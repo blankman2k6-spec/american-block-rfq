@@ -180,6 +180,16 @@
     .mix-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#60a5fa,#34d399)}
     .opportunity-card{background:#0d1829;border:1px solid var(--line);border-radius:15px;padding:12px;margin:9px 0}
     .report-hint{font-size:11px;color:var(--muted);margin-top:5px}
+
+    .account-row-actions{position:relative;display:flex;align-items:center;gap:8px}
+    .account-menu{position:absolute;right:0;top:38px;z-index:60;min-width:180px;background:#0d1829;border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 14px 34px rgba(0,0,0,.35)}
+    .account-menu button{width:100%;text-align:left;background:transparent;border:0;color:#e5edf8;padding:10px 11px;border-radius:8px;font-weight:750}
+    .account-menu button:hover{background:#17263d}
+    .account-menu .danger-item{color:#fecaca}
+    .inline-customer-panel{margin-top:10px;border:1px solid var(--line);background:#0c1728;border-radius:16px;padding:13px}
+    .inline-customer-panel h3{margin:0 0 10px;font-size:16px}
+    .inline-customer-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+
     @media(max-width:560px){
       .global-quick-actions{right:10px;bottom:88px}
       .global-quick-actions button{min-width:92px;padding:10px 12px;font-size:12px}
@@ -196,7 +206,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.0 Integrated Workflow</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.1 Account Management</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -336,7 +346,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.0</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.1</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -412,7 +422,38 @@
         </div>
       </div>
 
-      <label>Customer</label><select id="activityCustomer"></select>
+      <label>Customer</label>
+      <div class="row" style="grid-template-columns:1fr auto;align-items:end">
+        <div><select id="activityCustomer"></select></div>
+        <div><button id="activityAddCustomerBtn" class="secondary" type="button">＋ New Customer</button></div>
+      </div>
+
+      <div id="activityNewCustomerPanel" class="inline-customer-panel hidden">
+        <h3>Add Customer Without Leaving Activity</h3>
+        <label>Company Name</label><input id="activityNewCompany" placeholder="Company / account">
+        <div class="row">
+          <div><label>City</label><input id="activityNewCity" placeholder="City"></div>
+          <div><label>ZIP</label><input id="activityNewZip" inputmode="numeric" placeholder="ZIP"></div>
+        </div>
+        <label>Address</label><input id="activityNewAddress" placeholder="Street address">
+        <label>End User or Distributor</label>
+        <select id="activityNewAccountType">
+          <option value="">Not set</option>
+          <option value="EU">End User (EU)</option>
+          <option value="D">Distributor (D)</option>
+        </select>
+        <div class="row">
+          <div><label>Contact Name</label><input id="activityNewContactName" placeholder="Optional"></div>
+          <div><label>Phone</label><input id="activityNewContactPhone" type="tel" placeholder="Optional"></div>
+        </div>
+        <label>Email</label><input id="activityNewContactEmail" type="email" placeholder="Optional">
+        <div class="inline-customer-actions">
+          <button id="activitySaveNewCustomer" class="primary" type="button">Save & Select Customer</button>
+          <button id="activityCancelNewCustomer" class="secondary" type="button">Cancel</button>
+        </div>
+        <div id="activityNewCustomerMessage" class="mini" style="margin-top:8px"></div>
+      </div>
+
       <label>Contact</label><select id="activityContact"></select>
 
       <label>Opportunity</label>
@@ -553,7 +594,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 4.0 — Integrated Workflow</h2>
+      <h2>Version 4.1 — Account Management</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -998,12 +1039,72 @@ function renderCustomers(){
   $("customerList").innerHTML=list.length?"":"<div class='empty'>No customers yet.</div>";
   list.forEach(c=>{
     const row=document.createElement("div");row.className="account-list-row";row.dataset.openAccount=c.id;
-    row.innerHTML=`<strong>${esc(c.company)}</strong><span class="chev">›</span>`;
+    row.innerHTML=`<strong>${esc(c.company)}</strong>
+      <div class="account-row-actions">
+        <button class="menu-btn" data-account-menu="${c.id}" aria-label="Account actions">⋮</button>
+        <div class="account-menu hidden" data-account-menu-panel="${c.id}">
+          <button data-account-edit="${c.id}">✏️ Edit Account</button>
+          <button class="danger-item" data-account-delete="${c.id}">🗑 Delete Complete Account</button>
+        </div>
+        <span class="chev">›</span>
+      </div>`;
     $("customerList").appendChild(row);
   });
-  document.querySelectorAll("[data-open-account]").forEach(r=>r.onclick=()=>openCustomerAccount(r.dataset.openAccount));
+
+  document.querySelectorAll("[data-open-account]").forEach(r=>r.onclick=e=>{
+    if(e.target.closest("[data-account-menu]")||e.target.closest(".account-menu"))return;
+    openCustomerAccount(r.dataset.openAccount);
+  });
+
+  document.querySelectorAll("[data-account-menu]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const id=b.dataset.accountMenu;
+    document.querySelectorAll(".account-menu").forEach(m=>{if(m.dataset.accountMenuPanel!==id)m.classList.add("hidden")});
+    document.querySelector(`[data-account-menu-panel="${id}"]`)?.classList.toggle("hidden");
+  });
+
+  document.querySelectorAll("[data-account-edit]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();editCustomer(b.dataset.accountEdit);
+  });
+
+  document.querySelectorAll("[data-account-delete]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();confirmDeleteCompleteAccount(b.dataset.accountDelete);
+  });
 }
 
+
+
+function confirmDeleteCompleteAccount(customerId){
+  const c=customerById(customerId);if(!c)return;
+  const rfqCount=rfqs.filter(r=>r.customerId===customerId).length;
+  const orderCount=orders.filter(o=>o.customerId===customerId).length;
+  const activityCount=activities.filter(a=>a.customerId===customerId).length;
+  const commCount=communications.filter(x=>x.customerId===customerId).length;
+  const contactCount=(c.contacts||[]).length;
+
+  const ok=confirm(
+    `Delete ${c.company} completely?\n\n`+
+    `This will permanently delete:\n`+
+    `• ${contactCount} contact${contactCount===1?"":"s"}\n`+
+    `• ${rfqCount} RFQ${rfqCount===1?"":"s"}\n`+
+    `• ${orderCount} order${orderCount===1?"":"s"}\n`+
+    `• ${activityCount} activity log entr${activityCount===1?"y":"ies"}\n`+
+    `• ${commCount} communication${commCount===1?"":"s"}\n\n`+
+    `This cannot be undone.`
+  );
+  if(!ok)return;
+
+  customers=customers.filter(x=>x.id!==customerId);
+  rfqs=rfqs.filter(r=>r.customerId!==customerId);
+  orders=orders.filter(o=>o.customerId!==customerId);
+  activities=activities.filter(a=>a.customerId!==customerId);
+  communications=communications.filter(x=>x.customerId!==customerId);
+
+  if(activeCustomerId===customerId)activeCustomerId=null;
+  save();
+  renderAll();
+  showView("customersView",true);
+}
 
 function customerProductStats(customerId){
   const map=new Map(),family=new Map();
@@ -1544,6 +1645,64 @@ function toggleActivityOpportunityFields(){
   const isNew=$("activityOpportunity")?.value==="new";
   $("newOpportunityFields")?.classList.toggle("hidden",!isNew);
 }
+
+function resetInlineActivityCustomerForm(){
+  ["activityNewCompany","activityNewCity","activityNewZip","activityNewAddress","activityNewContactName","activityNewContactPhone","activityNewContactEmail"].forEach(id=>{if($(id))$(id).value=""});
+  if($("activityNewAccountType"))$("activityNewAccountType").value="";
+  if($("activityNewCustomerMessage"))$("activityNewCustomerMessage").textContent="";
+}
+function toggleInlineActivityCustomer(show){
+  if(!$("activityNewCustomerPanel"))return;
+  $("activityNewCustomerPanel").classList.toggle("hidden",!show);
+  if(show)setTimeout(()=>$("activityNewCompany")?.focus(),50);
+}
+function saveInlineActivityCustomer(){
+  const company=$("activityNewCompany").value.trim();
+  if(!company){$("activityNewCustomerMessage").textContent="Enter a company name.";return}
+
+  const existing=customers.find(c=>normalizeCompany(c.company)===normalizeCompany(company));
+  if(existing){
+    fillActivityCustomers();
+    $("activityCustomer").value=existing.id;
+    fillActivityContacts();
+    fillActivityOpportunities();
+    $("activityNewCustomerMessage").textContent="That account already exists, so I selected it for this activity.";
+    setTimeout(()=>{toggleInlineActivityCustomer(false);resetInlineActivityCustomerForm()},700);
+    return;
+  }
+
+  const contactName=$("activityNewContactName").value.trim();
+  const contactPhone=$("activityNewContactPhone").value.trim();
+  const contactEmail=$("activityNewContactEmail").value.trim();
+  const contacts=(contactName||contactPhone||contactEmail)?[{
+    id:uid(),name:contactName,role:"",phone:contactPhone,email:contactEmail,location:"",primary:true
+  }]:[];
+
+  const rec={
+    id:uid(),
+    company,
+    city:$("activityNewCity").value.trim(),
+    address:$("activityNewAddress").value.trim(),
+    zip:$("activityNewZip").value.trim(),
+    accountType:$("activityNewAccountType").value,
+    notes:"",
+    contacts,
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+
+  customers.push(rec);
+  save();
+  fillActivityCustomers();
+  $("activityCustomer").value=rec.id;
+  fillActivityContacts(contacts[0]?.id||"");
+  fillActivityOpportunities();
+  renderCustomers();
+
+  $("activityNewCustomerMessage").textContent=`${company} added and selected.`;
+  setTimeout(()=>{toggleInlineActivityCustomer(false);resetInlineActivityCustomerForm()},650);
+}
+
 function fillActivityCustomers(){
   if(!$("activityCustomer"))return;
   $("activityCustomer").innerHTML=`<option value="">Select customer</option>`+customers.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
@@ -1561,6 +1720,7 @@ function openNewActivity(customerId="",contactId=""){
   $("activityCustomer").value=customerId||"";
   fillActivityContacts(contactId);
   fillActivityOpportunities("");
+  toggleInlineActivityCustomer(false);resetInlineActivityCustomerForm();
   $("activityOpportunityTitle").value="";$("activityOpportunityValue").value="";$("activityOpportunityStage").value="Prospecting";$("activityOpportunityDetails").value="";
   $("activityComments").value="";
   $("activityMessage").textContent="";
@@ -2453,6 +2613,14 @@ document.addEventListener("click",e=>{
 $("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
 if($("activityCustomer"))$("activityCustomer").onchange=()=>{fillActivityContacts();fillActivityOpportunities()};
+if($("activityAddCustomerBtn"))$("activityAddCustomerBtn").onclick=()=>{
+  const showing=!$("activityNewCustomerPanel").classList.contains("hidden");
+  if(showing){toggleInlineActivityCustomer(false);return}
+  resetInlineActivityCustomerForm();toggleInlineActivityCustomer(true);
+};
+if($("activityCancelNewCustomer"))$("activityCancelNewCustomer").onclick=()=>{toggleInlineActivityCustomer(false);resetInlineActivityCustomerForm()};
+if($("activitySaveNewCustomer"))$("activitySaveNewCustomer").onclick=saveInlineActivityCustomer;
+
 if($("activityOpportunity"))$("activityOpportunity").onchange=toggleActivityOpportunityFields;
 if($("newActivityBtn"))$("newActivityBtn").onclick=()=>openNewActivity();
 if($("quickLogActivity"))$("quickLogActivity").onclick=()=>openNewActivity();
