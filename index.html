@@ -156,7 +156,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.4 Monthly Customer Log</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.5 Tax + Shipping</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -243,7 +243,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.4</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.5</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -425,7 +425,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 3.4 — Monthly Customer Log</h2>
+      <h2>Version 3.5 — Tax + Shipping</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -475,6 +475,11 @@
       </div>
       <div class="section-head"><h2 style="margin:0">Products</h2><button id="addItem" class="secondary">＋ Add Item</button></div>
       <div id="rfqItems"></div>
+      <div class="total"><span>Product Subtotal</span><strong id="rfqDraftSubtotal">$0.00</strong></div>
+      <div class="row" style="margin-top:10px">
+        <div><label>Shipping</label><input id="rfqShipping" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+        <div><label>Tax</label><input id="rfqTax" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+      </div>
       <div class="total"><span>Quote Total</span><strong id="rfqDraftTotal">$0.00</strong></div>
       <label>Customer Feedback</label><textarea id="rfqFeedback" placeholder="What did the customer say?"></textarea>
       <label>Next Action</label><input id="rfqNextAction" placeholder="Call, visit, revise quote, check inventory...">
@@ -511,7 +516,11 @@
       </div>
       <div class="row">
         <div><label>Order Date</label><input id="ackOrderDate" type="date"></div>
-        <div><label>Total Order Amount</label><input id="ackTotal" type="number" step="0.01"></div>
+        <div><label>Total Order Amount</label><input id="ackTotal" type="number" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="row">
+        <div><label>Shipping</label><input id="ackShipping" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+        <div><label>Tax</label><input id="ackTax" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
       </div>
       <div class="row">
         <div><label>Match Existing RFQ</label><select id="ackRfqMatch"></select></div>
@@ -535,7 +544,9 @@
         </div>
       </div>
       <div id="ackItems"></div>
-      <div class="total"><span>Calculated Line Total</span><strong id="ackCalcTotal">$0.00</strong></div>
+      <div class="total"><span>Product Subtotal</span><strong id="ackCalcSubtotal">$0.00</strong></div>
+      <div class="total"><span>Calculated Order Total</span><strong id="ackCalcTotal">$0.00</strong></div>
+      <div class="mini" style="margin-top:6px">Calculated total = product subtotal + shipping + tax.</div>
       <div id="ackTotalMismatch" class="mini" style="margin-top:8px"></div>
       <div class="toolbar" style="margin-top:8px">
         <button id="useCalculatedAckTotal" class="secondary">Use Calculated Total</button>
@@ -676,7 +687,9 @@ let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function save(){localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));localStorage.setItem(KEYS.customers,JSON.stringify(customers));localStorage.setItem(KEYS.orders,JSON.stringify(orders));localStorage.setItem(KEYS.communications,JSON.stringify(communications));localStorage.setItem(KEYS.activities,JSON.stringify(activities));localStorage.setItem(KEYS.settings,JSON.stringify(settings));localStorage.setItem(KEYS.cloud,JSON.stringify(cloud))}
-function total(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
+function itemSubtotal(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
+function extraCharges(r){return (Number(r.shipping)||0)+(Number(r.tax)||0)}
+function total(r){return itemSubtotal(r)+extraCharges(r)}
 function isOpen(r){return !["Closed Won","Lost"].includes(r.status)}
 function recordDate(r){if(r.createdAt)return new Date(r.createdAt);if(r.followup)return new Date(r.followup+"T00:00:00");return new Date(0)}
 function monthLabel(r){const d=recordDate(r);return isNaN(d)?"No Date":d.toLocaleDateString("en-US",{month:"long",year:"numeric"})}
@@ -1614,7 +1627,7 @@ function newManualOrder(){
   $("ackSalesOrder").value="";
   $("ackPO").value="";
   $("ackOrderDate").value=new Date().toISOString().slice(0,10);
-  $("ackTotal").value="0.00";
+  $("ackTotal").value="0.00";$("ackShipping").value="0.00";$("ackTax").value="0.00";
   $("ackRfqAction").value="none";
   $("ackWarnings").textContent="Manual order entry. Add line items and choose the correct account.";
   renderAckItems([{part:"",product:"",qty:1,price:0}]);
@@ -1664,7 +1677,7 @@ function editImportedOrder(id){
   $("ackSalesOrder").value=o.salesOrder||"";
   $("ackPO").value=o.poNumber||"";
   $("ackOrderDate").value=o.orderDate||"";
-  $("ackTotal").value=Number(o.total||0).toFixed(2);
+  $("ackTotal").value=Number(o.total||0).toFixed(2);$("ackShipping").value=Number(o.shipping||0).toFixed(2);$("ackTax").value=Number(o.tax||0).toFixed(2);
   renderAckItems((o.items||[]).map(i=>({...i,lineTotal:(Number(i.qty)||0)*(Number(i.price)||0)})));
   $("ackLineCount").textContent=`${(o.items||[]).length} item${(o.items||[]).length===1?"":"s"}`;
   fillAckContactOptions(o.contactId||"");
@@ -1717,19 +1730,23 @@ function getAckItems(){
   }));
 }
 function updateAckCalculatedTotal(){
-  let t=0;
+  let subtotal=0;
   document.querySelectorAll("#ackItems .ack-item").forEach(n=>{
     const q=Number(n.querySelector('[data-a="qty"]').value)||0,p=Number(n.querySelector('[data-a="price"]').value)||0,l=q*p;
-    t+=l;n.querySelector('[data-a="line"]').textContent=money.format(l);
+    subtotal+=l;n.querySelector('[data-a="line"]').textContent=money.format(l);
   });
-  $("ackCalcTotal").textContent=money.format(t);
+  const shipping=Number($("ackShipping")?.value)||0;
+  const tax=Number($("ackTax")?.value)||0;
+  const calculated=subtotal+shipping+tax;
+  if($("ackCalcSubtotal"))$("ackCalcSubtotal").textContent=money.format(subtotal);
+  $("ackCalcTotal").textContent=money.format(calculated);
   $("ackLineCount").textContent=`${document.querySelectorAll("#ackItems .ack-item").length} item${document.querySelectorAll("#ackItems .ack-item").length===1?"":"s"}`;
   const declared=Number($("ackTotal").value)||0;
-  const diff=declared-t;
+  const diff=declared-calculated;
   if($("ackTotalMismatch")){
     $("ackTotalMismatch").innerHTML=Math.abs(diff)>0.01
-      ? `<span style="color:#fbbf24">⚠ PDF/order total differs from edited line items by ${money.format(Math.abs(diff))}. Review freight, tax, missing items, or use the calculated total.</span>`
-      : `<span style="color:#86efac">✓ Order total matches the edited line items.</span>`;
+      ? `<span style="color:#fbbf24">⚠ Entered order total differs from subtotal + shipping + tax by ${money.format(Math.abs(diff))}. Review the values or use the calculated total.</span>`
+      : `<span style="color:#86efac">✓ Order total matches subtotal + shipping + tax.</span>`;
   }
 }
 async function importAcknowledgment(file){
@@ -1753,7 +1770,7 @@ async function importAcknowledgment(file){
     $("ackSalesOrder").value=parsed.salesOrder;
     $("ackPO").value=parsed.poNumber;
     $("ackOrderDate").value=parsed.orderDate;
-    $("ackTotal").value=parsed.total.toFixed(2);
+    $("ackTotal").value=parsed.total.toFixed(2);$("ackShipping").value="0.00";$("ackTax").value="0.00";
     $("ackLineCount").textContent=`${parsed.items.length} item${parsed.items.length===1?"":"s"}`;
     refreshAckCustomerDropdown();
     let match=bestCustomerMatch(parsed.company);
@@ -1794,10 +1811,32 @@ function addItem(data={part:"",product:"",qty:1,price:0}){
   $("rfqItems").appendChild(node);updateDraft();
 }
 function getItems(){return [...document.querySelectorAll("#rfqItems .item")].map(n=>({part:n.querySelector('[data-k="part"]').value.trim(),product:n.querySelector('[data-k="product"]').value.trim(),qty:Number(n.querySelector('[data-k="qty"]').value)||0,price:Number(n.querySelector('[data-k="price"]').value)||0}))}
-function updateDraft(){let t=0;document.querySelectorAll("#rfqItems .item").forEach(n=>{const q=Number(n.querySelector('[data-k="qty"]').value)||0,p=Number(n.querySelector('[data-k="price"]').value)||0,l=q*p;t+=l;n.querySelector('[data-k="line"]').textContent=money.format(l)});$("rfqDraftTotal").textContent=money.format(t)}
+function updateDraft(){
+  let subtotal=0;
+  document.querySelectorAll("#rfqItems .item").forEach(n=>{
+    const q=Number(n.querySelector('[data-k="qty"]').value)||0,p=Number(n.querySelector('[data-k="price"]').value)||0,l=q*p;
+    subtotal+=l;n.querySelector('[data-k="line"]').textContent=money.format(l)
+  });
+  const shipping=Number($("rfqShipping")?.value)||0;
+  const tax=Number($("rfqTax")?.value)||0;
+  if($("rfqDraftSubtotal"))$("rfqDraftSubtotal").textContent=money.format(subtotal);
+  $("rfqDraftTotal").textContent=money.format(subtotal+shipping+tax);
+}
 
-function newRfq(){if(!customers.length){alert("Add a customer first.");return}editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");$("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();showView("rfqFormView",false)}
-function editRfq(id){const r=rfqs.find(x=>x.id===id);if(!r)return;editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");$("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";$("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();showView("rfqFormView",false)}
+function newRfq(){
+  if(!customers.length){alert("Add a customer first.");return}
+  editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";
+  ["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");
+  $("rfqShipping").value="0.00";$("rfqTax").value="0.00";
+  $("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();updateDraft();showView("rfqFormView",false)
+}
+function editRfq(id){
+  const r=rfqs.find(x=>x.id===id);if(!r)return;
+  editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");
+  $("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";
+  $("rfqShipping").value=Number(r.shipping||0).toFixed(2);$("rfqTax").value=Number(r.tax||0).toFixed(2);
+  $("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();updateDraft();showView("rfqFormView",false)
+}
 function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",primary:false}){
   const row=$("contactTemplate").content.firstElementChild.cloneNode(true);
   row.dataset.id=data.id||uid();
@@ -1825,10 +1864,23 @@ function getContactRows(){
 function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cNotes"].forEach(id=>$(id).value="");$("cAccountType").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
 function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
-$("saveRfq").onclick=()=>{const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}const old=rfqs.find(r=>r.id===editingRfqId);const rec={id:editingRfqId||uid(),customerId:cid,contactId:$("rfqContact").value||null,contactNote:$("rfqContactNote").value.trim(),company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:$("rfqStatus").value,followup:$("rfqFollowup").value,feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);save();showView("rfqsView",true)}
+$("saveRfq").onclick=()=>{
+  const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}
+  const old=rfqs.find(r=>r.id===editingRfqId);
+  const rec={
+    id:editingRfqId||uid(),customerId:cid,contactId:$("rfqContact").value||null,contactNote:$("rfqContactNote").value.trim(),
+    company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:$("rfqStatus").value,followup:$("rfqFollowup").value,
+    feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),
+    shipping:Number($("rfqShipping").value)||0,tax:Number($("rfqTax").value)||0,
+    createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
+  };
+  if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);
+  save();showView("rfqsView",true)
+}
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),accountType:$("cAccountType").value,notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
 $("rfqCustomer").onchange=()=>renderContactOptions();$("addContact").onclick=()=>addContactRow();
+$("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
 $("backFromRfq").onclick=$("cancelRfq").onclick=()=>showView(lastMainView,true);$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
 $("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>showView("followupsView",true);
@@ -1872,9 +1924,12 @@ $("ackCustomer").onchange=()=>{
 };
 $("matchCustomerBtn").onclick=matchOrCreateAckCustomer;
 $("ackTotal").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal()};
+$("ackShipping").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal()};
+$("ackTax").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal()};
 $("addAckItem").onclick=()=>{addAckItemRow();updateAckCalculatedTotal()};
 $("useCalculatedAckTotal").onclick=()=>{
-  const calc=getAckItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0);
+  const subtotal=getAckItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0);
+  const calc=subtotal+(Number($("ackShipping").value)||0)+(Number($("ackTax").value)||0);
   $("ackTotal").value=calc.toFixed(2);
   fillAckRfqMatches();
   updateAckCalculatedTotal();
@@ -1909,7 +1964,10 @@ $("confirmAck").onclick=()=>{
   }
 
   const items=getAckItems();
-  const calc=items.reduce((s,i)=>s+i.qty*i.price,0);
+  const subtotal=items.reduce((s,i)=>s+i.qty*i.price,0);
+  const shipping=Number($("ackShipping").value)||0;
+  const tax=Number($("ackTax").value)||0;
+  const calc=subtotal+shipping+tax;
   const declared=Number($("ackTotal").value)||calc;
   const rfqId=$("ackRfqAction").value==="none"?null:($("ackRfqMatch").value||null);
   const contact=contactById(customerId,contactId);
@@ -1925,6 +1983,8 @@ $("confirmAck").onclick=()=>{
     poNumber:$("ackPO").value.trim(),
     orderDate:$("ackOrderDate").value,
     total:declared,
+    shipping,
+    tax,
     items,
     fileName:existing?.fileName||pendingAck.fileName,
     importedAt:existing?.importedAt||new Date().toISOString(),
