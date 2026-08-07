@@ -51,6 +51,10 @@
     .actions button{width:auto;flex:1}
     .toolbar{display:flex;gap:8px;margin-top:14px}
     .toolbar button{flex:1}
+    .group-block{margin-top:18px}
+    .group-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:#111827;border:1px solid var(--line)}
+    .group-heading h3{margin:0;font-size:17px}
+    .group-heading span{color:var(--muted);font-size:13px;text-align:right}
     .hidden{display:none}
     .notice{color:var(--muted);font-size:13px;margin-top:10px}
     @media(max-width:520px){.row{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
@@ -140,6 +144,25 @@
           </select>
         </div>
       </div>
+      <div class="row">
+        <div>
+          <label for="groupBy">Group RFQs By</label>
+          <select id="groupBy">
+            <option value="month">Month</option>
+            <option value="account">Customer / Account</option>
+            <option value="rfq">RFQ Number</option>
+          </select>
+        </div>
+        <div>
+          <label for="sortOrder">Sort Order</label>
+          <select id="sortOrder">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="az">A to Z</option>
+          </select>
+        </div>
+      </div>
+      <div class="notice" style="margin-top:10px">App version 3.1</div>
       <div id="quotes"></div>
     </section>
   </main>
@@ -172,6 +195,32 @@
     const saveLocal = () => localStorage.setItem(key, JSON.stringify(rfqs));
     const totalOf = r => r.items.reduce((a,i)=>a+(Number(i.qty)||0)*(Number(i.price)||0),0);
     const isOpen = r => !["Closed Won","Lost"].includes(r.status);
+    const recordDate = r => {
+      if(r.createdAt) return new Date(r.createdAt);
+      if(r.followup) return new Date(r.followup + "T00:00:00");
+      return new Date(0);
+    };
+    const monthLabel = r => {
+      const d = recordDate(r);
+      return isNaN(d) ? "No Date" : d.toLocaleDateString("en-US",{month:"long",year:"numeric"});
+    };
+    function groupRecords(records, mode){
+      const map = new Map();
+      records.forEach(r=>{
+        const key = mode==="account" ? (r.company||"No Account")
+                  : mode==="rfq" ? (r.quoteNo||"No RFQ Number")
+                  : monthLabel(r);
+        if(!map.has(key)) map.set(key,[]);
+        map.get(key).push(r);
+      });
+      const entries=[...map.entries()];
+      if(mode==="month"){
+        entries.sort((a,b)=>recordDate(b[1][0])-recordDate(a[1][0]));
+      } else {
+        entries.sort((a,b)=>a[0].localeCompare(b[0]));
+      }
+      return entries;
+    }
 
     function addItem(data={part:"",product:"",qty:1,price:0}){
       const node = $("itemTemplate").content.firstElementChild.cloneNode(true);
@@ -224,36 +273,62 @@
 
       const query=$("search").value.toLowerCase();
       const filter=$("filter").value;
-      const shown=rfqs.filter(r=>{
+      const groupMode=$("groupBy").value;
+      const sortMode=$("sortOrder").value;
+
+      let shown=rfqs.filter(r=>{
         const hay=[r.company,r.quoteNo,r.status,r.feedback,r.nextAction,...r.items.flatMap(i=>[i.part,i.product])].join(" ").toLowerCase();
         return (filter==="All"||r.status===filter) && hay.includes(query);
       });
-      $("quotes").innerHTML=shown.length?"":"<p class='muted'>No RFQs found.</p>";
-      shown.forEach(r=>{
-        const div=document.createElement("article");
-        div.className="quote-card";
-        div.innerHTML=`
-          <div class="quote-head">
-            <div><strong>${esc(r.company)}</strong><div class="muted">${esc(r.quoteNo||"No quote number")}</div></div>
-            <span class="badge">${esc(r.status)}</span>
-          </div>
-          <div class="quote-total">${money.format(totalOf(r))}</div>
-          <div class="products">${r.items.map(i=>`
-            <div class="product-line">
-              <strong>${esc(i.product||"Product")}</strong>
-              <div class="muted">${esc(i.part||"No part number")} · Qty ${i.qty} · ${money.format(i.price)} ea</div>
-              <div>${money.format(i.qty*i.price)}</div>
-            </div>`).join("")}
-          </div>
-          <div><span class="muted">Customer feedback:</span> ${esc(r.feedback||"None")}</div>
-          <div style="margin-top:8px"><span class="muted">Next action:</span> ${esc(r.nextAction||"None")}</div>
-          <div style="margin-top:8px"><span class="muted">Follow-up:</span> ${esc(r.followup||"Not scheduled")}</div>
-          <div class="actions">
-            <button data-edit="${r.id}" class="secondary">Edit</button>
-            <button data-delete="${r.id}" class="danger">Delete</button>
-          </div>`;
-        $("quotes").appendChild(div);
+
+      shown.sort((a,b)=>{
+        if(sortMode==="az") return (a.company||"").localeCompare(b.company||"");
+        const diff=recordDate(a)-recordDate(b);
+        return sortMode==="oldest" ? diff : -diff;
       });
+
+      $("quotes").innerHTML=shown.length?"":"<p class='muted'>No RFQs found.</p>";
+
+      groupRecords(shown,groupMode).forEach(([groupName,records])=>{
+        const section=document.createElement("section");
+        section.className="group-block";
+        const groupValue=records.reduce((sum,r)=>sum+totalOf(r),0);
+        section.innerHTML=`
+          <div class="group-heading">
+            <h3>${esc(groupName)}</h3>
+            <span>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(groupValue)}</span>
+          </div>
+          <div class="group-quotes"></div>`;
+        const holder=section.querySelector(".group-quotes");
+
+        records.forEach(r=>{
+          const div=document.createElement("article");
+          div.className="quote-card";
+          div.innerHTML=`
+            <div class="quote-head">
+              <div><strong>${esc(r.company)}</strong><div class="muted">${esc(r.quoteNo||"No quote number")}</div></div>
+              <span class="badge">${esc(r.status)}</span>
+            </div>
+            <div class="quote-total">${money.format(totalOf(r))}</div>
+            <div class="products">${r.items.map(i=>`
+              <div class="product-line">
+                <strong>${esc(i.product||"Product")}</strong>
+                <div class="muted">${esc(i.part||"No part number")} · Qty ${i.qty} · ${money.format(i.price)} ea</div>
+                <div>${money.format(i.qty*i.price)}</div>
+              </div>`).join("")}
+            </div>
+            <div><span class="muted">Customer feedback:</span> ${esc(r.feedback||"None")}</div>
+            <div style="margin-top:8px"><span class="muted">Next action:</span> ${esc(r.nextAction||"None")}</div>
+            <div style="margin-top:8px"><span class="muted">Follow-up:</span> ${esc(r.followup||"Not scheduled")}</div>
+            <div class="actions">
+              <button data-edit="${r.id}" class="secondary">Edit</button>
+              <button data-delete="${r.id}" class="danger">Delete</button>
+            </div>`;
+          holder.appendChild(div);
+        });
+        $("quotes").appendChild(section);
+      });
+
       document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>fillForm(rfqs.find(r=>r.id===b.dataset.edit)));
       document.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{
         if(confirm("Delete this RFQ?")){rfqs=rfqs.filter(r=>r.id!==b.dataset.delete);saveLocal();render()}
@@ -266,6 +341,7 @@
       if(!company){$("message").textContent="Enter a company name.";return}
       const record={
         id:editingId||crypto.randomUUID(),
+        createdAt: editingId ? (rfqs.find(r=>r.id===editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
         company, quoteNo:$("quoteNo").value.trim(), status:$("status").value,
         followup:$("followup").value, feedback:$("feedback").value.trim(),
         nextAction:$("nextAction").value.trim(), items:draftItems()
@@ -273,7 +349,7 @@
       if(editingId) rfqs=rfqs.map(r=>r.id===editingId?record:r); else rfqs.unshift(record);
       saveLocal(); resetForm(); render(); $("message").textContent="Saved on this device.";
     };
-    $("search").oninput=render; $("filter").onchange=render;
+    $("search").oninput=render; $("filter").onchange=render; $("groupBy").onchange=render; $("sortOrder").onchange=render;
 
     function buildTeamReport(){
       const openRfqs = rfqs.filter(isOpen);
@@ -284,43 +360,51 @@
       const today = new Date(); today.setHours(0,0,0,0);
       const dueCount = openRfqs.filter(r=>r.followup && new Date(r.followup+"T00:00:00")<=today).length;
 
-      const quoteSections = openRfqs.map((r,index)=>{
-        const rows = r.items.map(i=>`
-          <tr>
-            <td>${esc(i.part || "")}</td>
-            <td>${esc(i.product || "")}</td>
-            <td class="num">${Number(i.qty)||0}</td>
-            <td class="num">${money.format(Number(i.price)||0)}</td>
-            <td class="num">${money.format((Number(i.qty)||0)*(Number(i.price)||0))}</td>
-          </tr>`).join("");
+      const groupMode = $("groupBy").value;
+      const quoteSections = groupRecords(openRfqs,groupMode).map(([groupName,records])=>{
+        const groupTotal=records.reduce((sum,r)=>sum+totalOf(r),0);
+        const cards=records.map((r,index)=>{
+          const rows = r.items.map(i=>`
+            <tr>
+              <td>${esc(i.part || "")}</td>
+              <td>${esc(i.product || "")}</td>
+              <td class="num">${Number(i.qty)||0}</td>
+              <td class="num">${money.format(Number(i.price)||0)}</td>
+              <td class="num">${money.format((Number(i.qty)||0)*(Number(i.price)||0))}</td>
+            </tr>`).join("");
 
-        return `
-          <section class="quote">
-            <div class="quote-title">
-              <div>
-                <h2>${index+1}. ${esc(r.company)}</h2>
-                <div class="sub">Quote: ${esc(r.quoteNo || "Not entered")} | Status: ${esc(r.status)}</div>
+          return `
+            <section class="quote">
+              <div class="quote-title">
+                <div>
+                  <h2>${index+1}. ${esc(r.company)}</h2>
+                  <div class="sub">Quote: ${esc(r.quoteNo || "Not entered")} | Status: ${esc(r.status)}</div>
+                </div>
+                <div class="quote-amount">${money.format(totalOf(r))}</div>
               </div>
-              <div class="quote-amount">${money.format(totalOf(r))}</div>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Part Number</th>
-                  <th>Product</th>
-                  <th class="num">Qty</th>
-                  <th class="num">Unit Price</th>
-                  <th class="num">Line Total</th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-            <div class="notes-grid">
-              <div><strong>Customer Feedback</strong><p>${esc(r.feedback || "No feedback entered.")}</p></div>
-              <div><strong>Next Action</strong><p>${esc(r.nextAction || "No next action entered.")}</p></div>
-              <div><strong>Follow-up Date</strong><p>${esc(r.followup || "Not scheduled")}</p></div>
-            </div>
-          </section>`;
+              <table>
+                <thead>
+                  <tr>
+                    <th>Part Number</th>
+                    <th>Product</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Unit Price</th>
+                    <th class="num">Line Total</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+              <div class="notes-grid">
+                <div><strong>Customer Feedback</strong><p>${esc(r.feedback || "No feedback entered.")}</p></div>
+                <div><strong>Next Action</strong><p>${esc(r.nextAction || "No next action entered.")}</p></div>
+                <div><strong>Follow-up Date</strong><p>${esc(r.followup || "Not scheduled")}</p></div>
+              </div>
+            </section>`;
+        }).join("");
+        return `<section class="report-group">
+          <div class="report-group-title"><h2>${esc(groupName)}</h2><div>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(groupTotal)}</div></div>
+          ${cards}
+        </section>`;
       }).join("");
 
       return `<!doctype html>
@@ -340,7 +424,11 @@
   .metric{border:1px solid #cbd5e1;border-radius:10px;padding:14px}
   .metric span{display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
   .metric strong{display:block;font-size:22px;margin-top:5px;color:#0f172a}
-  .quote{break-inside:avoid;margin:0 0 24px;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden}
+  .report-group{margin:0 0 28px}
+  .report-group-title{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#e2e8f0;border-left:6px solid #1f4e78;padding:12px 14px;margin-bottom:12px}
+  .report-group-title h2{margin:0;color:#1f4e78}
+  .report-group-title div{font-weight:bold;color:#334155}
+  .quote{break-inside:avoid;margin:0 0 18px;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden}
   .quote-title{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;background:#f1f5f9;padding:15px 17px;border-bottom:1px solid #cbd5e1}
   h2{font-size:18px;margin:0 0 4px;color:#0f172a}
   .sub{font-size:12px;color:#64748b}
