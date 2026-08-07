@@ -52,7 +52,7 @@
     .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(7,16,31,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);
       padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));z-index:50}
     .tabs-inner{max-width:820px;margin:auto;display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
-    .tab{background:transparent;border:0;touch-action:manipulation;pointer-events:auto;color:var(--muted);padding:8px 2px;border-radius:12px;font-size:10px}
+    .tab{background:transparent;border:0;color:var(--muted);padding:8px 2px;border-radius:12px;font-size:10px}
     .tab strong{display:block;font-size:18px;margin-bottom:3px}.tab.active{background:#15233a;color:#fff}
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 10px}
     .item{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
@@ -73,7 +73,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v2.2.5</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v2.2.6</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -146,7 +146,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.5</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.6</div></div>
       <button id="importAckOrders" class="primary">＋ Import PDF</button>
     </div>
     <div class="row">
@@ -168,7 +168,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2.2.5 — Navigation Fix</h2>
+      <h2>Version 2.2.6 — Editable Orders</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, order history, PDF acknowledgment parsing, automatic customer matching, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -217,20 +217,12 @@
       <h2 id="ackFileName" style="margin-top:5px">PDF</h2>
       <p class="muted">Review the extracted information before saving it to the CRM.</p>
       <div class="row">
-        <div>
-          <label>Matched Customer / Account</label>
-          <select id="ackCustomer"></select>
-        </div>
+        <div><label>Matched Customer / Account</label><select id="ackCustomer"></select></div>
         <div><label>Contact</label><select id="ackContact"></select></div>
       </div>
       <div class="row">
-        <div>
-          <label>Customer Name to Save</label>
-          <input id="ackCustomerName" placeholder="Edit account name if needed">
-        </div>
-        <div style="display:flex;align-items:end">
-          <button id="saveAckCustomerName" class="secondary" style="width:100%">Save / Match Customer</button>
-        </div>
+        <div><label>Customer Name to Save</label><input id="ackCustomerName" placeholder="Edit or enter customer name"></div>
+        <div style="display:flex;align-items:end"><button id="matchCustomerBtn" class="secondary" style="width:100%">Match / Create Customer</button></div>
       </div>
       <div class="row">
         <div><label>Company Read From PDF</label><input id="ackCompany" readonly></div>
@@ -840,26 +832,22 @@ function bestCustomerMatch(name){
       ||customers.find(c=>normalizeCompany(c.company).includes(n)||n.includes(normalizeCompany(c.company)));
 }
 
-function refreshAckCustomerDropdown(selectedId=""){
-  $("ackCustomer").innerHTML='<option value="__new__">＋ Add / Edit Customer Name</option>'+
-    customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
-  if(selectedId)$("ackCustomer").value=selectedId;
+function refreshAckCustomerDropdown(selected=""){
+  $("ackCustomer").innerHTML='<option value="">Select customer</option><option value="__new__">＋ Create New Customer</option>'+
+    customers.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+  if(selected)$("ackCustomer").value=selected;
 }
-function ensureAckCustomerFromName(){
+function matchOrCreateAckCustomer(){
   const name=$("ackCustomerName").value.trim();
   if(!name){alert("Enter a customer name.");return null}
-  let existing=customers.find(c=>normalizeCompany(c.company)===normalizeCompany(name));
-  if(existing){
-    existing.company=name;
-    refreshAckCustomerDropdown(existing.id);
-    $("ackCustomer").value=existing.id;
-    fillAckContactOptions();
-    fillAckRfqMatches();
-    save();
-    return existing;
+  let c=customers.find(x=>normalizeCompany(x.company)===normalizeCompany(name));
+  if(!c){
+    c={id:uid(),company:name,city:"",address:"",notes:"Created from acknowledgment import.",contacts:[],createdAt:new Date().toISOString()};
+    customers.push(c);
+  }else{
+    c.company=name;
   }
-  const c={id:uid(),company:name,city:"",address:"",notes:"Created from acknowledgment import.",contacts:[],createdAt:new Date().toISOString()};
-  customers.push(c);save();
+  save();
   refreshAckCustomerDropdown(c.id);
   $("ackCustomer").value=c.id;
   fillAckContactOptions();
@@ -867,7 +855,8 @@ function ensureAckCustomerFromName(){
   return c;
 }
 function editImportedOrder(id){
-  const o=orders.find(x=>x.id===id);if(!o)return;
+  const o=orders.find(x=>x.id===id);
+  if(!o)return;
   editingOrderId=id;
   pendingAck={fileName:o.fileName||"Imported acknowledgment"};
   $("ackReviewTitle").textContent="Edit Imported Order";
@@ -877,17 +866,17 @@ function editImportedOrder(id){
   $("ackCustomerName").value=orderCustomerName(o);
   $("ackCompany").value=o.company||orderCustomerName(o);
   $("ackParsedContact").value=o.contactName||"";
-  fillAckContactOptions(o.contactId||"");
   $("ackSalesOrder").value=o.salesOrder||"";
   $("ackPO").value=o.poNumber||"";
   $("ackOrderDate").value=o.orderDate||"";
   $("ackTotal").value=Number(o.total||0).toFixed(2);
-  $("ackRfqAction").value=o.linkedRfqId?"link":"none";
-  renderAckItems((o.items||[]).map(i=>({...i,lineTotal:(i.qty||0)*(i.price||0)})));
+  renderAckItems((o.items||[]).map(i=>({...i,lineTotal:(Number(i.qty)||0)*(Number(i.price)||0)})));
   $("ackLineCount").textContent=`${(o.items||[]).length} item${(o.items||[]).length===1?"":"s"}`;
+  fillAckContactOptions(o.contactId||"");
   fillAckRfqMatches();
   if(o.linkedRfqId)$("ackRfqMatch").value=o.linkedRfqId;
-  $("ackWarnings").textContent="You are editing an existing imported order.";
+  $("ackRfqAction").value=o.linkedRfqId?"link":"none";
+  $("ackWarnings").textContent="Editing an existing imported order.";
   showView("ackReviewView",false);
 }
 function fillAckContactOptions(selected=""){
@@ -1068,9 +1057,10 @@ $("ackCustomer").onchange=()=>{
   }
   const c=customerById($("ackCustomer").value);
   if(c)$("ackCustomerName").value=c.company;
-  fillAckContactOptions();fillAckRfqMatches();
+  fillAckContactOptions();
+  fillAckRfqMatches();
 };
-$("saveAckCustomerName").onclick=ensureAckCustomerFromName;
+$("matchCustomerBtn").onclick=matchOrCreateAckCustomer;
 $("ackTotal").oninput=fillAckRfqMatches;
 $("backFromAck").onclick=$("cancelAck").onclick=()=>showView(lastMainView,true);
 $("orderSearch").oninput=renderOrders;$("orderGroup").onchange=renderOrders;
@@ -1080,29 +1070,25 @@ $("confirmAck").onclick=()=>{
 
   let customerId=$("ackCustomer").value;
   if(customerId==="__new__"||!customerId){
-    const c=ensureAckCustomerFromName();if(!c)return;customerId=c.id;
+    const created=matchOrCreateAckCustomer();
+    if(!created)return;
+    customerId=created.id;
   }else{
     const editedName=$("ackCustomerName").value.trim();
-    const c=customerById(customerId);
-    if(c&&editedName&&normalizeCompany(c.company)!==normalizeCompany(editedName)){
-      const match=customers.find(x=>x.id!==c.id&&normalizeCompany(x.company)===normalizeCompany(editedName));
-      if(match){
-        customerId=match.id;
-        $("ackCustomer").value=match.id;
-      }else{
-        c.company=editedName;
-        rfqs.filter(r=>r.customerId===c.id).forEach(r=>r.company=editedName);
-        orders.filter(o=>o.customerId===c.id).forEach(o=>o.company=editedName);
-      }
+    const current=customerById(customerId);
+    if(current&&editedName&&current.company!==editedName){
+      current.company=editedName;
+      rfqs.filter(r=>r.customerId===customerId).forEach(r=>r.company=editedName);
+      orders.filter(o=>o.customerId===customerId).forEach(o=>o.company=editedName);
     }
   }
 
   const contactId=$("ackContact").value||null;
   const salesOrder=$("ackSalesOrder").value.trim();
 
-  // Only block duplicate sales order when creating a new import.
   if(!editingOrderId&&salesOrder&&orders.some(o=>o.salesOrder===salesOrder)){
-    alert("That sales order is already in Orders.");return;
+    alert("That sales order is already in Orders.");
+    return;
   }
 
   const items=getAckItems();
@@ -1110,12 +1096,12 @@ $("confirmAck").onclick=()=>{
   const declared=Number($("ackTotal").value)||calc;
   const rfqId=$("ackRfqAction").value==="none"?null:($("ackRfqMatch").value||null);
   const contact=contactById(customerId,contactId);
-
   const existing=editingOrderId?orders.find(o=>o.id===editingOrderId):null;
+
   const order={
     id:editingOrderId||uid(),
     customerId,
-    company:customerById(customerId)?.company||$("ackCustomerName").value.trim()||$("ackCompany").value.trim(),
+    company:customerById(customerId)?.company||$("ackCustomerName").value.trim(),
     contactId,
     contactName:contact?.name||$("ackParsedContact").value.trim(),
     salesOrder,
