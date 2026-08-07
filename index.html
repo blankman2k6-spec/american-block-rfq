@@ -51,8 +51,8 @@
     .money{font-size:21px;font-weight:800;margin-top:7px}.mini{font-size:12px;color:var(--muted)}
     .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(7,16,31,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);
       padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));z-index:50}
-    .tabs-inner{max-width:820px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-    .tab{background:transparent;border:0;color:var(--muted);padding:8px 4px;border-radius:12px;font-size:11px}
+    .tabs-inner{max-width:820px;margin:auto;display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+    .tab{background:transparent;border:0;color:var(--muted);padding:8px 2px;border-radius:12px;font-size:10px}
     .tab strong{display:block;font-size:18px;margin-bottom:3px}.tab.active{background:#15233a;color:#fff}
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 10px}
     .item{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
@@ -94,10 +94,11 @@
       <div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">$100K Monthly Goal</h2><span id="goalStatus" class="status">Set up</span></div>
       <div class="row">
         <div><label>Monthly Goal</label><input id="monthlyGoal" type="number" min="0" step="1000" value="100000"></div>
-        <div><label>Sales Booked This Month</label><input id="monthlySales" type="number" min="0" step="0.01" value="0"></div>
+        <div><label>Manual Sales Adjustment</label><input id="monthlySales" type="number" min="0" step="0.01" value="0"></div>
       </div>
       <div class="progress-wrap" style="margin-top:14px"><div id="goalProgress" class="progress"></div></div>
       <div class="grid metrics" style="margin-top:12px">
+        <div class="metric"><small>Orders Imported This Month</small><strong id="importedMonthSales">$0</strong></div>
         <div class="metric"><small>Remaining</small><strong id="goalRemaining">$0</strong></div>
         <div class="metric"><small>Daily Run Rate Needed</small><strong id="dailyNeeded">$0</strong><div class="sub"><span id="businessDaysLeft">0</span> business days left</div></div>
       </div>
@@ -132,12 +133,27 @@
       <div><label>Sort</label><select id="rfqSort"><option value="newest">Newest First</option><option value="oldest">Oldest First</option><option value="az">A to Z</option><option value="value">Highest Value</option></select></div>
     </div>
     <div class="toolbar" style="margin-top:12px">
+      <button id="importAck" class="primary">＋ Import Acknowledgment PDF</button>
       <button id="teamPdf" class="secondary">Team PDF</button>
       <button id="exportBackup" class="secondary">Export Backup</button>
       <button id="importBackup" class="secondary">Import Backup</button>
       <input id="importFile" type="file" class="hidden" accept=".json,application/json">
+      <input id="ackFile" type="file" class="hidden" accept="application/pdf,.pdf">
     </div>
     <div id="rfqList" style="margin-top:10px"></div>
+  </section>
+
+
+  <section id="ordersView" class="view">
+    <div class="section-head">
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2></div>
+      <button id="importAckOrders" class="primary">＋ Import PDF</button>
+    </div>
+    <div class="row">
+      <div><label>Search</label><input id="orderSearch" placeholder="Account, sales order, PO, part..."></div>
+      <div><label>Group By</label><select id="orderGroup"><option value="month">Month</option><option value="account">Customer / Account</option></select></div>
+    </div>
+    <div id="orderList" style="margin-top:10px"></div>
   </section>
 
   <section id="followupsView" class="view">
@@ -152,8 +168,8 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2 Foundation</h2>
-      <p class="muted">Executive dashboard, customer CRM, RFQ management, monthly goal tracking, fast search, PDF reports, offline support, and migration from the original RFQ tracker.</p>
+      <h2>Version 2.2 — PDF Acknowledgment Import</h2>
+      <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, order history, PDF acknowledgment parsing, automatic customer matching, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
         <button id="settingsImport" class="secondary">Import Backup</button>
@@ -170,7 +186,11 @@
     <div class="card">
       <div class="row">
         <div><label>Customer / Account</label><select id="rfqCustomer"></select></div>
-        <div><label>RFQ / Quote Number</label><input id="rfqNumber" placeholder="Quote number or contact/date"></div>
+        <div><label>Contact for This RFQ</label><select id="rfqContact"></select></div>
+      </div>
+      <div class="row">
+        <div><label>RFQ / Quote Number</label><input id="rfqNumber" placeholder="Quote number or reference"></div>
+        <div><label>Contact Notes</label><input id="rfqContactNote" placeholder="Optional role, location, or note"></div>
       </div>
       <div class="row">
         <div><label>Status</label><select id="rfqStatus"><option>Waiting on Customer</option><option>Pricing Review</option><option>Verbal Yes</option><option>Hold</option><option>Closed Won</option><option>Lost</option></select></div>
@@ -189,20 +209,70 @@
     </div>
   </section>
 
+
+  <section id="ackReviewView" class="view">
+    <div class="section-head"><button id="backFromAck" class="secondary">← Back</button><h2 style="margin:0">Review PDF Import</h2></div>
+    <div class="card">
+      <div class="kicker">Acknowledgment Import</div>
+      <h2 id="ackFileName" style="margin-top:5px">PDF</h2>
+      <p class="muted">Review the extracted information before saving it to the CRM.</p>
+      <div class="row">
+        <div><label>Matched Customer / Account</label><select id="ackCustomer"></select></div>
+        <div><label>Contact</label><select id="ackContact"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Company Read From PDF</label><input id="ackCompany" readonly></div>
+        <div><label>Ship-To Contact Read From PDF</label><input id="ackParsedContact"></div>
+      </div>
+      <div class="row">
+        <div><label>Sales Order</label><input id="ackSalesOrder"></div>
+        <div><label>PO Number</label><input id="ackPO"></div>
+      </div>
+      <div class="row">
+        <div><label>Order Date</label><input id="ackOrderDate" type="date"></div>
+        <div><label>Total Order Amount</label><input id="ackTotal" type="number" step="0.01"></div>
+      </div>
+      <div class="row">
+        <div><label>Match Existing RFQ</label><select id="ackRfqMatch"></select></div>
+        <div><label>When Imported</label>
+          <select id="ackRfqAction">
+            <option value="close">Mark matched RFQ Closed Won</option>
+            <option value="link">Link only — keep RFQ status</option>
+            <option value="none">Do not link an RFQ</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-head"><h2 style="margin:0">Extracted Line Items</h2><span id="ackLineCount" class="pill">0 items</span></div>
+      <div id="ackItems"></div>
+      <div class="total"><span>Calculated Line Total</span><strong id="ackCalcTotal">$0.00</strong></div>
+
+      <div id="ackWarnings" class="mini" style="margin-top:12px"></div>
+      <div class="toolbar" style="margin-top:14px">
+        <button id="confirmAck" class="primary">Confirm & Import Order</button>
+        <button id="cancelAck" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </section>
+
   <section id="customerFormView" class="view">
     <div class="section-head"><button id="backFromCustomer" class="secondary">← Back</button><h2 id="customerFormTitle" style="margin:0">New Customer</h2></div>
     <div class="card">
       <label>Company Name</label><input id="cCompany" placeholder="Company / account">
       <div class="row">
-        <div><label>Primary Contact</label><input id="cContact" placeholder="Contact name"></div>
-        <div><label>Phone</label><input id="cPhone" type="tel" placeholder="Phone number"></div>
-      </div>
-      <div class="row">
-        <div><label>Email</label><input id="cEmail" type="email" placeholder="Email address"></div>
         <div><label>City / Location</label><input id="cCity" placeholder="City, State"></div>
+        <div><label>Address</label><input id="cAddress" placeholder="Street address"></div>
       </div>
-      <label>Address</label><input id="cAddress" placeholder="Street address">
       <label>Customer Notes</label><textarea id="cNotes" placeholder="Products purchased, buying habits, needs, preferences..."></textarea>
+
+      <div class="section-head">
+        <div>
+          <div class="kicker">Account Contacts</div>
+          <h2 style="margin-top:4px">Contacts</h2>
+        </div>
+        <button id="addContact" class="secondary">＋ Contact</button>
+      </div>
+      <div id="contactRows"></div>
       <div class="toolbar" style="margin-top:14px">
         <button id="saveCustomer" class="primary">Save Customer</button>
         <button id="cancelCustomer" class="secondary">Cancel</button>
@@ -210,6 +280,48 @@
       <div id="customerMessage" class="mini" style="margin-top:9px"></div>
     </div>
   </section>
+
+
+
+  <template id="ackItemTemplate">
+    <div class="item ack-item">
+      <div class="row">
+        <div><label>Part Number</label><input data-a="part"></div>
+        <div><label>Product Description</label><input data-a="product"></div>
+      </div>
+      <div class="row">
+        <div><label>Quantity</label><input data-a="qty" type="number" step="0.0001"></div>
+        <div><label>Unit Price</label><input data-a="price" type="number" step="0.01"></div>
+      </div>
+      <div class="total"><span>Line Total</span><strong data-a="line">$0.00</strong></div>
+    </div>
+  </template>
+
+  <template id="contactTemplate">
+    <div class="item contact-row">
+      <div class="row">
+        <div><label>Contact Name</label><input data-c="name" placeholder="Name"></div>
+        <div><label>Role / Department</label><input data-c="role" placeholder="Buyer, manager, flowline..."></div>
+      </div>
+      <div class="row">
+        <div><label>Phone</label><input data-c="phone" type="tel" placeholder="Phone number"></div>
+        <div><label>Email</label><input data-c="email" type="email" placeholder="Email address"></div>
+      </div>
+      <div class="row">
+        <div><label>Location</label><input data-c="location" placeholder="City, branch, yard..."></div>
+        <div><label>Primary Contact</label>
+          <select data-c="primary">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+      </div>
+      <div class="item-actions">
+        <span class="mini">One account can have multiple contacts.</span>
+        <button data-contact-remove class="danger">Remove</button>
+      </div>
+    </div>
+  </template>
 
   <template id="itemTemplate">
     <div class="item">
@@ -231,6 +343,7 @@
     <button class="tab active" data-view="dashboardView"><strong>⌂</strong>Dashboard</button>
     <button class="tab" data-view="customersView"><strong>👥</strong>Customers</button>
     <button class="tab" data-view="rfqsView"><strong>▤</strong>RFQs</button>
+    <button class="tab" data-view="ordersView"><strong>▣</strong>Orders</button>
     <button class="tab" data-view="followupsView"><strong>✓</strong>Follow-ups</button>
     <button class="tab" data-view="settingsView"><strong>⚙</strong>Settings</button>
   </div>
@@ -239,15 +352,16 @@
 <script>
 const $=id=>document.getElementById(id);
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2});
-const KEYS={rfqs:"abSalesOS_rfqs_v2",customers:"abSalesOS_customers_v2",settings:"abSalesOS_settings_v2"};
+const KEYS={rfqs:"abSalesOS_rfqs_v2",customers:"abSalesOS_customers_v2",orders:"abSalesOS_orders_v2",settings:"abSalesOS_settings_v2"};
 let rfqs=JSON.parse(localStorage.getItem(KEYS.rfqs)||"null");
 let customers=JSON.parse(localStorage.getItem(KEYS.customers)||"null");
+let orders=JSON.parse(localStorage.getItem(KEYS.orders)||"[]");
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
 let editingRfqId=null,editingCustomerId=null,lastMainView="dashboardView";
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
-function save(){localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));localStorage.setItem(KEYS.customers,JSON.stringify(customers));localStorage.setItem(KEYS.settings,JSON.stringify(settings))}
+function save(){localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));localStorage.setItem(KEYS.customers,JSON.stringify(customers));localStorage.setItem(KEYS.orders,JSON.stringify(orders));localStorage.setItem(KEYS.settings,JSON.stringify(settings))}
 function total(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
 function isOpen(r){return !["Closed Won","Lost"].includes(r.status)}
 function recordDate(r){if(r.createdAt)return new Date(r.createdAt);if(r.followup)return new Date(r.followup+"T00:00:00");return new Date(0)}
@@ -256,18 +370,103 @@ function today0(){const d=new Date();d.setHours(0,0,0,0);return d}
 function formatDate(s){if(!s)return"Not scheduled";return new Date(s+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}
 function customerById(id){return customers.find(c=>c.id===id)}
 function customerName(r){return customerById(r.customerId)?.company||r.company||"Unknown Customer"}
+function contactById(customerId,contactId){return customerById(customerId)?.contacts?.find(c=>c.id===contactId)}
+function contactName(r){return contactById(r.customerId,r.contactId)?.name||""}
 
+function normalizeCompany(name){
+  return String(name||"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ");
+}
 function migrate(){
   if(rfqs===null){
     const old=JSON.parse(localStorage.getItem("americanBlockRFQs_v1")||"[]");
-    rfqs=old.map(r=>({...r,customerId:null,createdAt:r.createdAt||new Date().toISOString()}));
+    rfqs=old.map(r=>({...r,customerId:null,contactId:null,createdAt:r.createdAt||new Date().toISOString()}));
   }
   if(customers===null)customers=[];
-  const names=[...new Set(rfqs.map(r=>r.company).filter(Boolean))];
-  names.forEach(name=>{
-    let c=customers.find(x=>x.company.toLowerCase()===name.toLowerCase());
-    if(!c){c={id:uid(),company:name,contact:"",phone:"",email:"",city:"",address:"",notes:"",createdAt:new Date().toISOString()};customers.push(c)}
-    rfqs.filter(r=>!r.customerId&&r.company===name).forEach(r=>r.customerId=c.id);
+
+  // Convert older single-contact customer records into a contacts array.
+  customers=customers.map(c=>{
+    let contacts=Array.isArray(c.contacts)?c.contacts:[];
+    if(!contacts.length && (c.contact||c.phone||c.email)){
+      contacts=[{
+        id:uid(),
+        name:c.contact||"",
+        role:"",
+        phone:c.phone||"",
+        email:c.email||"",
+        location:c.city||"",
+        primary:true
+      }];
+    }
+    return {...c,contacts};
+  });
+
+  // Create missing customer records from imported RFQs.
+  [...new Set(rfqs.map(r=>r.company).filter(Boolean))].forEach(name=>{
+    if(!customers.some(c=>normalizeCompany(c.company)===normalizeCompany(name))){
+      customers.push({
+        id:uid(),company:name,city:"",address:"",notes:"",
+        contacts:[],createdAt:new Date().toISOString()
+      });
+    }
+  });
+
+  // Merge duplicate accounts with the same normalized company name.
+  const merged=[];
+  const idMap=new Map();
+  customers.forEach(c=>{
+    const key=normalizeCompany(c.company);
+    let keeper=merged.find(x=>normalizeCompany(x.company)===key);
+    if(!keeper){
+      keeper={...c,contacts:[...(c.contacts||[])]};
+      merged.push(keeper);
+      idMap.set(c.id,keeper.id);
+    }else{
+      idMap.set(c.id,keeper.id);
+      keeper.city=keeper.city||c.city||"";
+      keeper.address=keeper.address||c.address||"";
+      keeper.notes=[keeper.notes,c.notes].filter(Boolean).join("\n").trim();
+      (c.contacts||[]).forEach(ct=>{
+        const duplicate=keeper.contacts.some(k=>
+          (ct.email&&k.email&&ct.email.toLowerCase()===k.email.toLowerCase()) ||
+          (ct.name&&k.name&&ct.name.toLowerCase()===k.name.toLowerCase()&&ct.phone===k.phone)
+        );
+        if(!duplicate)keeper.contacts.push(ct);
+      });
+    }
+  });
+  customers=merged;
+
+  // Connect RFQs to the merged account and preserve/match contact names.
+  rfqs.forEach(r=>{
+    if(r.customerId&&idMap.has(r.customerId))r.customerId=idMap.get(r.customerId);
+    let account=customerById(r.customerId);
+    if(!account&&r.company){
+      account=customers.find(c=>normalizeCompany(c.company)===normalizeCompany(r.company));
+      if(account)r.customerId=account.id;
+    }
+    if(account)r.company=account.company;
+
+    // If the old quote number looked like "Contact Name (date)", match or create that contact.
+    if(account&&!r.contactId&&r.quoteNo){
+      const guessed=String(r.quoteNo).replace(/\s*\([^)]*\)\s*$/,"").trim();
+      if(guessed&&!/^RFQ\b/i.test(guessed)){
+        let ct=(account.contacts||[]).find(x=>x.name.toLowerCase()===guessed.toLowerCase());
+        if(!ct){
+          ct={id:uid(),name:guessed,role:"",phone:"",email:"",location:"",primary:false};
+          account.contacts.push(ct);
+        }
+        r.contactId=ct.id;
+      }
+    }
+  });
+
+  // Ensure only one primary contact per account.
+  customers.forEach(c=>{
+    let seen=false;
+    (c.contacts||[]).forEach(ct=>{
+      if(ct.primary&&!seen)seen=true;
+      else if(ct.primary)ct.primary=false;
+    });
   });
   save();
 }
@@ -303,9 +502,9 @@ function renderDashboard(){
   const due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today);
   $("dDue").textContent=due.length;
   $("monthlyGoal").value=settings.goal||100000;$("monthlySales").value=settings.sales||0;
-  const goal=Number(settings.goal)||0,sales=Number(settings.sales)||0,remain=Math.max(0,goal-sales),days=businessDaysLeft();
+  const goal=Number(settings.goal)||0,imported=currentMonthImportedSales(),sales=(Number(settings.sales)||0)+imported,remain=Math.max(0,goal-sales),days=businessDaysLeft();
   const pct=goal?Math.min(100,(sales/goal)*100):0;
-  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);
+  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(imported);
   $("dailyNeeded").textContent=money.format(days?remain/days:remain);$("businessDaysLeft").textContent=days;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
@@ -317,7 +516,7 @@ function renderMiniList(el,arr,followup){
   el.innerHTML=arr.length?"":"<div class='empty'>Nothing to show.</div>";
   arr.forEach(r=>{
     const div=document.createElement("div");div.className="list-card";
-    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}</div></div><span class="status">${esc(r.status)}</span></div>
+    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · "+esc(contactName(r)):""}</div></div><span class="status">${esc(r.status)}</span></div>
       <div class="money">${money.format(total(r))}</div><div class="mini">${followup?"Follow-up: "+formatDate(r.followup):"Created: "+recordDate(r).toLocaleDateString()}</div>`;
     div.onclick=()=>editRfq(r.id);el.appendChild(div);
   });
@@ -329,8 +528,9 @@ function renderCustomers(){
   $("customerList").innerHTML=list.length?"":"<div class='empty'>No customers yet.</div>";
   list.forEach(c=>{
     const cr=rfqs.filter(r=>r.customerId===c.id),open=cr.filter(isOpen),openValue=open.reduce((s,r)=>s+total(r),0);
+    const primary=(c.contacts||[]).find(x=>x.primary)||(c.contacts||[])[0];
     const div=document.createElement("div");div.className="list-card";
-    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(c.company)}</div><div class="mini">${esc(c.contact||"No primary contact")} ${c.city?"· "+esc(c.city):""}</div></div><span class="pill">${cr.length} RFQs</span></div>
+    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(c.company)}</div><div class="mini">${esc(primary?.name||"No primary contact")} ${c.city?"· "+esc(c.city):""}</div></div><span class="pill">${(c.contacts||[]).length} contact${(c.contacts||[]).length===1?"":"s"} · ${cr.length} RFQs</span></div>
       <div class="grid metrics" style="margin-top:10px"><div class="metric"><small>Open Value</small><strong>${money.format(openValue)}</strong></div><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div></div>
       <div class="customer-actions"><button class="secondary" data-edit="${c.id}">Edit</button><button class="secondary" data-rfqs="${c.id}">View RFQs</button></div>`;
     $("customerList").appendChild(div);
@@ -347,7 +547,7 @@ function groupRecords(records,mode){
 }
 function renderRfqs(){
   const q=$("rfqSearch").value.toLowerCase(),status=$("rfqStatusFilter").value,mode=$("rfqGroup").value,sort=$("rfqSort").value;
-  let list=rfqs.filter(r=>{const hay=[customerName(r),r.quoteNo,r.status,r.feedback,r.nextAction,...(r.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase();return(status==="All"||r.status===status)&&hay.includes(q)});
+  let list=rfqs.filter(r=>{const hay=[customerName(r),contactName(r),r.quoteNo,r.status,r.feedback,r.nextAction,...(r.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase();return(status==="All"||r.status===status)&&hay.includes(q)});
   list.sort((a,b)=>sort==="az"?customerName(a).localeCompare(customerName(b)):sort==="oldest"?recordDate(a)-recordDate(b):sort==="value"?total(b)-total(a):recordDate(b)-recordDate(a));
   $("rfqList").innerHTML=list.length?"":"<div class='empty'>No RFQs found.</div>";
   groupRecords(list,mode).forEach(([name,records])=>{
@@ -356,7 +556,7 @@ function renderRfqs(){
     const holder=wrap.querySelector(".list");
     records.forEach(r=>{
       const div=document.createElement("div");div.className="list-card";
-      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}</div></div><span class="status">${esc(r.status)}</span></div>
+      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · "+esc(contactName(r)):""}</div></div><span class="status">${esc(r.status)}</span></div>
       <div class="money">${money.format(total(r))}</div><div class="mini">${(r.items||[]).length} line item${(r.items||[]).length===1?"":"s"} · Follow-up ${formatDate(r.followup)}</div>`;
       div.onclick=()=>editRfq(r.id);holder.appendChild(div);
     });
@@ -366,7 +566,7 @@ function renderRfqs(){
 
 function renderFollowups(){
   const filter=$("followupFilter").value,q=$("followupSearch").value.toLowerCase(),today=today0();
-  let list=rfqs.filter(isOpen).filter(r=>[customerName(r),r.quoteNo].join(" ").toLowerCase().includes(q));
+  let list=rfqs.filter(isOpen).filter(r=>[customerName(r),contactName(r),r.quoteNo].join(" ").toLowerCase().includes(q));
   list=list.filter(r=>filter==="all"||filter==="due"?(r.followup&&new Date(r.followup+"T00:00:00")<=today):(r.followup&&new Date(r.followup+"T00:00:00")>today));
   list.sort((a,b)=>(a.followup||"9999").localeCompare(b.followup||"9999"));
   $("followupList").innerHTML=list.length?"":"<div class='empty'>No matching follow-ups.</div>";
@@ -379,12 +579,245 @@ function renderFollowups(){
   });
 }
 
+function renderContactOptions(selectedContact=""){
+  const customer=customerById($("rfqCustomer").value);
+  const contacts=customer?.contacts||[];
+  $("rfqContact").innerHTML='<option value="">No specific contact</option>'+contacts.map(c=>`<option value="${c.id}">${esc(c.name||"Unnamed Contact")}${c.role?" — "+esc(c.role):""}${c.primary?" (Primary)":""}</option>`).join("");
+  if(selectedContact)$("rfqContact").value=selectedContact;
+}
 function renderCustomerOptions(){
   const current=$("rfqCustomer").value;
   $("rfqCustomer").innerHTML=customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
   if(current)$("rfqCustomer").value=current;
+  renderContactOptions();
 }
-function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderFollowups();renderCustomerOptions()}
+
+function orderCustomerName(o){return customerById(o.customerId)?.company||o.company||"Unknown Customer"}
+function orderDateObj(o){return o.orderDate?new Date(o.orderDate+"T00:00:00"):new Date(o.importedAt||0)}
+function orderMonthLabel(o){const d=orderDateObj(o);return isNaN(d)?"No Date":d.toLocaleDateString("en-US",{month:"long",year:"numeric"})}
+function currentMonthImportedSales(){
+  const now=new Date();
+  return orders.filter(o=>{const d=orderDateObj(o);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()})
+    .reduce((s,o)=>s+(Number(o.total)||0),0);
+}
+function renderOrders(){
+  const q=$("orderSearch")?.value.toLowerCase()||"",mode=$("orderGroup")?.value||"month";
+  let list=orders.filter(o=>[orderCustomerName(o),o.salesOrder,o.poNumber,o.contactName,...(o.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase().includes(q));
+  list.sort((a,b)=>orderDateObj(b)-orderDateObj(a));
+  $("orderList").innerHTML=list.length?"":"<div class='empty'>No acknowledgments imported yet.</div>";
+  const map=new Map();
+  list.forEach(o=>{const key=mode==="account"?orderCustomerName(o):orderMonthLabel(o);if(!map.has(key))map.set(key,[]);map.get(key).push(o)});
+  [...map.entries()].forEach(([name,records])=>{
+    const wrap=document.createElement("section");
+    wrap.innerHTML=`<div class="group-title"><h3>${esc(name)}</h3><span class="mini">${records.length} order${records.length===1?"":"s"} · ${money.format(records.reduce((s,o)=>s+(Number(o.total)||0),0))}</span></div><div class="list"></div>`;
+    const holder=wrap.querySelector(".list");
+    records.forEach(o=>{
+      const div=document.createElement("div");div.className="list-card";
+      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status green">ORDER</span></div>
+        <div class="money">${money.format(Number(o.total)||0)}</div>
+        <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"PDF acknowledgment")}</div>`;
+      holder.appendChild(div);
+    });
+    $("orderList").appendChild(wrap);
+  });
+}
+
+function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderFollowups();renderCustomerOptions()}
+
+let pendingAck=null;
+
+function pdfDateToISO(v){
+  const m=String(v||"").match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+  if(!m)return"";
+  let y=Number(m[3]);if(y<100)y+=2000;
+  return `${y}-${m[1]}-${m[2]}`;
+}
+function cleanMoney(v){return Number(String(v||"").replace(/[$,\s]/g,""))||0}
+function clusterPdfLines(items,tol=3.2){
+  const rows=[];
+  [...items].sort((a,b)=>b.y-a.y||a.x-b.x).forEach(item=>{
+    let row=rows.find(r=>Math.abs(r.y-item.y)<=tol);
+    if(!row){row={y:item.y,items:[]};rows.push(row)}
+    row.items.push(item);
+  });
+  rows.forEach(r=>r.items.sort((a,b)=>a.x-b.x));
+  rows.sort((a,b)=>b.y-a.y);
+  return rows;
+}
+function rowText(row){return row.items.map(i=>i.str).join(" ").replace(/\s+/g," ").trim()}
+function wordsInRange(row,min,max){return row.items.filter(i=>i.x>=min&&i.x<max).map(i=>i.str).join(" ").trim()}
+
+async function readAmericanBlockAck(file){
+  const pdfjs=await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs";
+  const data=new Uint8Array(await file.arrayBuffer());
+  const pdf=await pdfjs.getDocument({data}).promise;
+  const page=await pdf.getPage(1);
+  const viewport=page.getViewport({scale:1});
+  const tc=await page.getTextContent();
+  const items=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({str:i.str.trim(),x:i.transform[4],y:i.transform[5]}));
+  const rows=clusterPdfLines(items);
+  const W=viewport.width,H=viewport.height;
+
+  // Sold-to company: left side of the top address block.
+  const topRows=rows.filter(r=>r.y>H*0.80);
+  const leftTop=topRows.map(r=>({row:r,text:wordsInRange(r,55,W*.52)})).filter(x=>x.text);
+  let company=(leftTop.find(x=>/[A-Z].*(INC\.|LLC|CORP\.?|COMPANY|SERVICES|SUPPLY)/i.test(x.text))?.text)||leftTop[0]?.text||"";
+
+  // Ship-to contact: last non-address-looking line in the right-side top box.
+  const rightTop=topRows.map(r=>({row:r,text:wordsInRange(r,W*.60,W)})).filter(x=>x.text);
+  let parsedContact="";
+  const rightCandidates=rightTop.map(x=>x.text).filter(t=>t&&!/\d{4,}/.test(t)&&!/\b(TX|OK|KS|CO|NM|LA|OH|PA|WY|ND|SD)\b\s*\d*/i.test(t)&&normalizeCompany(t)!==normalizeCompany(company));
+  if(rightCandidates.length)parsedContact=rightCandidates[rightCandidates.length-1];
+
+  // Header value row: identify row containing EX-WORKS / NET terms.
+  const headerRow=rows.find(r=>/EX[- ]?WORKS/i.test(rowText(r))||/\bNET\s*\d+\b/i.test(rowText(r)));
+  let salesOrder="",poNumber="",orderDate="",promised="";
+  if(headerRow){
+    salesOrder=wordsInRange(headerRow,0,W*.13).replace(/\s/g,"");
+    orderDate=wordsInRange(headerRow,W*.29,W*.41);
+    promised=wordsInRange(headerRow,W*.45,W*.54);
+    poNumber=wordsInRange(headerRow,W*.69,W*.85).replace(/\s/g,"");
+  }
+  // Sales order is often in a nearby aligned row, so fall back to a 7-digit item in the header zone.
+  if(!/^\d{6,8}$/.test(salesOrder)){
+    const v=items.find(i=>i.y>H*.72&&i.y<H*.80&&i.x<W*.14&&/^\d{6,8}$/.test(i.str));
+    if(v)salesOrder=v.str;
+  }
+  if(!poNumber){
+    const po=items.find(i=>i.y>H*.72&&i.y<H*.80&&i.x>W*.68&&i.x<W*.86&&/^[A-Z0-9-]{3,20}$/i.test(i.str));
+    if(po)poNumber=po.str;
+  }
+  if(!orderDate){
+    const d=items.find(i=>i.y>H*.72&&i.y<H*.80&&i.x>W*.28&&i.x<W*.42&&/\d{2}\/\d{2}\/\d{2}/.test(i.str));
+    if(d)orderDate=d.str;
+  }
+
+  // Line items: rows with 3-digit item number in left-most column, below table headers.
+  const itemRows=rows.filter(r=>r.items.some(i=>i.x<W*.09&&/^\d{3}$/.test(i.str)));
+  const lineItems=[];
+  itemRows.forEach(r=>{
+    const itemNo=wordsInRange(r,0,W*.09).match(/\d{3}/)?.[0]||"";
+    const qtyText=wordsInRange(r,W*.13,W*.29);
+    const unit=wordsInRange(r,W*.29,W*.39);
+    const part=wordsInRange(r,W*.39,W*.56);
+    const product=wordsInRange(r,W*.56,W*.88);
+    const priceText=wordsInRange(r,W*.88,W);
+    const qty=cleanMoney(qtyText),price=cleanMoney(priceText);
+    if(itemNo&&part&&(qty||price))lineItems.push({itemNo,part,product,qty,unit,price,lineTotal:qty*price});
+  });
+
+  // Total amount: locate row containing Total Order Amount and read the right-most number.
+  let total=0;
+  const totalRow=rows.find(r=>/Total\s+Order\s+Amount/i.test(rowText(r)));
+  if(totalRow){
+    const nums=totalRow.items.map(i=>i.str).filter(s=>/^[\d,]+\.\d{2}$/.test(s));
+    if(nums.length)total=cleanMoney(nums[nums.length-1]);
+  }
+  if(!total){
+    const subtotalRow=rows.find(r=>/Order\s+SubTotal/i.test(rowText(r)));
+    if(subtotalRow){
+      const nums=subtotalRow.items.map(i=>i.str).filter(s=>/^[\d,]+\.\d{2}$/.test(s));
+      if(nums.length)total=cleanMoney(nums[nums.length-1]);
+    }
+  }
+  if(!total)total=lineItems.reduce((s,i)=>s+i.lineTotal,0);
+
+  return {company:company.trim(),parsedContact:parsedContact.trim(),salesOrder:salesOrder.trim(),poNumber:poNumber.trim(),orderDate:pdfDateToISO(orderDate),promisedDate:pdfDateToISO(promised),items:lineItems,total,fileName:file.name};
+}
+function bestCustomerMatch(name){
+  const n=normalizeCompany(name);
+  return customers.find(c=>normalizeCompany(c.company)===n)
+      ||customers.find(c=>normalizeCompany(c.company).includes(n)||n.includes(normalizeCompany(c.company)));
+}
+function fillAckContactOptions(selected=""){
+  const c=customerById($("ackCustomer").value);
+  $("ackContact").innerHTML='<option value="">No specific contact</option>'+((c?.contacts)||[]).map(x=>`<option value="${x.id}">${esc(x.name)}${x.role?" — "+esc(x.role):""}${x.primary?" (Primary)":""}</option>`).join("");
+  if(selected)$("ackContact").value=selected;
+}
+function fillAckRfqMatches(){
+  const cid=$("ackCustomer").value;
+  const candidates=rfqs.filter(r=>r.customerId===cid&&isOpen(r)).sort((a,b)=>Math.abs(total(a)-(Number($("ackTotal").value)||0))-Math.abs(total(b)-(Number($("ackTotal").value)||0)));
+  $("ackRfqMatch").innerHTML='<option value="">No RFQ selected</option>'+candidates.map(r=>`<option value="${r.id}">${esc(r.quoteNo||"No RFQ")} · ${money.format(total(r))}${contactName(r)?" · "+esc(contactName(r)):""}</option>`).join("");
+  if(candidates.length){
+    const ackTotal=Number($("ackTotal").value)||0;
+    const exact=candidates.find(r=>Math.abs(total(r)-ackTotal)<0.02);
+    if(exact)$("ackRfqMatch").value=exact.id;
+  }
+}
+function renderAckItems(items){
+  $("ackItems").innerHTML="";
+  items.forEach(i=>{
+    const node=$("ackItemTemplate").content.firstElementChild.cloneNode(true);
+    node.querySelector('[data-a="part"]').value=i.part||"";
+    node.querySelector('[data-a="product"]').value=i.product||"";
+    node.querySelector('[data-a="qty"]').value=i.qty||0;
+    node.querySelector('[data-a="price"]').value=i.price||0;
+    node.querySelectorAll("input").forEach(x=>x.oninput=updateAckCalculatedTotal);
+    $("ackItems").appendChild(node);
+  });
+  updateAckCalculatedTotal();
+}
+function getAckItems(){
+  return [...document.querySelectorAll("#ackItems .ack-item")].map(n=>({
+    part:n.querySelector('[data-a="part"]').value.trim(),
+    product:n.querySelector('[data-a="product"]').value.trim(),
+    qty:Number(n.querySelector('[data-a="qty"]').value)||0,
+    price:Number(n.querySelector('[data-a="price"]').value)||0
+  }));
+}
+function updateAckCalculatedTotal(){
+  let t=0;
+  document.querySelectorAll("#ackItems .ack-item").forEach(n=>{
+    const q=Number(n.querySelector('[data-a="qty"]').value)||0,p=Number(n.querySelector('[data-a="price"]').value)||0,l=q*p;
+    t+=l;n.querySelector('[data-a="line"]').textContent=money.format(l);
+  });
+  $("ackCalcTotal").textContent=money.format(t);
+}
+async function importAcknowledgment(file){
+  $("ackWarnings").textContent="";
+  try{
+    const parsed=await readAmericanBlockAck(file);
+    if(!parsed.items.length)throw new Error("No line items were detected.");
+    pendingAck=parsed;
+    $("ackFileName").textContent=file.name;
+    $("ackCompany").value=parsed.company;
+    $("ackParsedContact").value=parsed.parsedContact;
+    $("ackSalesOrder").value=parsed.salesOrder;
+    $("ackPO").value=parsed.poNumber;
+    $("ackOrderDate").value=parsed.orderDate;
+    $("ackTotal").value=parsed.total.toFixed(2);
+    $("ackLineCount").textContent=`${parsed.items.length} item${parsed.items.length===1?"":"s"}`;
+    $("ackCustomer").innerHTML=customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+    let match=bestCustomerMatch(parsed.company);
+    if(!match){
+      match={id:uid(),company:parsed.company||"Imported Customer",city:"",address:"",notes:"Imported from acknowledgment PDF.",contacts:[],createdAt:new Date().toISOString()};
+      customers.push(match);save();
+      $("ackCustomer").innerHTML=customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+      $("ackWarnings").textContent="A new customer account was created from the PDF. Review it after import.";
+    }
+    $("ackCustomer").value=match.id;
+
+    let selectedContact="";
+    if(parsed.parsedContact){
+      let ct=(match.contacts||[]).find(c=>normalizeCompany(c.name)===normalizeCompany(parsed.parsedContact));
+      if(!ct){
+        ct={id:uid(),name:parsed.parsedContact,role:"",phone:"",email:"",location:"",primary:!(match.contacts||[]).length};
+        match.contacts=match.contacts||[];match.contacts.push(ct);save();
+        $("ackWarnings").textContent=( $("ackWarnings").textContent+" A new contact was created from the ship-to name." ).trim();
+      }
+      selectedContact=ct.id;
+    }
+    fillAckContactOptions(selectedContact);
+    renderAckItems(parsed.items);
+    fillAckRfqMatches();
+    showView("ackReviewView",false);
+  }catch(err){
+    alert("I could not read this acknowledgment automatically. "+(err?.message||""));
+  }
+}
+function chooseAckFile(){$("ackFile").value="";$("ackFile").click()}
+
 
 function addItem(data={part:"",product:"",qty:1,price:0}){
   const node=$("itemTemplate").content.firstElementChild.cloneNode(true);
@@ -396,14 +829,39 @@ function addItem(data={part:"",product:"",qty:1,price:0}){
 function getItems(){return [...document.querySelectorAll("#rfqItems .item")].map(n=>({part:n.querySelector('[data-k="part"]').value.trim(),product:n.querySelector('[data-k="product"]').value.trim(),qty:Number(n.querySelector('[data-k="qty"]').value)||0,price:Number(n.querySelector('[data-k="price"]').value)||0}))}
 function updateDraft(){let t=0;document.querySelectorAll("#rfqItems .item").forEach(n=>{const q=Number(n.querySelector('[data-k="qty"]').value)||0,p=Number(n.querySelector('[data-k="price"]').value)||0,l=q*p;t+=l;n.querySelector('[data-k="line"]').textContent=money.format(l)});$("rfqDraftTotal").textContent=money.format(t)}
 
-function newRfq(){if(!customers.length){alert("Add a customer first.");return}editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction"].forEach(id=>$(id).value="");$("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();showView("rfqFormView",false)}
-function editRfq(id){const r=rfqs.find(x=>x.id===id);if(!r)return;editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";$("rfqNumber").value=r.quoteNo||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";$("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();showView("rfqFormView",false)}
-function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cContact","cPhone","cEmail","cCity","cAddress","cNotes"].forEach(id=>$(id).value="");showView("customerFormView",false)}
-function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cContact").value=c.contact||"";$("cPhone").value=c.phone||"";$("cEmail").value=c.email||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cNotes").value=c.notes||"";showView("customerFormView",false)}
+function newRfq(){if(!customers.length){alert("Add a customer first.");return}editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");$("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();showView("rfqFormView",false)}
+function editRfq(id){const r=rfqs.find(x=>x.id===id);if(!r)return;editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");$("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";$("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();showView("rfqFormView",false)}
+function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",primary:false}){
+  const row=$("contactTemplate").content.firstElementChild.cloneNode(true);
+  row.dataset.id=data.id||uid();
+  ["name","role","phone","email","location"].forEach(k=>row.querySelector(`[data-c="${k}"]`).value=data[k]||"");
+  row.querySelector('[data-c="primary"]').value=data.primary?"yes":"no";
+  row.querySelector('[data-contact-remove]').onclick=()=>row.remove();
+  row.querySelector('[data-c="primary"]').onchange=e=>{
+    if(e.target.value==="yes"){
+      document.querySelectorAll('#contactRows [data-c="primary"]').forEach(s=>{if(s!==e.target)s.value="no"});
+    }
+  };
+  $("contactRows").appendChild(row);
+}
+function getContactRows(){
+  return [...document.querySelectorAll("#contactRows .contact-row")].map(row=>({
+    id:row.dataset.id||uid(),
+    name:row.querySelector('[data-c="name"]').value.trim(),
+    role:row.querySelector('[data-c="role"]').value.trim(),
+    phone:row.querySelector('[data-c="phone"]').value.trim(),
+    email:row.querySelector('[data-c="email"]').value.trim(),
+    location:row.querySelector('[data-c="location"]').value.trim(),
+    primary:row.querySelector('[data-c="primary"]').value==="yes"
+  })).filter(c=>c.name||c.phone||c.email);
+}
+function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cNotes"].forEach(id=>$(id).value="");$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
+function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
-$("saveRfq").onclick=()=>{const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}const old=rfqs.find(r=>r.id===editingRfqId);const rec={id:editingRfqId||uid(),customerId:cid,company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:$("rfqStatus").value,followup:$("rfqFollowup").value,feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);save();showView("rfqsView",true)}
-$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,contact:$("cContact").value.trim(),phone:$("cPhone").value.trim(),email:$("cEmail").value.trim(),city:$("cCity").value.trim(),address:$("cAddress").value.trim(),notes:$("cNotes").value.trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();showView("customersView",true)}
+$("saveRfq").onclick=()=>{const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}const old=rfqs.find(r=>r.id===editingRfqId);const rec={id:editingRfqId||uid(),customerId:cid,contactId:$("rfqContact").value||null,contactNote:$("rfqContactNote").value.trim(),company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:$("rfqStatus").value,followup:$("rfqFollowup").value,feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);save();showView("rfqsView",true)}
+$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
+$("rfqCustomer").onchange=()=>renderContactOptions();$("addContact").onclick=()=>addContactRow();
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
 $("backFromRfq").onclick=$("cancelRfq").onclick=()=>showView(lastMainView,true);$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
 $("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>showView("followupsView",true);
@@ -411,23 +869,62 @@ $("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>s
 ["rfqStatusFilter","rfqGroup","rfqSort","followupFilter"].forEach(id=>$(id).onchange=renderAll);
 
 function exportBackup(){
-  const data={version:2,exportedAt:new Date().toISOString(),rfqs,customers,settings};
+  const data={version:2.2,exportedAt:new Date().toISOString(),rfqs,customers,orders,settings};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
   a.href=URL.createObjectURL(blob);a.download=`american-block-sales-os-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)
 }
 function importBackup(){ $("importFile").click() }
-$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];settings=data.settings||settings}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
+$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];settings=data.settings||settings}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
 ["exportBackup","settingsExport"].forEach(id=>$(id).onclick=exportBackup);
 ["importBackup","settingsImport"].forEach(id=>$(id).onclick=importBackup);
 
 function teamReport(){
   const open=rfqs.filter(isOpen),grand=open.reduce((s,r)=>s+total(r),0),due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today0()).length;
   const groups=groupRecords(open,$("rfqGroup").value);
-  const content=groups.map(([g,records])=>`<section class="group"><h2>${esc(g)} <span>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(records.reduce((s,r)=>s+total(r),0))}</span></h2>${records.map(r=>`<article><header><div><strong>${esc(customerName(r))}</strong><small>${esc(r.quoteNo||"No RFQ number")} · ${esc(r.status)}</small></div><b>${money.format(total(r))}</b></header><table><thead><tr><th>Part Number</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead><tbody>${(r.items||[]).map(i=>`<tr><td>${esc(i.part)}</td><td>${esc(i.product)}</td><td>${i.qty}</td><td>${money.format(i.price)}</td><td>${money.format(i.qty*i.price)}</td></tr>`).join("")}</tbody></table><div class="notes"><div><b>Feedback</b><p>${esc(r.feedback||"None")}</p></div><div><b>Next Action</b><p>${esc(r.nextAction||"None")}</p></div><div><b>Follow-up</b><p>${formatDate(r.followup)}</p></div></div></article>`).join("")}</section>`).join("");
+  const content=groups.map(([g,records])=>`<section class="group"><h2>${esc(g)} <span>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(records.reduce((s,r)=>s+total(r),0))}</span></h2>${records.map(r=>`<article><header><div><strong>${esc(customerName(r))}</strong><small>${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · Contact: "+esc(contactName(r)):""} · ${esc(r.status)}</small></div><b>${money.format(total(r))}</b></header><table><thead><tr><th>Part Number</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead><tbody>${(r.items||[]).map(i=>`<tr><td>${esc(i.part)}</td><td>${esc(i.product)}</td><td>${i.qty}</td><td>${money.format(i.price)}</td><td>${money.format(i.qty*i.price)}</td></tr>`).join("")}</tbody></table><div class="notes"><div><b>Feedback</b><p>${esc(r.feedback||"None")}</p></div><div><b>Next Action</b><p>${esc(r.nextAction||"None")}</p></div><div><b>Follow-up</b><p>${formatDate(r.followup)}</p></div></div></article>`).join("")}</section>`).join("");
   const win=window.open("","_blank");if(!win){alert("Allow pop-ups and try again.");return}
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Open RFQ Report</title><style>*{box-sizing:border-box}body{font-family:Arial;color:#1e293b;margin:0;background:#eef2f7}.page{max-width:1000px;margin:auto;background:#fff;padding:30px}h1{color:#1f4e78;margin:0}.sub{color:#64748b;margin:5px 0 20px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}.metric{border:1px solid #cbd5e1;padding:12px;border-radius:8px}.metric small{display:block;color:#64748b}.metric strong{font-size:22px}.group>h2{display:flex;justify-content:space-between;background:#e2e8f0;border-left:5px solid #1f4e78;padding:10px 12px;color:#1f4e78}.group h2 span{font-size:13px;color:#334155}article{border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;margin-bottom:15px;break-inside:avoid}header{display:flex;justify-content:space-between;padding:12px;background:#f8fafc}header small{display:block;color:#64748b;margin-top:3px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1f4e78;color:white;text-align:left;padding:8px}td{padding:8px;border-bottom:1px solid #e2e8f0}.notes{display:grid;grid-template-columns:2fr 2fr 1fr;gap:12px;padding:12px;font-size:12px}.notes p{white-space:pre-wrap;margin:4px 0}@media print{body{background:white}.page{padding:0}@page{size:letter;margin:.45in}}</style></head><body><main class="page"><h1>American Block — Open RFQ Report</h1><div class="sub">Generated ${new Date().toLocaleString()}</div><div class="summary"><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div><div class="metric"><small>Total Open Value</small><strong>${money.format(grand)}</strong></div><div class="metric"><small>Follow-ups Due</small><strong>${due}</strong></div></div>${content||"<p>No open RFQs.</p>"}</main><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`);win.document.close()
 }
 $("teamPdf").onclick=teamReport;
+
+$("importAck").onclick=chooseAckFile;
+$("importAckOrders").onclick=chooseAckFile;
+$("ackFile").onchange=e=>{const f=e.target.files?.[0];if(f)importAcknowledgment(f)};
+$("ackCustomer").onchange=()=>{fillAckContactOptions();fillAckRfqMatches()};
+$("ackTotal").oninput=fillAckRfqMatches;
+$("backFromAck").onclick=$("cancelAck").onclick=()=>showView(lastMainView,true);
+$("orderSearch").oninput=renderOrders;$("orderGroup").onchange=renderOrders;
+
+$("confirmAck").onclick=()=>{
+  if(!pendingAck)return;
+  const customerId=$("ackCustomer").value;
+  const contactId=$("ackContact").value||null;
+  const salesOrder=$("ackSalesOrder").value.trim();
+  if(salesOrder&&orders.some(o=>o.salesOrder===salesOrder)){
+    alert("That sales order is already in Orders.");return;
+  }
+  const items=getAckItems();
+  const calc=items.reduce((s,i)=>s+i.qty*i.price,0);
+  const declared=Number($("ackTotal").value)||calc;
+  const rfqId=$("ackRfqAction").value==="none"?null:($("ackRfqMatch").value||null);
+  const contact=contactById(customerId,contactId);
+  const order={
+    id:uid(),customerId,company:customerById(customerId)?.company||$("ackCompany").value.trim(),
+    contactId,contactName:contact?.name||$("ackParsedContact").value.trim(),
+    salesOrder,poNumber:$("ackPO").value.trim(),orderDate:$("ackOrderDate").value,
+    total:declared,items,fileName:pendingAck.fileName,importedAt:new Date().toISOString(),linkedRfqId:rfqId
+  };
+  orders.unshift(order);
+  if(rfqId){
+    const r=rfqs.find(x=>x.id===rfqId);
+    if(r&&$("ackRfqAction").value==="close"){
+      r.status="Closed Won";r.updatedAt=new Date().toISOString();
+      r.nextAction=`Order received — Sales Order ${salesOrder||"imported acknowledgment"}`;
+    }
+  }
+  save();pendingAck=null;showView("ordersView",true);
+};
+
 
 $("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
