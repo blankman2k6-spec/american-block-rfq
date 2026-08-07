@@ -164,6 +164,28 @@
     .mini-metric span{display:block;color:var(--muted);font-size:10px}
     .mini-metric strong{display:block;font-size:18px;margin-top:2px}
 
+
+    .global-quick-actions{position:fixed;right:14px;bottom:92px;z-index:110;display:grid;gap:8px}
+    .global-quick-actions button{min-width:104px;box-shadow:0 10px 30px rgba(0,0,0,.28)}
+    .account-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:linear-gradient(180deg,#111e31,#0d1829);border:1px solid var(--line);border-radius:16px;margin:9px 0;cursor:pointer}
+    .account-list-row strong{font-size:16px}
+    .account-list-row .chev{font-size:22px;color:var(--muted)}
+    .account-tabs{display:flex;gap:7px;overflow-x:auto;margin:12px 0}
+    .account-tab{flex:0 0 auto}
+    .account-tab.active{background:#1d4f91;border-color:#356fb4;color:#fff}
+    .account-panel{display:none}.account-panel.active{display:block}
+    .mix-list{display:grid;gap:8px;margin-top:10px}
+    .mix-row{display:grid;grid-template-columns:1.2fr 1.6fr auto;gap:10px;align-items:center}
+    .mix-track{height:10px;border-radius:999px;background:#0a1322;border:1px solid var(--line);overflow:hidden}
+    .mix-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#60a5fa,#34d399)}
+    .opportunity-card{background:#0d1829;border:1px solid var(--line);border-radius:15px;padding:12px;margin:9px 0}
+    .report-hint{font-size:11px;color:var(--muted);margin-top:5px}
+    @media(max-width:560px){
+      .global-quick-actions{right:10px;bottom:88px}
+      .global-quick-actions button{min-width:92px;padding:10px 12px;font-size:12px}
+      .mix-row{grid-template-columns:1fr 1.2fr auto}
+    }
+
     @media(max-width:560px){.insight-grid{grid-template-columns:1fr}.momentum-row{grid-template-columns:1.25fr .62fr .62fr .7fr}}
     @media(max-width:560px){.donut-wrap{grid-template-columns:1fr}.product-stats{grid-template-columns:repeat(2,1fr)}.product-bar-row{grid-template-columns:minmax(100px,1.2fr) 1.4fr auto}.gap-row{grid-template-columns:1.4fr .55fr .55fr .7fr}}
     @media(max-width:560px){.row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
@@ -174,7 +196,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.7 Closed Won Sales Sync</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.0 Integrated Workflow</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -233,9 +255,61 @@
   </section>
 
   <section id="customersView" class="view">
-    <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2></div><button id="addCustomerBtn" class="primary">＋ Customer</button></div>
+    <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2><div class="mini">Tap a company to open the full account.</div></div><button id="addCustomerBtn" class="primary">＋ Customer</button></div>
     <input id="customerSearch" placeholder="Search customer, contact, city, phone...">
     <div id="customerList" class="list" style="margin-top:12px"></div>
+  </section>
+
+
+  <section id="customerAccountView" class="view">
+    <div class="section-head">
+      <button id="backFromAccount" class="secondary">← Accounts</button>
+      <button id="editAccountFromDetail" class="secondary">Edit Account</button>
+    </div>
+    <div class="card">
+      <div class="kicker">Account</div>
+      <h1 id="accountDetailName" class="headline" style="font-size:28px">Customer</h1>
+      <div id="accountDetailMeta" class="mini"></div>
+      <div class="grid metrics" style="margin-top:14px">
+        <div class="metric"><small>Current YTD Sales</small><strong id="accountYtdSales">$0</strong><div class="sub">Orders + Closed Won</div></div>
+        <div class="metric"><small>Open Pipeline</small><strong id="accountOpenPipeline">$0</strong><div class="sub">Open RFQs</div></div>
+        <div class="metric"><small>Top Product</small><strong id="accountTopProduct" style="font-size:18px">—</strong><div class="sub" id="accountTopProductSub">No sales yet</div></div>
+        <div class="metric"><small>Last Activity</small><strong id="accountLastActivity" style="font-size:18px">—</strong><div class="sub">Latest customer note</div></div>
+      </div>
+    </div>
+
+    <div class="account-tabs">
+      <button class="secondary account-tab active" data-account-panel="accountOverviewPanel">Overview</button>
+      <button class="secondary account-tab" data-account-panel="accountOpportunitiesPanel">Opportunities</button>
+      <button class="secondary account-tab" data-account-panel="accountActivityPanel">Activity</button>
+      <button class="secondary account-tab" data-account-panel="accountOrdersPanel">Orders</button>
+    </div>
+
+    <div id="accountOverviewPanel" class="account-panel active">
+      <div class="card">
+        <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">Product Mix</h2><div class="mini">YTD product revenue by family</div></div></div>
+        <div id="accountProductMix" class="mix-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">Latest Customer Notes</h2><div class="mini">Most recent logged activity</div></div></div>
+        <div id="accountLastNotes"></div>
+      </div>
+    </div>
+
+    <div id="accountOpportunitiesPanel" class="account-panel">
+      <div class="card">
+        <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">Opportunities</h2><div class="mini">RFQs plus opportunities created from Log Activity</div></div></div>
+        <div id="accountOpportunities"></div>
+      </div>
+    </div>
+
+    <div id="accountActivityPanel" class="account-panel">
+      <div class="card"><div id="accountActivityList"></div></div>
+    </div>
+
+    <div id="accountOrdersPanel" class="account-panel">
+      <div class="card"><div id="accountOrdersList"></div></div>
+    </div>
   </section>
 
   <section id="rfqsView" class="view">
@@ -262,7 +336,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.7</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.0</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -340,6 +414,19 @@
 
       <label>Customer</label><select id="activityCustomer"></select>
       <label>Contact</label><select id="activityContact"></select>
+
+      <label>Opportunity</label>
+      <select id="activityOpportunity">
+        <option value="">No opportunity</option>
+      </select>
+      <div id="newOpportunityFields" class="hidden">
+        <label>Opportunity Name</label><input id="activityOpportunityTitle" placeholder="Example: 1502 stock order">
+        <div class="row">
+          <div><label>Estimated Value</label><input id="activityOpportunityValue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+          <div><label>Stage</label><select id="activityOpportunityStage"><option>Prospecting</option><option>Qualified</option><option>Quote Needed</option><option>Waiting on Customer</option><option>Verbal Yes</option></select></div>
+        </div>
+      </div>
+      <label>Opportunity Details</label><textarea id="activityOpportunityDetails" placeholder="Need, product, timing, competitor, next step..."></textarea>
 
       <label>Comments</label>
       <textarea id="activityComments" placeholder="What happened? What did the customer say? What is the next opportunity?"></textarea>
@@ -466,7 +553,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 3.7 — Closed Won Sales Sync</h2>
+      <h2>Version 4.0 — Integrated Workflow</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -711,6 +798,11 @@
   </div>
 </nav>
 
+<div class="global-quick-actions">
+  <button id="globalLogActivity" class="primary">＋ Log Activity</button>
+  <button id="globalExportPdf" class="secondary">PDF</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -723,7 +815,7 @@ let communications=JSON.parse(localStorage.getItem(KEYS.communications)||"[]");
 let activities=JSON.parse(localStorage.getItem(KEYS.activities)||"[]");
 let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:""};
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
-let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView";
+let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
@@ -849,6 +941,7 @@ function migrate(){
 migrate();
 
 function showView(id,main=true){
+  currentViewId=id;
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   $(id).classList.add("active");
   if(main){
@@ -901,31 +994,60 @@ function renderMiniList(el,arr,followup){
 
 function renderCustomers(){
   const q=$("customerSearch").value.toLowerCase();
-  const list=customers.filter(c=>[c.company,c.contact,c.phone,c.email,c.city].join(" ").toLowerCase().includes(q)).sort((a,b)=>a.company.localeCompare(b.company));
+  const list=customers.filter(c=>[c.company,c.city,...(c.contacts||[]).flatMap(x=>[x.name,x.email,x.phone])].join(" ").toLowerCase().includes(q)).sort((a,b)=>a.company.localeCompare(b.company));
   $("customerList").innerHTML=list.length?"":"<div class='empty'>No customers yet.</div>";
   list.forEach(c=>{
-    const cr=rfqs.filter(r=>r.customerId===c.id),open=cr.filter(isOpen),openValue=open.reduce((s,r)=>s+total(r),0);
-    const primary=(c.contacts||[]).find(x=>x.primary)||(c.contacts||[])[0];
-    const div=document.createElement("div");div.className="list-card";
-    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(c.company)}</div><div class="mini">${esc(primary?.name||"No primary contact")} ${c.city?"· "+esc(c.city):""}</div></div><span class="pill">${(c.contacts||[]).length} contact${(c.contacts||[]).length===1?"":"s"} · ${cr.length} RFQs</span></div>
-      <div class="grid metrics" style="margin-top:10px">
-        <div class="metric"><small>Open Value</small><strong>${money.format(openValue)}</strong></div>
-        <div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div>
-        <div class="metric"><small>Order History</small><strong>${orders.filter(o=>o.customerId===c.id).length}</strong></div>
-        <div class="metric"><small>Order Sales</small><strong>${money.format(orders.filter(o=>o.customerId===c.id).reduce((s,o)=>s+(Number(o.total)||0),0))}</strong></div>
-      </div>
-      <div class="customer-actions">
-        <button class="secondary" data-edit="${c.id}">Edit</button>
-        <button class="secondary" data-rfqs="${c.id}">View RFQs</button>
-        <button class="secondary" data-orders="${c.id}">View Orders</button>
-      </div>`;
-    $("customerList").appendChild(div);
+    const row=document.createElement("div");row.className="account-list-row";row.dataset.openAccount=c.id;
+    row.innerHTML=`<strong>${esc(c.company)}</strong><span class="chev">›</span>`;
+    $("customerList").appendChild(row);
   });
-  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editCustomer(b.dataset.edit)});
-  document.querySelectorAll("[data-rfqs]").forEach(b=>b.onclick=e=>{e.stopPropagation();$("rfqSearch").value=customerById(b.dataset.rfqs)?.company||"";showView("rfqsView",true)});
-  document.querySelectorAll("[data-orders]").forEach(b=>b.onclick=e=>{e.stopPropagation();$("orderSearch").value=customerById(b.dataset.orders)?.company||"";showView("ordersView",true)});
+  document.querySelectorAll("[data-open-account]").forEach(r=>r.onclick=()=>openCustomerAccount(r.dataset.openAccount));
 }
 
+
+function customerProductStats(customerId){
+  const map=new Map(),family=new Map();
+  ytdOrdersForCustomer(customerId).forEach(o=>(o.items||[]).forEach(i=>{
+    const key=normalizeProductKey(i),qty=Number(i.qty)||0,rev=qty*(Number(i.price)||0),name=i.product||i.part||"Unnamed Product";
+    if(!map.has(key))map.set(key,{name,part:i.part||"",qty:0,revenue:0,family:productFamily(name)});
+    const x=map.get(key);x.qty+=qty;x.revenue+=rev;
+    family.set(x.family,(family.get(x.family)||0)+rev);
+  }));
+  return {products:[...map.values()].sort((a,b)=>b.revenue-a.revenue),families:[...family.entries()].sort((a,b)=>b[1]-a[1])};
+}
+function openCustomerAccount(id){
+  activeCustomerId=id;
+  renderCustomerAccount();
+  showView("customerAccountView",false);
+}
+function renderCustomerAccount(){
+  const c=customerById(activeCustomerId);if(!c)return;
+  $("accountDetailName").textContent=c.company;
+  const primary=(c.contacts||[]).find(x=>x.primary)||(c.contacts||[])[0];
+  $("accountDetailMeta").textContent=[c.city,c.zip,primary?.name,primary?.email].filter(Boolean).join(" · ");
+  const ytd=ytdSalesForCustomer(c.id),open=rfqs.filter(r=>r.customerId===c.id&&isOpen(r));
+  $("accountYtdSales").textContent=money.format(ytd);
+  $("accountOpenPipeline").textContent=money.format(open.reduce((s,r)=>s+total(r),0));
+  const ps=customerProductStats(c.id),top=ps.products[0];
+  $("accountTopProduct").textContent=top?.name||"—";
+  $("accountTopProductSub").textContent=top?`${money.format(top.revenue)} YTD · ${Math.round(top.qty).toLocaleString()} units`:"No sales yet";
+  const acts=activities.filter(a=>a.customerId===c.id).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
+  $("accountLastActivity").textContent=acts[0]?formatDate(acts[0].date):"—";
+  $("accountLastNotes").innerHTML=acts.slice(0,5).map(a=>`<div class="activity-card"><div class="activity-top"><strong>${esc(a.type)}</strong><span class="mini">${formatDate(a.date)}</span></div><div class="activity-comments">${esc(a.comments||"")}</div></div>`).join("")||"<div class='empty'>No activity notes yet.</div>";
+  const maxFamily=Math.max(1,...ps.families.map(x=>x[1]));
+  $("accountProductMix").innerHTML=ps.families.length?ps.families.map(([name,val])=>`<div class="mix-row"><strong>${esc(name)}</strong><div class="mix-track"><div class="mix-fill" style="width:${Math.max(4,val/maxFamily*100)}%"></div></div><span>${money.format(val)}</span></div>`).join(""):"<div class='empty'>No product mix yet.</div>";
+
+  const activityOpps=acts.filter(a=>a.opportunityTitle||a.opportunityDetails||a.opportunityRfqId);
+  const rfqCards=open.map(r=>`<div class="opportunity-card"><div class="list-head"><div><strong>${esc(r.quoteNo||"RFQ Opportunity")}</strong><div class="mini">${esc(r.nextAction||r.feedback||"Open RFQ")}</div></div><span class="status blue">${esc(r.status)}</span></div><div class="money" style="font-size:18px">${money.format(total(r))}</div></div>`);
+  const actCards=activityOpps.map(a=>{
+    const linked=a.opportunityRfqId?rfqs.find(r=>r.id===a.opportunityRfqId):null;
+    return `<div class="opportunity-card"><div class="list-head"><div><strong>${esc(a.opportunityTitle||(linked?.quoteNo||"Logged Opportunity"))}</strong><div class="mini">${formatDate(a.date)} · ${esc(a.opportunityStage||linked?.status||"Opportunity")}</div></div>${a.opportunityValue?`<span class="pill">${money.format(Number(a.opportunityValue)||0)}</span>`:""}</div><div class="activity-comments">${esc(a.opportunityDetails||a.comments||"")}</div></div>`;
+  });
+  $("accountOpportunities").innerHTML=[...rfqCards,...actCards].join("")||"<div class='empty'>No opportunities yet.</div>";
+  $("accountActivityList").innerHTML=acts.map(a=>`<div class="activity-card"><div class="activity-top"><div><strong>${esc(a.type)}</strong><div class="mini">${formatDate(a.date)}</div></div><span class="activity-type">${esc(a.type)}</span></div><div class="activity-comments">${esc(a.comments||"")}</div></div>`).join("")||"<div class='empty'>No activity yet.</div>";
+  const os=unifiedOrders().filter(o=>o.customerId===c.id).sort((a,b)=>orderDateObj(b)-orderDateObj(a));
+  $("accountOrdersList").innerHTML=os.map(o=>`<div class="list-card"><div class="list-head"><div><strong>${esc(o.synthetic?`RFQ ${o.poNumber||"Closed Won"}`:`SO ${o.salesOrder||"—"}`)}</strong><div class="mini">${formatDate(o.orderDate)} · ${o.synthetic?"Closed Won RFQ":"Order"}</div></div><span class="status ${o.synthetic?"blue":"green"}">${o.synthetic?"CLOSED WON":"ORDER"}</span></div><div class="money">${money.format(Number(o.total)||0)}</div></div>`).join("")||"<div class='empty'>No orders yet.</div>";
+}
 function groupRecords(records,mode){
   const map=new Map();records.forEach(r=>{const key=mode==="account"?customerName(r):mode==="rfq"?(r.quoteNo||"No RFQ Number"):monthLabel(r);if(!map.has(key))map.set(key,[]);map.get(key).push(r)});
   let entries=[...map.entries()];
@@ -1002,6 +1124,44 @@ function currentMonthClosedWonSales(){
 function currentMonthSalesTotal(){
   return currentMonthImportedSales()+currentMonthClosedWonSales();
 }
+
+function closedWonAsOrder(r){
+  const d=rfqClosedWonDate(r);
+  return {
+    id:`cw_${r.id}`,
+    synthetic:true,
+    sourceRfqId:r.id,
+    customerId:r.customerId,
+    company:customerName(r),
+    contactId:r.contactId||null,
+    contactName:contactName(r),
+    salesOrder:"",
+    poNumber:r.quoteNo||"",
+    orderDate:d?localIsoDate(d):"",
+    total:total(r),
+    shipping:Number(r.shipping)||0,
+    tax:Number(r.tax)||0,
+    items:(r.items||[]).map(i=>({...i})),
+    fileName:"Closed Won RFQ",
+    importedAt:r.closedWonAt||r.updatedAt||r.createdAt,
+    linkedRfqId:r.id
+  };
+}
+function unifiedOrders(){
+  const real=orders.slice();
+  const synthetic=rfqs.filter(r=>r.status==="Closed Won"&&!orderLinkedToRfq(r.id)).map(closedWonAsOrder);
+  return [...real,...synthetic];
+}
+function ytdOrdersForCustomer(customerId){
+  const now=new Date(),y=now.getFullYear();
+  return unifiedOrders().filter(o=>{
+    const d=orderDateObj(o);
+    return o.customerId===customerId&&!isNaN(d)&&d.getFullYear()===y;
+  });
+}
+function ytdSalesForCustomer(customerId){
+  return ytdOrdersForCustomer(customerId).reduce((s,o)=>s+(Number(o.total)||0),0);
+}
 function currentMonthImportedSales(){
   const now=new Date();
   return orders.filter(o=>{const d=orderDateObj(o);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()})
@@ -1009,9 +1169,9 @@ function currentMonthImportedSales(){
 }
 function renderOrders(){
   const q=$("orderSearch")?.value.toLowerCase()||"",mode=$("orderGroup")?.value||"month";
-  let list=orders.filter(o=>[orderCustomerName(o),o.salesOrder,o.poNumber,o.contactName,...(o.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase().includes(q));
+  let list=unifiedOrders().filter(o=>[orderCustomerName(o),o.salesOrder,o.poNumber,o.contactName,...(o.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase().includes(q));
   list.sort((a,b)=>orderDateObj(b)-orderDateObj(a));
-  $("orderList").innerHTML=list.length?"":"<div class='empty'>No acknowledgments imported yet.</div>";
+  $("orderList").innerHTML=list.length?"":"<div class='empty'>No orders or Closed Won RFQs yet.</div>";
   const map=new Map();
   list.forEach(o=>{const key=mode==="account"?orderCustomerName(o):orderMonthLabel(o);if(!map.has(key))map.set(key,[]);map.get(key).push(o)});
   [...map.entries()].forEach(([name,records])=>{
@@ -1019,33 +1179,21 @@ function renderOrders(){
     wrap.innerHTML=`<div class="group-title"><h3>${esc(name)}</h3><span class="mini">${records.length} order${records.length===1?"":"s"} · ${money.format(records.reduce((s,o)=>s+(Number(o.total)||0),0))}</span></div><div class="list"></div>`;
     const holder=wrap.querySelector(".list");
     records.forEach(o=>{
-      const div=document.createElement("div");div.className="list-card order-card";div.dataset.orderOpen=o.id;
-      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status green">ORDER</span></div>
+      const div=document.createElement("div");div.className="list-card order-card";
+      if(!o.synthetic)div.dataset.orderOpen=o.id;
+      if(o.synthetic)div.dataset.rFqOpen=o.sourceRfqId;
+      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">${o.synthetic?`RFQ ${esc(o.poNumber||"—")}`:`SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}`}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status ${o.synthetic?"blue":"green"}">${o.synthetic?"CLOSED WON":"ORDER"}</span></div>
         <div class="money">${money.format(Number(o.total)||0)}</div>
-        <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"PDF acknowledgment")}</div>
-        <div class="order-menu-wrap">
-          <button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button>
-          <div class="order-menu hidden" data-order-menu-panel="${o.id}">
-            <button data-order-edit="${o.id}">✏️ Edit Import</button>
-            <button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button>
-          </div>
-        </div>`;
+        <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"Order")}</div>
+        ${o.synthetic?`<div class="report-hint">Automatically shown from Closed Won RFQ. It will be replaced by the linked acknowledgment/order later.</div>`:
+        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-order-edit="${o.id}">✏️ Edit Import</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(wrap);
   });
-  document.querySelectorAll("[data-order-open]").forEach(card=>{
-    card.onclick=e=>{
-      if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu"))return;
-      editImportedOrder(card.dataset.orderOpen);
-    };
-  });
-  document.querySelectorAll("[data-order-menu]").forEach(b=>b.onclick=e=>{
-    e.stopPropagation();
-    const id=b.dataset.orderMenu;
-    document.querySelectorAll(".order-menu").forEach(m=>{if(m.dataset.orderMenuPanel!==id)m.classList.add("hidden")});
-    document.querySelector(`[data-order-menu-panel="${id}"]`)?.classList.toggle("hidden");
-  });
+  document.querySelectorAll("[data-order-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu"))return;editImportedOrder(card.dataset.orderOpen)});
+  document.querySelectorAll("[data-r-fq-open]").forEach(card=>card.onclick=()=>editRfq(card.dataset.rFqOpen));
+  document.querySelectorAll("[data-order-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.orderMenu;document.querySelectorAll(".order-menu").forEach(m=>{if(m.dataset.orderMenuPanel!==id)m.classList.add("hidden")});document.querySelector(`[data-order-menu-panel="${id}"]`)?.classList.toggle("hidden")});
   document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editImportedOrder(b.dataset.orderEdit)});
   document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.stopPropagation();confirmDeleteImportedOrder(b.dataset.orderDelete)});
 }
@@ -1078,7 +1226,7 @@ function aggregateProducts(){
   const period=$("productPeriod")?.value||"all";
   const q=($("productSearch")?.value||"").trim().toLowerCase();
   const map=new Map(),customerSet=new Set();let units=0,revenue=0;
-  orders.filter(o=>productPeriodAllows(o,period)).forEach(o=>{
+  unifiedOrders().filter(o=>productPeriodAllows(o,period)).forEach(o=>{
     const customer=orderCustomerName(o);let matchedOrder=false;
     (o.items||[]).forEach(i=>{
       const qty=Number(i.qty)||0,price=Number(i.price)||0,line=qty*price;
@@ -1101,7 +1249,7 @@ function aggregateDemandGaps(){
     if(!demand.has(key))demand.set(key,{part:i.part||"",product:i.product||"Unnamed Product",qty:0});
     demand.get(key).qty+=Number(i.qty)||0;
   }));
-  orders.forEach(o=>(o.items||[]).forEach(i=>{const key=normalizeProductKey(i);sold.set(key,(sold.get(key)||0)+(Number(i.qty)||0))}));
+  unifiedOrders().forEach(o=>(o.items||[]).forEach(i=>{const key=normalizeProductKey(i);sold.set(key,(sold.get(key)||0)+(Number(i.qty)||0))}));
   return [...demand.entries()].map(([key,d])=>({...d,sold:sold.get(key)||0,gap:Math.max(0,d.qty-(sold.get(key)||0))})).sort((a,b)=>b.gap-a.gap||b.qty-a.qty).slice(0,12);
 }
 
@@ -1110,7 +1258,7 @@ function productWindowStats(startDaysAgo,endDaysAgo=0){
   const start=new Date(now);start.setDate(start.getDate()-startDaysAgo);
   const end=new Date(now);end.setDate(end.getDate()-endDaysAgo);
   const map=new Map();
-  orders.forEach(o=>{
+  unifiedOrders().forEach(o=>{
     const d=orderDateObj(o);
     if(isNaN(d)||d<start||d>end)return;
     (o.items||[]).forEach(i=>{
@@ -1290,6 +1438,78 @@ function renderCommunications(){
 }
 
 
+
+function reportEscape(v){return esc(v)}
+function reportMoney(v){return money.format(Number(v)||0)}
+function reportBar(label,value,max){
+  const pct=max?Math.max(2,Math.min(100,value/max*100)):0;
+  return `<div class="rbar"><span>${reportEscape(label)}</span><div class="rtrack"><i style="width:${pct}%"></i></div><b>${reportMoney(value)}</b></div>`;
+}
+function reportShell(title,subtitle,body){
+  const w=window.open("","_blank");
+  if(!w){alert("Allow pop-ups for this site so the PDF report can open.");return}
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${reportEscape(title)}</title><style>
+  *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;background:#fff}.page{max-width:980px;margin:auto;padding:34px}
+  h1{font-size:28px;margin:0}h2{font-size:18px;margin:22px 0 10px}.sub{color:#667085;margin-top:5px}.brand{font-size:12px;font-weight:800;letter-spacing:.12em;color:#356fb4;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.metric{border:1px solid #d9e1ec;border-radius:12px;padding:12px}.metric small{color:#667085}.metric strong{display:block;font-size:21px;margin-top:5px}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}th{background:#eaf1fb;text-align:left;padding:8px;border:1px solid #ccd6e4}td{padding:8px;border:1px solid #dde4ee;vertical-align:top}
+  .rbar{display:grid;grid-template-columns:180px 1fr 110px;gap:10px;align-items:center;margin:8px 0;font-size:11px}.rtrack{height:12px;background:#edf1f6;border-radius:999px;overflow:hidden}.rtrack i{display:block;height:100%;background:#4c84d9;border-radius:999px}
+  .donut{width:180px;height:180px;border-radius:50%;margin:15px auto;position:relative}.donut:after{content:"";position:absolute;inset:40px;background:#fff;border-radius:50%}.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;font-size:11px}
+  .legend div{display:flex;justify-content:space-between;border-bottom:1px solid #e7ebf0;padding:5px}.footer{margin-top:26px;padding-top:10px;border-top:1px solid #d9e1ec;font-size:9px;color:#98a2b3}
+  @media print{.page{padding:16px}.no-print{display:none}@page{size:landscape;margin:.35in}}
+  </style></head><body><div class="page"><div class="brand">American Block Sales OS</div><h1>${reportEscape(title)}</h1><div class="sub">${reportEscape(subtitle)}</div>${body}<div class="footer">Generated ${new Date().toLocaleString()}</div></div><script>setTimeout(()=>window.print(),450)<\/script></body></html>`);
+  w.document.close();
+}
+function productReportData(){
+  const oldPeriod=$("productPeriod")?.value;
+  const data=aggregateProducts();
+  return data.rows.sort((a,b)=>b.revenue-a.revenue);
+}
+function exportCurrentViewPDF(){
+  const view=currentViewId||lastMainView;
+  if(view==="dashboardView"){
+    const goal=Number(settings.goal)||0,sales=(Number(settings.sales)||0)+currentMonthSalesTotal(),remaining=Math.max(0,goal-sales),days=businessDaysLeft(),daily=days?remaining/days:remaining;
+    const max=Math.max(goal,1);
+    const body=`<div class="grid"><div class="metric"><small>Monthly Goal</small><strong>${reportMoney(goal)}</strong></div><div class="metric"><small>Sales This Month</small><strong>${reportMoney(sales)}</strong></div><div class="metric"><small>Remaining</small><strong>${reportMoney(remaining)}</strong></div><div class="metric"><small>Daily Run Rate</small><strong>${reportMoney(daily)}</strong></div></div><h2>Goal Progress</h2>${reportBar("Sales",sales,max)}${reportBar("Remaining",remaining,max)}<h2>Pipeline</h2><table><tr><th>Customer</th><th>RFQ</th><th>Status</th><th>Value</th></tr>${rfqs.filter(isOpen).sort((a,b)=>total(b)-total(a)).slice(0,15).map(r=>`<tr><td>${reportEscape(customerName(r))}</td><td>${reportEscape(r.quoteNo||"")}</td><td>${reportEscape(r.status)}</td><td>${reportMoney(total(r))}</td></tr>`).join("")}</table>`;
+    return reportShell("Monthly Sales Goal Tracker",new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"}),body);
+  }
+  if(view==="productsView"){
+    const rows=productReportData(),top=rows.slice(0,12),max=Math.max(1,...top.map(r=>r.revenue)),families=new Map();
+    rows.forEach(r=>families.set(r.family,(families.get(r.family)||0)+r.revenue));
+    const fam=[...families.entries()].sort((a,b)=>b[1]-a[1]),sum=fam.reduce((s,x)=>s+x[1],0)||1,colors=["#4c84d9","#38a169","#e9a23b","#8b5cf6","#e05252","#2aa8b8"];let cur=0;
+    const stops=fam.slice(0,6).map((x,i)=>{const st=cur;cur+=x[1]/sum*100;return `${colors[i]} ${st}% ${cur}%`}).join(",");
+    const body=`<div class="grid"><div class="metric"><small>Products</small><strong>${rows.length}</strong></div><div class="metric"><small>Product Revenue</small><strong>${reportMoney(rows.reduce((s,r)=>s+r.revenue,0))}</strong></div><div class="metric"><small>Units Sold</small><strong>${Math.round(rows.reduce((s,r)=>s+r.qty,0)).toLocaleString()}</strong></div><div class="metric"><small>Customers</small><strong>${new Set(rows.flatMap(r=>[...r.customers])).size}</strong></div></div><h2>Top Products</h2>${top.map(r=>reportBar(r.product,r.revenue,max)).join("")}<h2>Product Mix</h2><div class="donut" style="background:conic-gradient(${stops||"#ddd 0 100%"})"></div><div class="legend">${fam.slice(0,6).map(([n,v],i)=>`<div><span>${reportEscape(n)}</span><b>${reportMoney(v)}</b></div>`).join("")}</div>`;
+    return reportShell("Product Intelligence Report","Sales mix, top products, and product revenue",body);
+  }
+  if(view==="customersView"||view==="customerAccountView"){
+    const list=view==="customerAccountView"&&activeCustomerId?customers.filter(c=>c.id===activeCustomerId):customers.slice().sort((a,b)=>a.company.localeCompare(b.company));
+    const body=`<table><tr><th>Customer</th><th>YTD Sales</th><th>Open Pipeline</th><th>Top Product</th><th>Last Activity</th></tr>${list.map(c=>{const ps=customerProductStats(c.id).products[0],acts=activities.filter(a=>a.customerId===c.id).sort((a,b)=>activityDateObj(b)-activityDateObj(a));return `<tr><td>${reportEscape(c.company)}</td><td>${reportMoney(ytdSalesForCustomer(c.id))}</td><td>${reportMoney(rfqs.filter(r=>r.customerId===c.id&&isOpen(r)).reduce((s,r)=>s+total(r),0))}</td><td>${reportEscape(ps?.name||"—")}</td><td>${acts[0]?formatDate(acts[0].date):"—"}</td></tr>`}).join("")}</table>`;
+    return reportShell(view==="customerAccountView"?(customerById(activeCustomerId)?.company||"Account")+" Account Report":"Customer Accounts Report","Current account performance",body);
+  }
+  if(view==="ordersView"){
+    const list=unifiedOrders().sort((a,b)=>orderDateObj(b)-orderDateObj(a));
+    const body=`<div class="grid"><div class="metric"><small>Total Orders</small><strong>${list.length}</strong></div><div class="metric"><small>Total Value</small><strong>${reportMoney(list.reduce((s,o)=>s+(Number(o.total)||0),0))}</strong></div></div><table><tr><th>Date</th><th>Customer</th><th>Source</th><th>SO / RFQ</th><th>Value</th></tr>${list.map(o=>`<tr><td>${formatDate(o.orderDate)}</td><td>${reportEscape(orderCustomerName(o))}</td><td>${o.synthetic?"Closed Won RFQ":"Order"}</td><td>${reportEscape(o.synthetic?(o.poNumber||""):(o.salesOrder||""))}</td><td>${reportMoney(o.total)}</td></tr>`).join("")}</table>`;
+    return reportShell("Orders Report","All orders including Closed Won RFQs",body);
+  }
+  if(view==="rfqsView"){
+    const body=`<table><tr><th>Customer</th><th>RFQ</th><th>Status</th><th>Follow-up</th><th>Value</th><th>Next Action</th></tr>${rfqs.slice().sort((a,b)=>recordDate(b)-recordDate(a)).map(r=>`<tr><td>${reportEscape(customerName(r))}</td><td>${reportEscape(r.quoteNo||"")}</td><td>${reportEscape(r.status)}</td><td>${formatDate(r.followup)}</td><td>${reportMoney(total(r))}</td><td>${reportEscape(r.nextAction||"")}</td></tr>`).join("")}</table>`;
+    return reportShell("RFQ Pipeline Report","Open and closed RFQ activity",body);
+  }
+  if(view==="activityLogView"){
+    const month=$("activityMonth")?.value||localIsoDate().slice(0,7),list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(a)-activityDateObj(b));
+    const body=`<table><tr><th>Date</th><th>Customer</th><th>Type</th><th>Contact</th><th>Opportunity</th><th>Comments</th></tr>${list.map(a=>`<tr><td>${formatDate(a.date)}</td><td>${reportEscape(activityCustomer(a)?.company||"")}</td><td>${reportEscape(a.type)}</td><td>${reportEscape(activityContact(a)?.name||"")}</td><td>${reportEscape(a.opportunityTitle||"")}</td><td>${reportEscape(a.comments||"")}</td></tr>`).join("")}</table>`;
+    return reportShell("Monthly Customer Activity Log",month,body);
+  }
+  if(view==="followupsView"){
+    const list=rfqs.filter(isOpen).filter(r=>r.followup).sort((a,b)=>String(a.followup).localeCompare(String(b.followup)));
+    return reportShell("Follow-up Report","Open opportunities requiring action",`<table><tr><th>Date</th><th>Customer</th><th>RFQ</th><th>Status</th><th>Value</th><th>Next Action</th></tr>${list.map(r=>`<tr><td>${formatDate(r.followup)}</td><td>${reportEscape(customerName(r))}</td><td>${reportEscape(r.quoteNo||"")}</td><td>${reportEscape(r.status)}</td><td>${reportMoney(total(r))}</td><td>${reportEscape(r.nextAction||"")}</td></tr>`).join("")}</table>`);
+  }
+  if(view==="communicationsView"){
+    return reportShell("Communications Report","Recent customer communications",`<table><tr><th>Date</th><th>Customer</th><th>Contact</th><th>Type</th><th>Message</th></tr>${communications.map(x=>`<tr><td>${new Date(x.createdAt).toLocaleDateString()}</td><td>${reportEscape(x.customerName)}</td><td>${reportEscape(x.contactName)}</td><td>${reportEscape(x.type)}</td><td>${reportEscape(x.message)}</td></tr>`).join("")}</table>`);
+  }
+  alert("PDF export is available from Dashboard, Customers, RFQs, Orders, Log, Products, Communications, Follow-ups, and individual customer accounts.");
+}
+
 function localIsoDate(d=new Date()){
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
@@ -1311,6 +1531,19 @@ function weekRangeLabel(a){
   const fmt=x=>x.toLocaleDateString("en-US",{month:"short",day:"numeric"});
   return `${fmt(start)} – ${fmt(end)}`;
 }
+
+function fillActivityOpportunities(selected=""){
+  if(!$("activityOpportunity"))return;
+  const cid=$("activityCustomer").value;
+  const list=rfqs.filter(r=>r.customerId===cid&&isOpen(r)).sort((a,b)=>recordDate(b)-recordDate(a));
+  $("activityOpportunity").innerHTML='<option value="">No opportunity</option>'+list.map(r=>`<option value="rfq:${r.id}">${esc(r.quoteNo||"RFQ")} · ${money.format(total(r))} · ${esc(r.status)}</option>`).join("")+'<option value="new">＋ New Opportunity</option>';
+  if(selected)$("activityOpportunity").value=selected;
+  toggleActivityOpportunityFields();
+}
+function toggleActivityOpportunityFields(){
+  const isNew=$("activityOpportunity")?.value==="new";
+  $("newOpportunityFields")?.classList.toggle("hidden",!isNew);
+}
 function fillActivityCustomers(){
   if(!$("activityCustomer"))return;
   $("activityCustomer").innerHTML=`<option value="">Select customer</option>`+customers.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
@@ -1327,6 +1560,8 @@ function openNewActivity(customerId="",contactId=""){
   $("activityType").value="Visit";
   $("activityCustomer").value=customerId||"";
   fillActivityContacts(contactId);
+  fillActivityOpportunities("");
+  $("activityOpportunityTitle").value="";$("activityOpportunityValue").value="";$("activityOpportunityStage").value="Prospecting";$("activityOpportunityDetails").value="";
   $("activityComments").value="";
   $("activityMessage").textContent="";
   showView("activityFormView",false);
@@ -1336,6 +1571,9 @@ function editActivity(id){
   editingActivityId=id;$("activityFormTitle").textContent="Edit Activity";
   fillActivityCustomers();$("activityCustomer").value=a.customerId||"";fillActivityContacts(a.contactId||"");
   $("activityDate").value=a.date||localIsoDate();$("activityType").value=a.type||"Visit";$("activityComments").value=a.comments||"";
+  fillActivityOpportunities(a.opportunityRfqId?`rfq:${a.opportunityRfqId}`:(a.opportunityTitle?"new":""));
+  $("activityOpportunityTitle").value=a.opportunityTitle||"";$("activityOpportunityValue").value=a.opportunityValue||"";$("activityOpportunityStage").value=a.opportunityStage||"Prospecting";$("activityOpportunityDetails").value=a.opportunityDetails||"";
+  toggleActivityOpportunityFields();
   $("activityMessage").textContent="";showView("activityFormView",false);
 }
 
@@ -1504,7 +1742,7 @@ async function exportCustomerLogWorkbook(){
   }
 }
 
-function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications()}
+function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
 let editingOrderId=null;
@@ -2214,7 +2452,8 @@ document.addEventListener("click",e=>{
 });
 $("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
-if($("activityCustomer"))$("activityCustomer").onchange=()=>fillActivityContacts();
+if($("activityCustomer"))$("activityCustomer").onchange=()=>{fillActivityContacts();fillActivityOpportunities()};
+if($("activityOpportunity"))$("activityOpportunity").onchange=toggleActivityOpportunityFields;
 if($("newActivityBtn"))$("newActivityBtn").onclick=()=>openNewActivity();
 if($("quickLogActivity"))$("quickLogActivity").onclick=()=>openNewActivity();
 if($("quickOpenLog"))$("quickOpenLog").onclick=()=>showView("activityLogView",true);
@@ -2244,10 +2483,30 @@ if($("saveActivity"))$("saveActivity").onclick=()=>{
   if(!date){$("activityMessage").textContent="Select a date.";return}
   if(!comments){$("activityMessage").textContent="Enter your comments.";return}
   const old=activities.find(a=>a.id===editingActivityId);
-  const rec={id:editingActivityId||uid(),date,type:$("activityType").value,customerId,contactId:$("activityContact").value||null,comments,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const oppChoice=$("activityOpportunity").value||"";
+  const opportunityRfqId=oppChoice.startsWith("rfq:")?oppChoice.slice(4):null;
+  const linkedOpp=opportunityRfqId?rfqs.find(r=>r.id===opportunityRfqId):null;
+  const opportunityTitle=oppChoice==="new"?$("activityOpportunityTitle").value.trim():(linkedOpp?.quoteNo||"");
+  const opportunityValue=oppChoice==="new"?(Number($("activityOpportunityValue").value)||0):(linkedOpp?total(linkedOpp):0);
+  const opportunityStage=oppChoice==="new"?$("activityOpportunityStage").value:(linkedOpp?.status||"");
+  const opportunityDetails=$("activityOpportunityDetails").value.trim();
+  const rec={id:editingActivityId||uid(),date,type:$("activityType").value,customerId,contactId:$("activityContact").value||null,comments,
+    opportunityRfqId,opportunityTitle,opportunityValue,opportunityStage,opportunityDetails,
+    createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
   if(editingActivityId)activities=activities.map(a=>a.id===editingActivityId?rec:a);else activities.push(rec);
   save();editingActivityId=null;showView("activityLogView",true);
 };
+
+
+if($("globalLogActivity"))$("globalLogActivity").onclick=()=>openNewActivity(currentViewId==="customerAccountView"?(activeCustomerId||""):"");
+if($("globalExportPdf"))$("globalExportPdf").onclick=exportCurrentViewPDF;
+if($("backFromAccount"))$("backFromAccount").onclick=()=>showView("customersView",true);
+if($("editAccountFromDetail"))$("editAccountFromDetail").onclick=()=>{if(activeCustomerId)editCustomer(activeCustomerId)};
+document.querySelectorAll(".account-tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".account-tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".account-panel").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");$(b.dataset.accountPanel).classList.add("active");
+});
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 renderAll();
