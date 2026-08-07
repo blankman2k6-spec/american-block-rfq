@@ -146,7 +146,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.3</div></div>
       <button id="importAckOrders" class="primary">＋ Import PDF</button>
     </div>
     <div class="row">
@@ -168,7 +168,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2.2.2 — Robust PDF + OCR Import</h2>
+      <h2>Version 2.2.3 — Safari OCR Fix</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, order history, PDF acknowledgment parsing, automatic customer matching, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -647,6 +647,24 @@ function clusterPdfLines(items,tol=3.2){
 function rowText(row){return row.items.map(i=>i.str).join(" ").replace(/\s+/g," ").trim()}
 function wordsInRange(row,min,max){return row.items.filter(i=>i.x>=min&&i.x<max).map(i=>i.str).join(" ").trim()}
 
+
+function loadScriptOnce(src,id){
+  return new Promise((resolve,reject)=>{
+    if(window[id]){resolve(window[id]);return}
+    const existing=document.querySelector(`script[data-lib="${id}"]`);
+    if(existing){
+      existing.addEventListener("load",()=>resolve(window[id]));
+      existing.addEventListener("error",reject);
+      return;
+    }
+    const s=document.createElement("script");
+    s.src=src;s.async=true;s.dataset.lib=id;
+    s.onload=()=>resolve(window[id]);
+    s.onerror=()=>reject(new Error("Could not load OCR library."));
+    document.head.appendChild(s);
+  });
+}
+
 async function readAmericanBlockAck(file){
   const pdfjs=await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.mjs";
@@ -664,14 +682,29 @@ async function readAmericanBlockAck(file){
   let usedOCR=false;
   if(sourceText.length<80){
     usedOCR=true;
-    const tess=await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
-    const scale=2.0;
+    const Tesseract=await loadScriptOnce("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js","Tesseract");
+    const scale=2.5;
     const vp=page.getViewport({scale});
     const canvas=document.createElement("canvas");
     canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
     const ctx=canvas.getContext("2d",{willReadFrequently:true});
     await page.render({canvasContext:ctx,viewport:vp}).promise;
-    const result=await tess.recognize(canvas,"eng",{logger:()=>{}});
+
+    // Improve contrast for scanned acknowledgments before OCR.
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const d=img.data;
+    for(let i=0;i<d.length;i+=4){
+      const gray=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]);
+      const v=gray<190?0:255;
+      d[i]=d[i+1]=d[i+2]=v;
+    }
+    ctx.putImageData(img,0,0);
+
+    const result=await Tesseract.recognize(canvas,"eng",{
+      logger:()=>{},
+      tessedit_pageseg_mode:6,
+      preserve_interword_spaces:"1"
+    });
     sourceText=String(result?.data?.text||"").replace(/\s+/g," ").trim();
   }
 
@@ -744,11 +777,33 @@ async function readAmericanBlockAck(file){
   // OCR FALLBACK PARSER: OCR text can lose exact spacing, but American Block's
   // acknowledgment row order is still consistent.
   if(!lineItems.length && usedOCR){
-    const ocrRx=/\b(\d{3})\s+[A-Z]\s+([\d,.]+)\s+(EA|PC|FT|SET)\s+([A-Z0-9_.\/-]+)\s+(.+?)\s+([\d,]+\.\d{2})(?=\s+PROMISED|\s+Order\s+SubTotal|\s+Total\s+Order\s+Amount)/gi;
+    const ocrRx=/\b(\d{3})\s+[A-Z]?\s*([\d,.]+)\s+(EA|PC|FT|SET)\s+([A-Z0-9_.\/-]+)\s+(.+?)\s+([\d,]+\.\d{2})(?=\s+PROMISED|\s+Order\s+SubTotal|\s+Total\s+Order\s+Amount|\s*$)/gi;
     let om;
     while((om=ocrRx.exec(text))!==null){
       const qty=cleanMoney(om[2]),price=cleanMoney(om[6]);
       lineItems.push({itemNo:om[1],part:om[4],product:om[5].trim(),qty,unit:om[3],price,lineTotal:qty*price});
+    }
+  }
+
+  // LAST OCR FALLBACK: find known row components independently in the OCR text.
+  // This handles scan PDFs where OCR scrambles the table's visual column order.
+  if(!lineItems.length && usedOCR){
+    const partMatch=text.match(/\b([0-9A-Z]{4,}-[0-9A-Z.]+)\b/i);
+    const qtyMatch=text.match(/\b(\d+[,.]?\d*)\s+(EA|PC|FT|SET)\b/i);
+    const priceMatches=[...text.matchAll(/\b([\d,]+\.\d{2})\b/g)].map(m=>cleanMoney(m[1]));
+    const price=priceMatches.find(v=>v>0&&v<100000)||0;
+    if(partMatch&&qtyMatch&&price){
+      let product="";
+      const idx=text.indexOf(partMatch[1]);
+      if(idx>=0){
+        const tail=text.slice(idx+partMatch[1].length,idx+partMatch[1].length+180);
+        product=tail.split(/PROMISED|Order SubTotal|Total Order Amount/i)[0].trim();
+      }
+      lineItems.push({
+        itemNo:"001",part:partMatch[1],product,
+        qty:cleanMoney(qtyMatch[1]),unit:qtyMatch[2],price,
+        lineTotal:cleanMoney(qtyMatch[1])*price
+      });
     }
   }
 
@@ -821,7 +876,7 @@ async function importAcknowledgment(file){
       console.error("PDF parser debug:",parsed.debugText);
       throw new Error(parsed.usedOCR
         ? "The PDF was scanned and OCR ran, but the line item still could not be recognized."
-        : "The PDF text was read, but the line item format did not match. Parser version 2.2.2.");
+        : "The PDF text was read, but the line item format did not match. Parser version 2.2.3.");
     }
     pendingAck=parsed;
     $("ackFileName").textContent=file.name;
