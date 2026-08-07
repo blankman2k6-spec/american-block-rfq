@@ -3,169 +3,213 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#0b1220">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="AB RFQ">
+  <meta name="apple-mobile-web-app-title" content="AB Sales OS">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <title>American Block RFQ</title>
+  <title>American Block Sales OS</title>
   <style>
     :root{
-      --bg:#0b0f19; --panel:#171c27; --panel2:#202736; --text:#f7f8fa;
-      --muted:#aeb7c7; --line:#394255; --accent:#3b82f6; --green:#16a34a;
-      --red:#dc2626; --yellow:#d97706;
+      --bg:#07101f;--panel:#101a2b;--panel2:#172338;--line:#2a3852;--text:#f8fafc;
+      --muted:#9eabc0;--accent:#3b82f6;--accent2:#2563eb;--green:#22c55e;--red:#ef4444;
+      --yellow:#f59e0b;--shadow:0 12px 34px rgba(0,0,0,.24)
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    .wrap{max-width:760px;margin:auto;padding:18px 14px 110px}
-    h1{font-size:22px;margin:4px 0 18px}
-    h2{font-size:19px;margin:0 0 14px}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-    .metric,.card{background:var(--panel);border:1px solid var(--line);border-radius:18px}
-    .metric{padding:16px}
-    .metric small{display:block;color:var(--muted);font-size:14px;margin-bottom:7px}
-    .metric strong{font-size:24px}
-    .card{padding:16px;margin-top:16px}
-    label{display:block;font-size:14px;margin:12px 0 6px;color:var(--muted)}
-    input,select,textarea,button{
-      width:100%;font:inherit;border-radius:14px;border:1px solid var(--line);
-      background:#111722;color:var(--text);padding:13px 14px
-    }
-    textarea{min-height:92px;resize:vertical}
-    button{background:var(--accent);border:none;font-weight:700}
-    button.secondary{background:transparent;border:1px solid var(--line);width:auto}
-    button.danger{background:var(--red);width:auto}
+    html{background:var(--bg)}
+    body{margin:0;background:linear-gradient(180deg,#07101f,#091425 45%,#07101f);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .app{max-width:820px;margin:auto;padding:calc(12px + env(safe-area-inset-top)) 14px calc(92px + env(safe-area-inset-bottom))}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}
+    .brand h1{font-size:22px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:13px}
+    .icon-btn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:14px;padding:10px 12px}
+    .view{display:none}.view.active{display:block}
+    .grid{display:grid;gap:12px}.metrics{grid-template-columns:repeat(2,1fr)}
+    .metric,.card{background:rgba(16,26,43,.94);border:1px solid var(--line);border-radius:19px;box-shadow:var(--shadow)}
+    .metric{padding:16px}.metric small{display:block;color:var(--muted);font-size:13px;margin-bottom:7px}
+    .metric strong{font-size:25px;letter-spacing:-.02em}.metric .sub{margin-top:5px;font-size:12px;color:var(--muted)}
+    .card{padding:16px;margin-top:14px}
+    h2{font-size:19px;margin:0 0 12px}h3{font-size:16px;margin:0}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{display:block;color:var(--muted);font-size:13px;margin:10px 0 6px}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#0b1424;color:var(--text);border-radius:14px;padding:13px}
+    textarea{min-height:90px;resize:vertical}
+    .primary,.secondary,.danger{border-radius:14px;padding:12px 14px;font-weight:700}
+    .primary{background:var(--accent);color:#fff;border:0}.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+    .danger{background:var(--red);color:#fff;border:0}
+    .toolbar{display:flex;gap:9px;flex-wrap:wrap}.toolbar>*{flex:1}
+    .progress-wrap{background:#0a1322;border-radius:999px;height:12px;overflow:hidden;border:1px solid var(--line)}
+    .progress{height:100%;background:linear-gradient(90deg,var(--accent),#60a5fa);width:0}
+    .status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;background:#23324c;color:#dbeafe;font-size:12px}
+    .status.green{background:#123520;color:#bbf7d0}.status.red{background:#481c21;color:#fecaca}.status.yellow{background:#4a3311;color:#fde68a}
+    .list{display:grid;gap:10px}.list-card{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:14px}
+    .list-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .list-title{font-weight:800}.muted{color:var(--muted)}
+    .money{font-size:21px;font-weight:800;margin-top:7px}.mini{font-size:12px;color:var(--muted)}
+    .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(7,16,31,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);
+      padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));z-index:50}
+    .tabs-inner{max-width:820px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+    .tab{background:transparent;border:0;color:var(--muted);padding:8px 4px;border-radius:12px;font-size:11px}
+    .tab strong{display:block;font-size:18px;margin-bottom:3px}.tab.active{background:#15233a;color:#fff}
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 10px}
     .item{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
     .item-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
-    .total{display:flex;justify-content:space-between;align-items:center;background:#101827;border-radius:14px;padding:14px;margin-top:12px}
-    .quote-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:15px;margin-top:14px}
-    .quote-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .badge{font-size:12px;padding:6px 9px;border-radius:999px;background:#263248;color:#d7e5ff}
-    .quote-total{font-size:22px;font-weight:800;margin:10px 0}
-    .muted{color:var(--muted)}
-    .products{margin:10px 0}
-    .product-line{padding:9px 0;border-top:1px solid var(--line)}
-    .actions{display:flex;gap:8px;margin-top:12px}
-    .actions button{width:auto;flex:1}
-    .toolbar{display:flex;gap:8px;margin-top:14px}
-    .toolbar button{flex:1}
-    .group-block{margin-top:18px}
-    .group-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:#111827;border:1px solid var(--line)}
-    .group-heading h3{margin:0;font-size:17px}
-    .group-heading span{color:var(--muted);font-size:13px;text-align:right}
-    .hidden{display:none}
-    .notice{color:var(--muted);font-size:13px;margin-top:10px}
-    @media(max-width:520px){.row{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+    .total{display:flex;justify-content:space-between;background:#0b1424;padding:13px;border-radius:14px;margin-top:10px}
+    .hidden{display:none!important}
+    .empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
+    .group-title{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0c1728;border:1px solid var(--line);padding:12px 14px;border-radius:14px;margin:16px 0 8px}
+    .pill{display:inline-block;background:#15233a;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:#dbeafe}
+    .customer-actions{display:flex;gap:8px;margin-top:12px}.customer-actions button{flex:1}
+    .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7da7e8;font-weight:800}
+    .headline{font-size:26px;margin:4px 0 2px}
+    @media(max-width:560px){.row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <h1>American Block RFQ</h1>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>American Block Sales OS</h1>
+      <p id="todayLabel"></p>
+    </div>
+    <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
+  </header>
 
-    <section class="grid">
-      <div class="metric"><small>Open RFQs</small><strong id="openCount">0</strong></div>
-      <div class="metric"><small>Open Value</small><strong id="openValue">$0.00</strong></div>
-      <div class="metric"><small>Follow-ups Due</small><strong id="dueCount">0</strong></div>
-      <div class="metric"><small>Verbal Yes</small><strong id="verbalValue">$0.00</strong></div>
-    </section>
+  <section id="dashboardView" class="view active">
+    <div class="kicker">Executive Dashboard</div>
+    <div class="headline">Good day, Alex</div>
+    <p class="muted" style="margin-top:4px">Your territory at a glance.</p>
 
-    <section class="card">
-      <h2>Add Pending RFQ</h2>
+    <div class="grid metrics" style="margin-top:15px">
+      <div class="metric"><small>Open RFQs</small><strong id="dOpenCount">0</strong><div class="sub">Active opportunities</div></div>
+      <div class="metric"><small>Open Value</small><strong id="dOpenValue">$0</strong><div class="sub">Current pipeline</div></div>
+      <div class="metric"><small>Verbal Yes</small><strong id="dVerbal">$0</strong><div class="sub">Likely to close</div></div>
+      <div class="metric"><small>Follow-ups Due</small><strong id="dDue">0</strong><div class="sub">Today or overdue</div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">$100K Monthly Goal</h2><span id="goalStatus" class="status">Set up</span></div>
       <div class="row">
-        <div>
-          <label for="company">Company Name</label>
-          <input id="company" placeholder="Customer company">
-        </div>
-        <div>
-          <label for="quoteNo">RFQ / Quote Number</label>
-          <input id="quoteNo" placeholder="Optional">
-        </div>
+        <div><label>Monthly Goal</label><input id="monthlyGoal" type="number" min="0" step="1000" value="100000"></div>
+        <div><label>Sales Booked This Month</label><input id="monthlySales" type="number" min="0" step="0.01" value="0"></div>
       </div>
-      <div class="row">
-        <div>
-          <label for="status">Status</label>
-          <select id="status">
-            <option>Waiting on Customer</option>
-            <option>Pricing Review</option>
-            <option>Verbal Yes</option>
-            <option>Hold</option>
-            <option>Closed Won</option>
-            <option>Lost</option>
-          </select>
-        </div>
-        <div>
-          <label for="followup">Next Follow-up</label>
-          <input id="followup" type="date">
-        </div>
+      <div class="progress-wrap" style="margin-top:14px"><div id="goalProgress" class="progress"></div></div>
+      <div class="grid metrics" style="margin-top:12px">
+        <div class="metric"><small>Remaining</small><strong id="goalRemaining">$0</strong></div>
+        <div class="metric"><small>Daily Run Rate Needed</small><strong id="dailyNeeded">$0</strong><div class="sub"><span id="businessDaysLeft">0</span> business days left</div></div>
       </div>
+      <button id="saveGoal" class="secondary" style="width:100%;margin-top:10px">Save Goal Progress</button>
+    </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
-        <h2 style="margin:0">Products</h2>
-        <button class="secondary" id="addItem">+ Add Item</button>
-      </div>
-      <div id="items"></div>
-      <div class="total"><span>Quote Total</span><strong id="draftTotal">$0.00</strong></div>
+    <div class="card">
+      <div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">Today's Follow-ups</h2><button class="secondary" id="goFollowups">View All</button></div>
+      <div id="todayFollowups" class="list"></div>
+    </div>
 
-      <label for="feedback">Customer Feedback</label>
-      <textarea id="feedback" placeholder="What did the customer say?"></textarea>
-      <label for="nextAction">Next Action</label>
-      <input id="nextAction" placeholder="Call, visit, revise quote, check inventory...">
+    <div class="card">
+      <div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">Largest Open RFQs</h2><button class="secondary" id="goRfqs">View RFQs</button></div>
+      <div id="topRfqs" class="list"></div>
+    </div>
+  </section>
 
+  <section id="customersView" class="view">
+    <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2></div><button id="addCustomerBtn" class="primary">＋ Customer</button></div>
+    <input id="customerSearch" placeholder="Search customer, contact, city, phone...">
+    <div id="customerList" class="list" style="margin-top:12px"></div>
+  </section>
+
+  <section id="rfqsView" class="view">
+    <div class="section-head"><div><div class="kicker">Pipeline</div><h2 style="margin-top:4px">RFQ Management</h2></div><button id="addRfqTop" class="primary">＋ RFQ</button></div>
+    <div class="row">
+      <div><label>Search</label><input id="rfqSearch" placeholder="Account, RFQ, part number, product..."></div>
+      <div><label>Status</label><select id="rfqStatusFilter"><option>All</option><option>Waiting on Customer</option><option>Pricing Review</option><option>Verbal Yes</option><option>Hold</option><option>Closed Won</option><option>Lost</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>Group By</label><select id="rfqGroup"><option value="month">Month</option><option value="account">Customer / Account</option><option value="rfq">RFQ Number</option></select></div>
+      <div><label>Sort</label><select id="rfqSort"><option value="newest">Newest First</option><option value="oldest">Oldest First</option><option value="az">A to Z</option><option value="value">Highest Value</option></select></div>
+    </div>
+    <div class="toolbar" style="margin-top:12px">
+      <button id="teamPdf" class="secondary">Team PDF</button>
+      <button id="exportBackup" class="secondary">Export Backup</button>
+      <button id="importBackup" class="secondary">Import Backup</button>
+      <input id="importFile" type="file" class="hidden" accept=".json,application/json">
+    </div>
+    <div id="rfqList" style="margin-top:10px"></div>
+  </section>
+
+  <section id="followupsView" class="view">
+    <div class="kicker">Action Center</div><h2 style="margin-top:4px">Follow-ups</h2>
+    <div class="row">
+      <div><label>Show</label><select id="followupFilter"><option value="due">Due / Overdue</option><option value="upcoming">Upcoming</option><option value="all">All Open</option></select></div>
+      <div><label>Search</label><input id="followupSearch" placeholder="Account or RFQ"></div>
+    </div>
+    <div id="followupList" class="list" style="margin-top:12px"></div>
+  </section>
+
+  <section id="settingsView" class="view">
+    <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
+    <div class="card">
+      <h2>Version 2 Foundation</h2>
+      <p class="muted">Executive dashboard, customer CRM, RFQ management, monthly goal tracking, fast search, PDF reports, offline support, and migration from the original RFQ tracker.</p>
       <div class="toolbar">
-        <button id="save">Save RFQ</button>
-        <button id="teamReport" class="secondary">Team PDF</button>
+        <button id="settingsExport" class="secondary">Export Backup</button>
+        <button id="settingsImport" class="secondary">Import Backup</button>
       </div>
-      <div class="toolbar">
-        <button id="export" class="secondary">Export Backup</button>
-        <button id="import" class="secondary">Import Backup</button>
-      </div>
-      <input id="importFile" class="hidden" type="file" accept=".json,application/json">
-      <div id="message" class="notice"></div>
-    </section>
+    </div>
+    <div class="card">
+      <h2>Data Storage</h2>
+      <p class="muted">This version still saves locally on this device. Cloud sync, user login, notifications, and photo storage are the next build phase.</p>
+    </div>
+  </section>
 
-    <section style="margin-top:22px">
+  <section id="rfqFormView" class="view">
+    <div class="section-head"><button id="backFromRfq" class="secondary">← Back</button><h2 id="rfqFormTitle" style="margin:0">New RFQ</h2></div>
+    <div class="card">
       <div class="row">
-        <div>
-          <label for="search">Search</label>
-          <input id="search" placeholder="Company, part number, product...">
-        </div>
-        <div>
-          <label for="filter">Filter Status</label>
-          <select id="filter">
-            <option>All</option>
-            <option>Waiting on Customer</option>
-            <option>Pricing Review</option>
-            <option>Verbal Yes</option>
-            <option>Hold</option>
-            <option>Closed Won</option>
-            <option>Lost</option>
-          </select>
-        </div>
+        <div><label>Customer / Account</label><select id="rfqCustomer"></select></div>
+        <div><label>RFQ / Quote Number</label><input id="rfqNumber" placeholder="Quote number or contact/date"></div>
       </div>
       <div class="row">
-        <div>
-          <label for="groupBy">Group RFQs By</label>
-          <select id="groupBy">
-            <option value="month">Month</option>
-            <option value="account">Customer / Account</option>
-            <option value="rfq">RFQ Number</option>
-          </select>
-        </div>
-        <div>
-          <label for="sortOrder">Sort Order</label>
-          <select id="sortOrder">
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="az">A to Z</option>
-          </select>
-        </div>
+        <div><label>Status</label><select id="rfqStatus"><option>Waiting on Customer</option><option>Pricing Review</option><option>Verbal Yes</option><option>Hold</option><option>Closed Won</option><option>Lost</option></select></div>
+        <div><label>Next Follow-up</label><input id="rfqFollowup" type="date"></div>
       </div>
-      <div class="notice" style="margin-top:10px">App version 3.1</div>
-      <div id="quotes"></div>
-    </section>
-  </main>
+      <div class="section-head"><h2 style="margin:0">Products</h2><button id="addItem" class="secondary">＋ Add Item</button></div>
+      <div id="rfqItems"></div>
+      <div class="total"><span>Quote Total</span><strong id="rfqDraftTotal">$0.00</strong></div>
+      <label>Customer Feedback</label><textarea id="rfqFeedback" placeholder="What did the customer say?"></textarea>
+      <label>Next Action</label><input id="rfqNextAction" placeholder="Call, visit, revise quote, check inventory...">
+      <div class="toolbar" style="margin-top:14px">
+        <button id="saveRfq" class="primary">Save RFQ</button>
+        <button id="cancelRfq" class="secondary">Cancel</button>
+      </div>
+      <div id="rfqMessage" class="mini" style="margin-top:9px"></div>
+    </div>
+  </section>
+
+  <section id="customerFormView" class="view">
+    <div class="section-head"><button id="backFromCustomer" class="secondary">← Back</button><h2 id="customerFormTitle" style="margin:0">New Customer</h2></div>
+    <div class="card">
+      <label>Company Name</label><input id="cCompany" placeholder="Company / account">
+      <div class="row">
+        <div><label>Primary Contact</label><input id="cContact" placeholder="Contact name"></div>
+        <div><label>Phone</label><input id="cPhone" type="tel" placeholder="Phone number"></div>
+      </div>
+      <div class="row">
+        <div><label>Email</label><input id="cEmail" type="email" placeholder="Email address"></div>
+        <div><label>City / Location</label><input id="cCity" placeholder="City, State"></div>
+      </div>
+      <label>Address</label><input id="cAddress" placeholder="Street address">
+      <label>Customer Notes</label><textarea id="cNotes" placeholder="Products purchased, buying habits, needs, preferences..."></textarea>
+      <div class="toolbar" style="margin-top:14px">
+        <button id="saveCustomer" class="primary">Save Customer</button>
+        <button id="cancelCustomer" class="secondary">Cancel</button>
+      </div>
+      <div id="customerMessage" class="mini" style="margin-top:9px"></div>
+    </div>
+  </section>
 
   <template id="itemTemplate">
     <div class="item">
@@ -177,332 +221,217 @@
         <div><label>Quantity</label><input data-k="qty" type="number" min="0" step="1" value="1"></div>
         <div><label>Unit Price</label><input data-k="price" type="number" min="0" step="0.01" value="0"></div>
       </div>
-      <div class="item-actions">
-        <span>Line Total: <strong data-k="line">$0.00</strong></span>
-        <button class="danger" data-action="remove">Remove</button>
-      </div>
+      <div class="item-actions"><span>Line Total: <strong data-k="line">$0.00</strong></span><button data-action="remove" class="danger">Remove</button></div>
     </div>
   </template>
+</div>
 
-  <script>
-    const key = "americanBlockRFQs_v1";
-    const money = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"});
-    let rfqs = JSON.parse(localStorage.getItem(key) || "[]");
-    let editingId = null;
-
-    const $ = id => document.getElementById(id);
-    const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-    const saveLocal = () => localStorage.setItem(key, JSON.stringify(rfqs));
-    const totalOf = r => r.items.reduce((a,i)=>a+(Number(i.qty)||0)*(Number(i.price)||0),0);
-    const isOpen = r => !["Closed Won","Lost"].includes(r.status);
-    const recordDate = r => {
-      if(r.createdAt) return new Date(r.createdAt);
-      if(r.followup) return new Date(r.followup + "T00:00:00");
-      return new Date(0);
-    };
-    const monthLabel = r => {
-      const d = recordDate(r);
-      return isNaN(d) ? "No Date" : d.toLocaleDateString("en-US",{month:"long",year:"numeric"});
-    };
-    function groupRecords(records, mode){
-      const map = new Map();
-      records.forEach(r=>{
-        const key = mode==="account" ? (r.company||"No Account")
-                  : mode==="rfq" ? (r.quoteNo||"No RFQ Number")
-                  : monthLabel(r);
-        if(!map.has(key)) map.set(key,[]);
-        map.get(key).push(r);
-      });
-      const entries=[...map.entries()];
-      if(mode==="month"){
-        entries.sort((a,b)=>recordDate(b[1][0])-recordDate(a[1][0]));
-      } else {
-        entries.sort((a,b)=>a[0].localeCompare(b[0]));
-      }
-      return entries;
-    }
-
-    function addItem(data={part:"",product:"",qty:1,price:0}){
-      const node = $("itemTemplate").content.firstElementChild.cloneNode(true);
-      node.querySelector('[data-k="part"]').value=data.part;
-      node.querySelector('[data-k="product"]').value=data.product;
-      node.querySelector('[data-k="qty"]').value=data.qty;
-      node.querySelector('[data-k="price"]').value=data.price;
-      node.querySelectorAll("input").forEach(i=>i.addEventListener("input",updateDraft));
-      node.querySelector('[data-action="remove"]').addEventListener("click",()=>{node.remove();if(!$("items").children.length)addItem();updateDraft()});
-      $("items").appendChild(node); updateDraft();
-    }
-    function draftItems(){
-      return [...document.querySelectorAll("#items .item")].map(n=>({
-        part:n.querySelector('[data-k="part"]').value.trim(),
-        product:n.querySelector('[data-k="product"]').value.trim(),
-        qty:Number(n.querySelector('[data-k="qty"]').value)||0,
-        price:Number(n.querySelector('[data-k="price"]').value)||0
-      }));
-    }
-    function updateDraft(){
-      let total=0;
-      document.querySelectorAll("#items .item").forEach(n=>{
-        const q=Number(n.querySelector('[data-k="qty"]').value)||0;
-        const p=Number(n.querySelector('[data-k="price"]').value)||0;
-        const line=q*p; total+=line;
-        n.querySelector('[data-k="line"]').textContent=money.format(line);
-      });
-      $("draftTotal").textContent=money.format(total);
-    }
-    function resetForm(){
-      editingId=null;
-      ["company","quoteNo","followup","feedback","nextAction"].forEach(id=>$(id).value="");
-      $("status").value="Waiting on Customer";
-      $("items").innerHTML=""; addItem(); $("save").textContent="Save RFQ";
-    }
-    function fillForm(r){
-      editingId=r.id;
-      $("company").value=r.company; $("quoteNo").value=r.quoteNo||""; $("status").value=r.status;
-      $("followup").value=r.followup||""; $("feedback").value=r.feedback||""; $("nextAction").value=r.nextAction||"";
-      $("items").innerHTML=""; r.items.forEach(addItem); $("save").textContent="Update RFQ";
-      window.scrollTo({top:0,behavior:"smooth"});
-    }
-    function render(){
-      const open=rfqs.filter(isOpen);
-      $("openCount").textContent=open.length;
-      $("openValue").textContent=money.format(open.reduce((s,r)=>s+totalOf(r),0));
-      const today=new Date(); today.setHours(0,0,0,0);
-      $("dueCount").textContent=open.filter(r=>r.followup && new Date(r.followup+"T00:00:00")<=today).length;
-      $("verbalValue").textContent=money.format(rfqs.filter(r=>r.status==="Verbal Yes").reduce((s,r)=>s+totalOf(r),0));
-
-      const query=$("search").value.toLowerCase();
-      const filter=$("filter").value;
-      const groupMode=$("groupBy").value;
-      const sortMode=$("sortOrder").value;
-
-      let shown=rfqs.filter(r=>{
-        const hay=[r.company,r.quoteNo,r.status,r.feedback,r.nextAction,...r.items.flatMap(i=>[i.part,i.product])].join(" ").toLowerCase();
-        return (filter==="All"||r.status===filter) && hay.includes(query);
-      });
-
-      shown.sort((a,b)=>{
-        if(sortMode==="az") return (a.company||"").localeCompare(b.company||"");
-        const diff=recordDate(a)-recordDate(b);
-        return sortMode==="oldest" ? diff : -diff;
-      });
-
-      $("quotes").innerHTML=shown.length?"":"<p class='muted'>No RFQs found.</p>";
-
-      groupRecords(shown,groupMode).forEach(([groupName,records])=>{
-        const section=document.createElement("section");
-        section.className="group-block";
-        const groupValue=records.reduce((sum,r)=>sum+totalOf(r),0);
-        section.innerHTML=`
-          <div class="group-heading">
-            <h3>${esc(groupName)}</h3>
-            <span>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(groupValue)}</span>
-          </div>
-          <div class="group-quotes"></div>`;
-        const holder=section.querySelector(".group-quotes");
-
-        records.forEach(r=>{
-          const div=document.createElement("article");
-          div.className="quote-card";
-          div.innerHTML=`
-            <div class="quote-head">
-              <div><strong>${esc(r.company)}</strong><div class="muted">${esc(r.quoteNo||"No quote number")}</div></div>
-              <span class="badge">${esc(r.status)}</span>
-            </div>
-            <div class="quote-total">${money.format(totalOf(r))}</div>
-            <div class="products">${r.items.map(i=>`
-              <div class="product-line">
-                <strong>${esc(i.product||"Product")}</strong>
-                <div class="muted">${esc(i.part||"No part number")} · Qty ${i.qty} · ${money.format(i.price)} ea</div>
-                <div>${money.format(i.qty*i.price)}</div>
-              </div>`).join("")}
-            </div>
-            <div><span class="muted">Customer feedback:</span> ${esc(r.feedback||"None")}</div>
-            <div style="margin-top:8px"><span class="muted">Next action:</span> ${esc(r.nextAction||"None")}</div>
-            <div style="margin-top:8px"><span class="muted">Follow-up:</span> ${esc(r.followup||"Not scheduled")}</div>
-            <div class="actions">
-              <button data-edit="${r.id}" class="secondary">Edit</button>
-              <button data-delete="${r.id}" class="danger">Delete</button>
-            </div>`;
-          holder.appendChild(div);
-        });
-        $("quotes").appendChild(section);
-      });
-
-      document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>fillForm(rfqs.find(r=>r.id===b.dataset.edit)));
-      document.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{
-        if(confirm("Delete this RFQ?")){rfqs=rfqs.filter(r=>r.id!==b.dataset.delete);saveLocal();render()}
-      });
-    }
-
-    $("addItem").onclick=()=>addItem();
-    $("save").onclick=()=>{
-      const company=$("company").value.trim();
-      if(!company){$("message").textContent="Enter a company name.";return}
-      const record={
-        id:editingId||crypto.randomUUID(),
-        createdAt: editingId ? (rfqs.find(r=>r.id===editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
-        company, quoteNo:$("quoteNo").value.trim(), status:$("status").value,
-        followup:$("followup").value, feedback:$("feedback").value.trim(),
-        nextAction:$("nextAction").value.trim(), items:draftItems()
-      };
-      if(editingId) rfqs=rfqs.map(r=>r.id===editingId?record:r); else rfqs.unshift(record);
-      saveLocal(); resetForm(); render(); $("message").textContent="Saved on this device.";
-    };
-    $("search").oninput=render; $("filter").onchange=render; $("groupBy").onchange=render; $("sortOrder").onchange=render;
-
-    function buildTeamReport(){
-      const openRfqs = rfqs.filter(isOpen);
-      const generated = new Date().toLocaleString("en-US", {
-        month:"long", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit"
-      });
-      const grandTotal = openRfqs.reduce((sum,r)=>sum+totalOf(r),0);
-      const today = new Date(); today.setHours(0,0,0,0);
-      const dueCount = openRfqs.filter(r=>r.followup && new Date(r.followup+"T00:00:00")<=today).length;
-
-      const groupMode = $("groupBy").value;
-      const quoteSections = groupRecords(openRfqs,groupMode).map(([groupName,records])=>{
-        const groupTotal=records.reduce((sum,r)=>sum+totalOf(r),0);
-        const cards=records.map((r,index)=>{
-          const rows = r.items.map(i=>`
-            <tr>
-              <td>${esc(i.part || "")}</td>
-              <td>${esc(i.product || "")}</td>
-              <td class="num">${Number(i.qty)||0}</td>
-              <td class="num">${money.format(Number(i.price)||0)}</td>
-              <td class="num">${money.format((Number(i.qty)||0)*(Number(i.price)||0))}</td>
-            </tr>`).join("");
-
-          return `
-            <section class="quote">
-              <div class="quote-title">
-                <div>
-                  <h2>${index+1}. ${esc(r.company)}</h2>
-                  <div class="sub">Quote: ${esc(r.quoteNo || "Not entered")} | Status: ${esc(r.status)}</div>
-                </div>
-                <div class="quote-amount">${money.format(totalOf(r))}</div>
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Part Number</th>
-                    <th>Product</th>
-                    <th class="num">Qty</th>
-                    <th class="num">Unit Price</th>
-                    <th class="num">Line Total</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
-              <div class="notes-grid">
-                <div><strong>Customer Feedback</strong><p>${esc(r.feedback || "No feedback entered.")}</p></div>
-                <div><strong>Next Action</strong><p>${esc(r.nextAction || "No next action entered.")}</p></div>
-                <div><strong>Follow-up Date</strong><p>${esc(r.followup || "Not scheduled")}</p></div>
-              </div>
-            </section>`;
-        }).join("");
-        return `<section class="report-group">
-          <div class="report-group-title"><h2>${esc(groupName)}</h2><div>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(groupTotal)}</div></div>
-          ${cards}
-        </section>`;
-      }).join("");
-
-      return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Open RFQ Report</title>
-<style>
-  *{box-sizing:border-box}
-  body{font-family:Arial,Helvetica,sans-serif;color:#1f2937;margin:0;background:#eef2f7}
-  .page{max-width:1000px;margin:0 auto;background:#fff;padding:34px}
-  .header{border-bottom:4px solid #1f4e78;padding-bottom:18px;margin-bottom:22px}
-  h1{margin:0;color:#1f4e78;font-size:28px}
-  .generated{margin-top:6px;color:#64748b;font-size:13px}
-  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 26px}
-  .metric{border:1px solid #cbd5e1;border-radius:10px;padding:14px}
-  .metric span{display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  .metric strong{display:block;font-size:22px;margin-top:5px;color:#0f172a}
-  .report-group{margin:0 0 28px}
-  .report-group-title{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#e2e8f0;border-left:6px solid #1f4e78;padding:12px 14px;margin-bottom:12px}
-  .report-group-title h2{margin:0;color:#1f4e78}
-  .report-group-title div{font-weight:bold;color:#334155}
-  .quote{break-inside:avoid;margin:0 0 18px;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden}
-  .quote-title{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;background:#f1f5f9;padding:15px 17px;border-bottom:1px solid #cbd5e1}
-  h2{font-size:18px;margin:0 0 4px;color:#0f172a}
-  .sub{font-size:12px;color:#64748b}
-  .quote-amount{font-size:20px;font-weight:bold;color:#1f4e78;white-space:nowrap}
-  table{width:100%;border-collapse:collapse;font-size:12px}
-  th{background:#1f4e78;color:#fff;text-align:left;padding:9px}
-  td{padding:9px;border-bottom:1px solid #e2e8f0;vertical-align:top}
-  .num{text-align:right;white-space:nowrap}
-  .notes-grid{display:grid;grid-template-columns:2fr 2fr 1fr;gap:14px;padding:14px 17px}
-  .notes-grid strong{font-size:12px;color:#475569}
-  .notes-grid p{margin:5px 0 0;white-space:pre-wrap;font-size:12px}
-  .empty{padding:30px;border:1px dashed #94a3b8;text-align:center;color:#64748b}
-  .print-note{margin-top:18px;color:#64748b;font-size:11px;text-align:center}
-  @media(max-width:700px){
-    .page{padding:18px}
-    .summary{grid-template-columns:1fr}
-    .notes-grid{grid-template-columns:1fr}
-    table{font-size:10px}
-    th,td{padding:6px}
-  }
-  @media print{
-    body{background:#fff}
-    .page{max-width:none;padding:0}
-    .print-note{display:none}
-    @page{size:letter;margin:.45in}
-  }
-</style>
-</head>
-<body>
-<main class="page">
-  <div class="header">
-    <h1>American Block - Open RFQ Report</h1>
-    <div class="generated">Generated ${esc(generated)}</div>
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab active" data-view="dashboardView"><strong>⌂</strong>Dashboard</button>
+    <button class="tab" data-view="customersView"><strong>👥</strong>Customers</button>
+    <button class="tab" data-view="rfqsView"><strong>▤</strong>RFQs</button>
+    <button class="tab" data-view="followupsView"><strong>✓</strong>Follow-ups</button>
+    <button class="tab" data-view="settingsView"><strong>⚙</strong>Settings</button>
   </div>
-  <section class="summary">
-    <div class="metric"><span>Open RFQs</span><strong>${openRfqs.length}</strong></div>
-    <div class="metric"><span>Total Open Value</span><strong>${money.format(grandTotal)}</strong></div>
-    <div class="metric"><span>Follow-ups Due</span><strong>${dueCount}</strong></div>
-  </section>
-  ${quoteSections || '<div class="empty">There are no open RFQs to report.</div>'}
-  <div class="print-note">Use Print and select Save as PDF.</div>
-</main>
-<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),350));<\/script>
-</body>
-</html>`;
-    }
+</nav>
 
-    $("teamReport").onclick=()=>{
-      const report = buildTeamReport();
-      const win = window.open("", "_blank");
-      if(!win){
-        $("message").textContent="Please allow pop-ups, then try Team PDF again.";
-        return;
-      }
-      win.document.open();
-      win.document.write(report);
-      win.document.close();
-    };
+<script>
+const $=id=>document.getElementById(id);
+const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2});
+const KEYS={rfqs:"abSalesOS_rfqs_v2",customers:"abSalesOS_customers_v2",settings:"abSalesOS_settings_v2"};
+let rfqs=JSON.parse(localStorage.getItem(KEYS.rfqs)||"null");
+let customers=JSON.parse(localStorage.getItem(KEYS.customers)||"null");
+let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
+let editingRfqId=null,editingCustomerId=null,lastMainView="dashboardView";
 
-    $("export").onclick=()=>{
-      const blob=new Blob([JSON.stringify(rfqs,null,2)],{type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-      a.download=`american-block-rfq-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
-      URL.revokeObjectURL(a.href);
-    };
-    $("import").onclick=()=>$("importFile").click();
-    $("importFile").onchange=async e=>{
-      try{const text=await e.target.files[0].text(); const data=JSON.parse(text); if(!Array.isArray(data))throw new Error();
-        rfqs=data; saveLocal(); render(); $("message").textContent="Backup imported.";
-      }catch{$("message").textContent="That backup file could not be imported."}
-    };
+function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function save(){localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));localStorage.setItem(KEYS.customers,JSON.stringify(customers));localStorage.setItem(KEYS.settings,JSON.stringify(settings))}
+function total(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
+function isOpen(r){return !["Closed Won","Lost"].includes(r.status)}
+function recordDate(r){if(r.createdAt)return new Date(r.createdAt);if(r.followup)return new Date(r.followup+"T00:00:00");return new Date(0)}
+function monthLabel(r){const d=recordDate(r);return isNaN(d)?"No Date":d.toLocaleDateString("en-US",{month:"long",year:"numeric"})}
+function today0(){const d=new Date();d.setHours(0,0,0,0);return d}
+function formatDate(s){if(!s)return"Not scheduled";return new Date(s+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}
+function customerById(id){return customers.find(c=>c.id===id)}
+function customerName(r){return customerById(r.customerId)?.company||r.company||"Unknown Customer"}
 
-    if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
-    addItem(); render();
-  </script>
+function migrate(){
+  if(rfqs===null){
+    const old=JSON.parse(localStorage.getItem("americanBlockRFQs_v1")||"[]");
+    rfqs=old.map(r=>({...r,customerId:null,createdAt:r.createdAt||new Date().toISOString()}));
+  }
+  if(customers===null)customers=[];
+  const names=[...new Set(rfqs.map(r=>r.company).filter(Boolean))];
+  names.forEach(name=>{
+    let c=customers.find(x=>x.company.toLowerCase()===name.toLowerCase());
+    if(!c){c={id:uid(),company:name,contact:"",phone:"",email:"",city:"",address:"",notes:"",createdAt:new Date().toISOString()};customers.push(c)}
+    rfqs.filter(r=>!r.customerId&&r.company===name).forEach(r=>r.customerId=c.id);
+  });
+  save();
+}
+migrate();
+
+function showView(id,main=true){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  $(id).classList.add("active");
+  if(main){
+    lastMainView=id;
+    document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+  renderAll();
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showView(t.dataset.view,true));
+
+function businessDaysLeft(){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+  let count=0;
+  for(let d=now.getDate()+1;d<=new Date(y,m+1,0).getDate();d++){
+    const day=new Date(y,m,d).getDay();
+    if(day!==0&&day!==6)count++;
+  }
+  return count;
+}
+
+function renderDashboard(){
+  const open=rfqs.filter(isOpen),today=today0();
+  $("dOpenCount").textContent=open.length;
+  $("dOpenValue").textContent=money.format(open.reduce((s,r)=>s+total(r),0));
+  $("dVerbal").textContent=money.format(rfqs.filter(r=>r.status==="Verbal Yes").reduce((s,r)=>s+total(r),0));
+  const due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today);
+  $("dDue").textContent=due.length;
+  $("monthlyGoal").value=settings.goal||100000;$("monthlySales").value=settings.sales||0;
+  const goal=Number(settings.goal)||0,sales=Number(settings.sales)||0,remain=Math.max(0,goal-sales),days=businessDaysLeft();
+  const pct=goal?Math.min(100,(sales/goal)*100):0;
+  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);
+  $("dailyNeeded").textContent=money.format(days?remain/days:remain);$("businessDaysLeft").textContent=days;
+  $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
+  $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
+  renderMiniList($("todayFollowups"),due.slice(0,5),true);
+  const top=[...open].sort((a,b)=>total(b)-total(a)).slice(0,5);
+  renderMiniList($("topRfqs"),top,false);
+}
+function renderMiniList(el,arr,followup){
+  el.innerHTML=arr.length?"":"<div class='empty'>Nothing to show.</div>";
+  arr.forEach(r=>{
+    const div=document.createElement("div");div.className="list-card";
+    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}</div></div><span class="status">${esc(r.status)}</span></div>
+      <div class="money">${money.format(total(r))}</div><div class="mini">${followup?"Follow-up: "+formatDate(r.followup):"Created: "+recordDate(r).toLocaleDateString()}</div>`;
+    div.onclick=()=>editRfq(r.id);el.appendChild(div);
+  });
+}
+
+function renderCustomers(){
+  const q=$("customerSearch").value.toLowerCase();
+  const list=customers.filter(c=>[c.company,c.contact,c.phone,c.email,c.city].join(" ").toLowerCase().includes(q)).sort((a,b)=>a.company.localeCompare(b.company));
+  $("customerList").innerHTML=list.length?"":"<div class='empty'>No customers yet.</div>";
+  list.forEach(c=>{
+    const cr=rfqs.filter(r=>r.customerId===c.id),open=cr.filter(isOpen),openValue=open.reduce((s,r)=>s+total(r),0);
+    const div=document.createElement("div");div.className="list-card";
+    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(c.company)}</div><div class="mini">${esc(c.contact||"No primary contact")} ${c.city?"· "+esc(c.city):""}</div></div><span class="pill">${cr.length} RFQs</span></div>
+      <div class="grid metrics" style="margin-top:10px"><div class="metric"><small>Open Value</small><strong>${money.format(openValue)}</strong></div><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div></div>
+      <div class="customer-actions"><button class="secondary" data-edit="${c.id}">Edit</button><button class="secondary" data-rfqs="${c.id}">View RFQs</button></div>`;
+    $("customerList").appendChild(div);
+  });
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editCustomer(b.dataset.edit)});
+  document.querySelectorAll("[data-rfqs]").forEach(b=>b.onclick=e=>{e.stopPropagation();$("rfqSearch").value=customerById(b.dataset.rfqs)?.company||"";showView("rfqsView",true)});
+}
+
+function groupRecords(records,mode){
+  const map=new Map();records.forEach(r=>{const key=mode==="account"?customerName(r):mode==="rfq"?(r.quoteNo||"No RFQ Number"):monthLabel(r);if(!map.has(key))map.set(key,[]);map.get(key).push(r)});
+  let entries=[...map.entries()];
+  if(mode==="month")entries.sort((a,b)=>recordDate(b[1][0])-recordDate(a[1][0]));else entries.sort((a,b)=>a[0].localeCompare(b[0]));
+  return entries;
+}
+function renderRfqs(){
+  const q=$("rfqSearch").value.toLowerCase(),status=$("rfqStatusFilter").value,mode=$("rfqGroup").value,sort=$("rfqSort").value;
+  let list=rfqs.filter(r=>{const hay=[customerName(r),r.quoteNo,r.status,r.feedback,r.nextAction,...(r.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase();return(status==="All"||r.status===status)&&hay.includes(q)});
+  list.sort((a,b)=>sort==="az"?customerName(a).localeCompare(customerName(b)):sort==="oldest"?recordDate(a)-recordDate(b):sort==="value"?total(b)-total(a):recordDate(b)-recordDate(a));
+  $("rfqList").innerHTML=list.length?"":"<div class='empty'>No RFQs found.</div>";
+  groupRecords(list,mode).forEach(([name,records])=>{
+    const wrap=document.createElement("section");
+    wrap.innerHTML=`<div class="group-title"><h3>${esc(name)}</h3><span class="mini">${records.length} RFQ${records.length===1?"":"s"} · ${money.format(records.reduce((s,r)=>s+total(r),0))}</span></div><div class="list"></div>`;
+    const holder=wrap.querySelector(".list");
+    records.forEach(r=>{
+      const div=document.createElement("div");div.className="list-card";
+      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}</div></div><span class="status">${esc(r.status)}</span></div>
+      <div class="money">${money.format(total(r))}</div><div class="mini">${(r.items||[]).length} line item${(r.items||[]).length===1?"":"s"} · Follow-up ${formatDate(r.followup)}</div>`;
+      div.onclick=()=>editRfq(r.id);holder.appendChild(div);
+    });
+    $("rfqList").appendChild(wrap);
+  });
+}
+
+function renderFollowups(){
+  const filter=$("followupFilter").value,q=$("followupSearch").value.toLowerCase(),today=today0();
+  let list=rfqs.filter(isOpen).filter(r=>[customerName(r),r.quoteNo].join(" ").toLowerCase().includes(q));
+  list=list.filter(r=>filter==="all"||filter==="due"?(r.followup&&new Date(r.followup+"T00:00:00")<=today):(r.followup&&new Date(r.followup+"T00:00:00")>today));
+  list.sort((a,b)=>(a.followup||"9999").localeCompare(b.followup||"9999"));
+  $("followupList").innerHTML=list.length?"":"<div class='empty'>No matching follow-ups.</div>";
+  list.forEach(r=>{
+    const overdue=r.followup&&new Date(r.followup+"T00:00:00")<today;
+    const div=document.createElement("div");div.className="list-card";
+    div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}</div></div><span class="status ${overdue?"red":"yellow"}">${formatDate(r.followup)}</span></div>
+      <div class="money">${money.format(total(r))}</div><div class="mini">${esc(r.nextAction||r.feedback||"No next action entered")}</div>`;
+    div.onclick=()=>editRfq(r.id);$("followupList").appendChild(div);
+  });
+}
+
+function renderCustomerOptions(){
+  const current=$("rfqCustomer").value;
+  $("rfqCustomer").innerHTML=customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+  if(current)$("rfqCustomer").value=current;
+}
+function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderFollowups();renderCustomerOptions()}
+
+function addItem(data={part:"",product:"",qty:1,price:0}){
+  const node=$("itemTemplate").content.firstElementChild.cloneNode(true);
+  ["part","product","qty","price"].forEach(k=>node.querySelector(`[data-k="${k}"]`).value=data[k]??"");
+  node.querySelectorAll("input").forEach(i=>i.addEventListener("input",updateDraft));
+  node.querySelector('[data-action="remove"]').onclick=()=>{node.remove();if(!$("rfqItems").children.length)addItem();updateDraft()};
+  $("rfqItems").appendChild(node);updateDraft();
+}
+function getItems(){return [...document.querySelectorAll("#rfqItems .item")].map(n=>({part:n.querySelector('[data-k="part"]').value.trim(),product:n.querySelector('[data-k="product"]').value.trim(),qty:Number(n.querySelector('[data-k="qty"]').value)||0,price:Number(n.querySelector('[data-k="price"]').value)||0}))}
+function updateDraft(){let t=0;document.querySelectorAll("#rfqItems .item").forEach(n=>{const q=Number(n.querySelector('[data-k="qty"]').value)||0,p=Number(n.querySelector('[data-k="price"]').value)||0,l=q*p;t+=l;n.querySelector('[data-k="line"]').textContent=money.format(l)});$("rfqDraftTotal").textContent=money.format(t)}
+
+function newRfq(){if(!customers.length){alert("Add a customer first.");return}editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction"].forEach(id=>$(id).value="");$("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();showView("rfqFormView",false)}
+function editRfq(id){const r=rfqs.find(x=>x.id===id);if(!r)return;editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";$("rfqNumber").value=r.quoteNo||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";$("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();showView("rfqFormView",false)}
+function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cContact","cPhone","cEmail","cCity","cAddress","cNotes"].forEach(id=>$(id).value="");showView("customerFormView",false)}
+function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cContact").value=c.contact||"";$("cPhone").value=c.phone||"";$("cEmail").value=c.email||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cNotes").value=c.notes||"";showView("customerFormView",false)}
+
+$("saveRfq").onclick=()=>{const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}const old=rfqs.find(r=>r.id===editingRfqId);const rec={id:editingRfqId||uid(),customerId:cid,company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:$("rfqStatus").value,followup:$("rfqFollowup").value,feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);save();showView("rfqsView",true)}
+$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,contact:$("cContact").value.trim(),phone:$("cPhone").value.trim(),email:$("cEmail").value.trim(),city:$("cCity").value.trim(),address:$("cAddress").value.trim(),notes:$("cNotes").value.trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();showView("customersView",true)}
+$("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
+$("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
+$("backFromRfq").onclick=$("cancelRfq").onclick=()=>showView(lastMainView,true);$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
+$("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>showView("followupsView",true);
+["rfqSearch","customerSearch","followupSearch"].forEach(id=>$(id).oninput=renderAll);
+["rfqStatusFilter","rfqGroup","rfqSort","followupFilter"].forEach(id=>$(id).onchange=renderAll);
+
+function exportBackup(){
+  const data={version:2,exportedAt:new Date().toISOString(),rfqs,customers,settings};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=`american-block-sales-os-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)
+}
+function importBackup(){ $("importFile").click() }
+$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];settings=data.settings||settings}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
+["exportBackup","settingsExport"].forEach(id=>$(id).onclick=exportBackup);
+["importBackup","settingsImport"].forEach(id=>$(id).onclick=importBackup);
+
+function teamReport(){
+  const open=rfqs.filter(isOpen),grand=open.reduce((s,r)=>s+total(r),0),due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today0()).length;
+  const groups=groupRecords(open,$("rfqGroup").value);
+  const content=groups.map(([g,records])=>`<section class="group"><h2>${esc(g)} <span>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(records.reduce((s,r)=>s+total(r),0))}</span></h2>${records.map(r=>`<article><header><div><strong>${esc(customerName(r))}</strong><small>${esc(r.quoteNo||"No RFQ number")} · ${esc(r.status)}</small></div><b>${money.format(total(r))}</b></header><table><thead><tr><th>Part Number</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead><tbody>${(r.items||[]).map(i=>`<tr><td>${esc(i.part)}</td><td>${esc(i.product)}</td><td>${i.qty}</td><td>${money.format(i.price)}</td><td>${money.format(i.qty*i.price)}</td></tr>`).join("")}</tbody></table><div class="notes"><div><b>Feedback</b><p>${esc(r.feedback||"None")}</p></div><div><b>Next Action</b><p>${esc(r.nextAction||"None")}</p></div><div><b>Follow-up</b><p>${formatDate(r.followup)}</p></div></div></article>`).join("")}</section>`).join("");
+  const win=window.open("","_blank");if(!win){alert("Allow pop-ups and try again.");return}
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Open RFQ Report</title><style>*{box-sizing:border-box}body{font-family:Arial;color:#1e293b;margin:0;background:#eef2f7}.page{max-width:1000px;margin:auto;background:#fff;padding:30px}h1{color:#1f4e78;margin:0}.sub{color:#64748b;margin:5px 0 20px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}.metric{border:1px solid #cbd5e1;padding:12px;border-radius:8px}.metric small{display:block;color:#64748b}.metric strong{font-size:22px}.group>h2{display:flex;justify-content:space-between;background:#e2e8f0;border-left:5px solid #1f4e78;padding:10px 12px;color:#1f4e78}.group h2 span{font-size:13px;color:#334155}article{border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;margin-bottom:15px;break-inside:avoid}header{display:flex;justify-content:space-between;padding:12px;background:#f8fafc}header small{display:block;color:#64748b;margin-top:3px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1f4e78;color:white;text-align:left;padding:8px}td{padding:8px;border-bottom:1px solid #e2e8f0}.notes{display:grid;grid-template-columns:2fr 2fr 1fr;gap:12px;padding:12px;font-size:12px}.notes p{white-space:pre-wrap;margin:4px 0}@media print{body{background:white}.page{padding:0}@page{size:letter;margin:.45in}}</style></head><body><main class="page"><h1>American Block — Open RFQ Report</h1><div class="sub">Generated ${new Date().toLocaleString()}</div><div class="summary"><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div><div class="metric"><small>Total Open Value</small><strong>${money.format(grand)}</strong></div><div class="metric"><small>Follow-ups Due</small><strong>${due}</strong></div></div>${content||"<p>No open RFQs.</p>"}</main><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`);win.document.close()
+}
+$("teamPdf").onclick=teamReport;
+
+$("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
+renderAll();
+</script>
 </body>
 </html>
