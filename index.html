@@ -168,7 +168,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2.2.1 — PDF Import Fix</h2>
+      <h2>Version 2.2.2 — Robust PDF + OCR Import</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, order history, PDF acknowledgment parsing, automatic customer matching, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -655,96 +655,114 @@ async function readAmericanBlockAck(file){
   const page=await pdf.getPage(1);
   const viewport=page.getViewport({scale:1});
   const tc=await page.getTextContent();
+
+  const rawTokens=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>i.str.trim());
+  const fullText=rawTokens.join(" ").replace(/\s+/g," ").trim();
+
+  // If a PDF has essentially no embedded text, render page 1 and OCR it.
+  let sourceText=fullText;
+  let usedOCR=false;
+  if(sourceText.length<80){
+    usedOCR=true;
+    const tess=await import("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/+esm");
+    const scale=2.0;
+    const vp=page.getViewport({scale});
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
+    const ctx=canvas.getContext("2d",{willReadFrequently:true});
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    const result=await tess.recognize(canvas,"eng",{logger:()=>{}});
+    sourceText=String(result?.data?.text||"").replace(/\s+/g," ").trim();
+  }
+
+  const text=sourceText;
+
+  // Basic header fields from the text stream.
+  let company="";
+  // Text PDFs normally start with the sold-to company name.
+  const companyPatterns=[
+    /^(.{2,80}?(?:INC\.?|LLC|L\.L\.C\.|CORP\.?|CORPORATION|COMPANY|CO\.|SERVICES|SUPPLY|EQUIPMENT))/i,
+    /^([A-Z0-9&.,' -]{3,80}?)(?=\s+\d{1,6}\s+[A-Z0-9])/i
+  ];
+  for(const rx of companyPatterns){const m=text.match(rx);if(m){company=m[1].trim();break}}
+
+  let salesOrder="",poNumber="",orderDate="",promised="",parsedContact="";
+  let m=text.match(/\b(\d{7})\b[\s\S]{0,180}?\bEX[- ]?WORKS\b\s+(\d{2}\/\d{2}\/\d{2})\s+\w+\s+(\d{2}\/\d{2}\/\d{2})\s+ALEX\s+CAZARES\s+([A-Z0-9-]+)/i);
+  if(m){salesOrder=m[1];orderDate=m[2];promised=m[3];poNumber=m[4]}
+  if(!salesOrder){const x=text.match(/\bSales Order\b[\s\S]{0,350}?\b(\d{7})\b/i);if(x)salesOrder=x[1]}
+  if(!orderDate){const x=text.match(/\bEX[- ]?WORKS\b\s+(\d{2}\/\d{2}\/\d{2})/i);if(x)orderDate=x[1]}
+  if(!poNumber){
+    const x=text.match(/\bALEX\s+CAZARES\s+([A-Z0-9-]{3,20})\s+NET\b/i);
+    if(x)poNumber=x[1];
+  }
+
+  // Ship-to contact: use positioned text when available.
   const items=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({str:i.str.trim(),x:i.transform[4],y:i.transform[5]}));
   const rows=clusterPdfLines(items);
   const W=viewport.width,H=viewport.height;
-
-  // Sold-to company: left side of the top address block.
-  const topRows=rows.filter(r=>r.y>H*0.80);
-  const leftTop=topRows.map(r=>({row:r,text:wordsInRange(r,55,W*.52)})).filter(x=>x.text);
-  let company=(leftTop.find(x=>/[A-Z].*(INC\.|LLC|CORP\.?|COMPANY|SERVICES|SUPPLY)/i.test(x.text))?.text)||leftTop[0]?.text||"";
-
-  // Ship-to contact: last non-address-looking line in the right-side top box.
-  const rightTop=topRows.map(r=>({row:r,text:wordsInRange(r,W*.60,W)})).filter(x=>x.text);
-  let parsedContact="";
-  const rightCandidates=rightTop.map(x=>x.text).filter(t=>t&&!/\d{4,}/.test(t)&&!/\b(TX|OK|KS|CO|NM|LA|OH|PA|WY|ND|SD)\b\s*\d*/i.test(t)&&normalizeCompany(t)!==normalizeCompany(company));
-  if(rightCandidates.length)parsedContact=rightCandidates[rightCandidates.length-1];
-
-  // Header value row: identify row containing EX-WORKS / NET terms.
-  const headerRow=rows.find(r=>/EX[- ]?WORKS/i.test(rowText(r))||/\bNET\s*\d+\b/i.test(rowText(r)));
-  let salesOrder="",poNumber="",orderDate="",promised="";
-  if(headerRow){
-    salesOrder=wordsInRange(headerRow,0,W*.13).replace(/\s/g,"");
-    orderDate=wordsInRange(headerRow,W*.29,W*.41);
-    promised=wordsInRange(headerRow,W*.43,W*.54);
-    poNumber=wordsInRange(headerRow,W*.69,W*.85).replace(/\s/g,"");
-  }
-  // Sales order is often in a nearby aligned row, so fall back to a 7-digit item in the header zone.
-  if(!/^\d{6,8}$/.test(salesOrder)){
-    const v=items.find(i=>i.y>H*.72&&i.y<H*.80&&i.x<W*.14&&/^\d{6,8}$/.test(i.str));
-    if(v)salesOrder=v.str;
-  }
-  if(!poNumber){
-    const po=items.find(i=>i.y>H*.72&&i.y<H*.80&&i.x>W*.68&&i.x<W*.86&&/^[A-Z0-9-]{3,20}$/i.test(i.str));
-    if(po)poNumber=po.str;
-  }
-  if(!orderDate){
-    const d=items.find(i=>i.y>H*.72&&i.y<H*.80&&i.x>W*.28&&i.x<W*.42&&/\d{2}\/\d{2}\/\d{2}/.test(i.str));
-    if(d)orderDate=d.str;
+  if(items.length){
+    const topRows=rows.filter(r=>r.y>H*0.80);
+    const rightTop=topRows.map(r=>wordsInRange(r,W*.60,W)).filter(Boolean);
+    const candidates=rightTop.filter(t=>t&&!/\d{4,}/.test(t)&&!/\b(TX|OK|KS|CO|NM|LA|OH|PA|WY|ND|SD)\b\s*\d*/i.test(t)&&normalizeCompany(t)!==normalizeCompany(company));
+    if(candidates.length)parsedContact=candidates[candidates.length-1];
   }
 
-  // Line items: rows with 3-digit item number in left-most column, below table headers.
-  const itemRows=rows.filter(r=>r.items.some(i=>i.x<W*.10&&/^\d{3}$/.test(i.str)));
   const lineItems=[];
-  itemRows.forEach(r=>{
-    const itemNo=wordsInRange(r,0,W*.10).match(/\d{3}/)?.[0]||"";
-    // American Block table columns on the supplied acknowledgment:
-    // item | T | quantity | unit | part number | description | unit price
-    // Give part number a little extra room on the left because its text can
-    // begin just left of the visual column center.
-    const qtyText=wordsInRange(r,W*.12,W*.29);
-    const unit=wordsInRange(r,W*.29,W*.37);
-    const part=wordsInRange(r,W*.34,W*.56);
-    const product=wordsInRange(r,W*.55,W*.88);
-    const priceText=wordsInRange(r,W*.87,W);
-    const qty=cleanMoney(qtyText),price=cleanMoney(priceText);
-    if(itemNo&&part&&(qty||price))lineItems.push({itemNo,part,product,qty,unit,price,lineTotal:qty*price});
-  });
 
-  // Total amount: locate row containing Total Order Amount and read the right-most number.
-  let total=0;
-  const totalRow=rows.find(r=>/Total\s+Order\s+Amount/i.test(rowText(r)));
-  if(totalRow){
-    const nums=totalRow.items.map(i=>i.str).filter(s=>/^[\d,]+\.\d{2}$/.test(s));
-    if(nums.length)total=cleanMoney(nums[nums.length-1]);
-  }
-  if(!total){
-    const subtotalRow=rows.find(r=>/Order\s+SubTotal/i.test(rowText(r)));
-    if(subtotalRow){
-      const nums=subtotalRow.items.map(i=>i.str).filter(s=>/^[\d,]+\.\d{2}$/.test(s));
-      if(nums.length)total=cleanMoney(nums[nums.length-1]);
+  // PRIMARY PARSER: parse the text stream. This is much less sensitive to PDF
+  // coordinate/baseline differences than the original column parser.
+  const itemRegex=/\b(\d{3})\s+([A-Z])\s+([\d,.]+)\s+([A-Z]{1,5})\s+([A-Z0-9_.\/-]+)\s+(.+?)\s+([\d,]+\.\d{2})(?=\s+PROMISED\b|\s+\d{3}\s+[A-Z]\s+[\d,.]+\s+[A-Z]{1,5}\s+|\s+Order\s+SubTotal\b)/gi;
+  let im;
+  while((im=itemRegex.exec(text))!==null){
+    const qty=cleanMoney(im[3]),price=cleanMoney(im[7]);
+    const product=im[6].replace(/\s+/g," ").trim();
+    // Skip table/header noise if it somehow matches.
+    if(qty>0 && im[5] && product){
+      lineItems.push({
+        itemNo:im[1],part:im[5],product,qty,unit:im[4],price,lineTotal:qty*price
+      });
     }
   }
-  // Fallback for PDFs where PDF.js gives slightly different baselines to cells
-  // in the same printed row. Build each line item from tokens within a small
-  // vertical band around the left-side 3-digit item number.
-  if(!lineItems.length){
+
+  // SECONDARY PARSER: coordinate parsing for normal text PDFs.
+  if(!lineItems.length && items.length){
     const markers=items.filter(i=>i.x<W*.10&&/^\d{3}$/.test(i.str));
     markers.forEach(marker=>{
-      const band=items.filter(i=>Math.abs(i.y-marker.y)<=5.5).sort((a,b)=>a.x-b.x);
+      // PDF.js frequently gives quantity and unit price baselines 1-3 points
+      // different from item/part/description, so use a generous vertical band.
+      const band=items.filter(i=>Math.abs(i.y-marker.y)<=8).sort((a,b)=>a.x-b.x);
       const qtyText=band.filter(i=>i.x>=W*.12&&i.x<W*.29).map(i=>i.str).join(" ");
       const unit=band.filter(i=>i.x>=W*.29&&i.x<W*.37).map(i=>i.str).join(" ");
       const part=band.filter(i=>i.x>=W*.34&&i.x<W*.56).map(i=>i.str).join(" ").trim();
       const product=band.filter(i=>i.x>=W*.55&&i.x<W*.88).map(i=>i.str).join(" ").trim();
       const priceText=band.filter(i=>i.x>=W*.87).map(i=>i.str).join(" ");
       const qty=cleanMoney(qtyText),price=cleanMoney(priceText);
-      if(part&&(qty||price))lineItems.push({itemNo:marker.str,part,product,qty,unit,price,lineTotal:qty*price});
+      if(part&&qty>0&&price>=0)lineItems.push({itemNo:marker.str,part,product,qty,unit,price,lineTotal:qty*price});
     });
   }
 
+  // OCR FALLBACK PARSER: OCR text can lose exact spacing, but American Block's
+  // acknowledgment row order is still consistent.
+  if(!lineItems.length && usedOCR){
+    const ocrRx=/\b(\d{3})\s+[A-Z]\s+([\d,.]+)\s+(EA|PC|FT|SET)\s+([A-Z0-9_.\/-]+)\s+(.+?)\s+([\d,]+\.\d{2})(?=\s+PROMISED|\s+Order\s+SubTotal|\s+Total\s+Order\s+Amount)/gi;
+    let om;
+    while((om=ocrRx.exec(text))!==null){
+      const qty=cleanMoney(om[2]),price=cleanMoney(om[6]);
+      lineItems.push({itemNo:om[1],part:om[4],product:om[5].trim(),qty,unit:om[3],price,lineTotal:qty*price});
+    }
+  }
+
+  let total=0;
+  const tm=text.match(/Total\s+Order\s+Amount\s+\$?\s*([\d,]+\.\d{2})/i)
+          || text.match(/Order\s+SubTotal\s+\$?\s*([\d,]+\.\d{2})/i);
+  if(tm)total=cleanMoney(tm[1]);
   if(!total)total=lineItems.reduce((s,i)=>s+i.lineTotal,0);
 
-  return {company:company.trim(),parsedContact:parsedContact.trim(),salesOrder:salesOrder.trim(),poNumber:poNumber.trim(),orderDate:pdfDateToISO(orderDate),promisedDate:pdfDateToISO(promised),items:lineItems,total,fileName:file.name};
+  return {
+    company:company.trim(),parsedContact:parsedContact.trim(),salesOrder:salesOrder.trim(),
+    poNumber:poNumber.trim(),orderDate:pdfDateToISO(orderDate),promisedDate:pdfDateToISO(promised),
+    items:lineItems,total,fileName:file.name,usedOCR,debugText:text.slice(0,1000)
+  };
 }
 function bestCustomerMatch(name){
   const n=normalizeCompany(name);
@@ -796,10 +814,15 @@ function updateAckCalculatedTotal(){
   $("ackCalcTotal").textContent=money.format(t);
 }
 async function importAcknowledgment(file){
-  $("ackWarnings").textContent="";
+  $("ackWarnings").textContent="Reading PDF… scanned/image PDFs may take longer because OCR is used.";
   try{
     const parsed=await readAmericanBlockAck(file);
-    if(!parsed.items.length)throw new Error("No line items were detected. Parser version 2.2.1.");
+    if(!parsed.items.length){
+      console.error("PDF parser debug:",parsed.debugText);
+      throw new Error(parsed.usedOCR
+        ? "The PDF was scanned and OCR ran, but the line item still could not be recognized."
+        : "The PDF text was read, but the line item format did not match. Parser version 2.2.2.");
+    }
     pendingAck=parsed;
     $("ackFileName").textContent=file.name;
     $("ackCompany").value=parsed.company;
