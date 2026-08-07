@@ -146,7 +146,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.3</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.4</div></div>
       <button id="importAckOrders" class="primary">＋ Import PDF</button>
     </div>
     <div class="row">
@@ -168,7 +168,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2.2.3 — Safari OCR Fix</h2>
+      <h2>Version 2.2.4 — Editable Imports & Customer Matching</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, order history, PDF acknowledgment parsing, automatic customer matching, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -211,14 +211,26 @@
 
 
   <section id="ackReviewView" class="view">
-    <div class="section-head"><button id="backFromAck" class="secondary">← Back</button><h2 style="margin:0">Review PDF Import</h2></div>
+    <div class="section-head"><button id="backFromAck" class="secondary">← Back</button><h2 id="ackReviewTitle" style="margin:0">Review PDF Import</h2></div>
     <div class="card">
       <div class="kicker">Acknowledgment Import</div>
       <h2 id="ackFileName" style="margin-top:5px">PDF</h2>
       <p class="muted">Review the extracted information before saving it to the CRM.</p>
       <div class="row">
-        <div><label>Matched Customer / Account</label><select id="ackCustomer"></select></div>
+        <div>
+          <label>Matched Customer / Account</label>
+          <select id="ackCustomer"></select>
+        </div>
         <div><label>Contact</label><select id="ackContact"></select></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Customer Name to Save</label>
+          <input id="ackCustomerName" placeholder="Edit account name if needed">
+        </div>
+        <div style="display:flex;align-items:end">
+          <button id="saveAckCustomerName" class="secondary" style="width:100%">Save / Match Customer</button>
+        </div>
       </div>
       <div class="row">
         <div><label>Company Read From PDF</label><input id="ackCompany" readonly></div>
@@ -615,16 +627,19 @@ function renderOrders(){
       const div=document.createElement("div");div.className="list-card";
       div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status green">ORDER</span></div>
         <div class="money">${money.format(Number(o.total)||0)}</div>
-        <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"PDF acknowledgment")}</div>`;
+        <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"PDF acknowledgment")}</div>
+        <div class="customer-actions"><button class="secondary" data-order-edit="${o.id}">Edit Import</button></div>`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(wrap);
   });
+  document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=()=>editImportedOrder(b.dataset.orderEdit));
 }
 
 function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderFollowups();renderCustomerOptions()}
 
 let pendingAck=null;
+let editingOrderId=null;
 
 function pdfDateToISO(v){
   const m=String(v||"").match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
@@ -824,8 +839,59 @@ function bestCustomerMatch(name){
   return customers.find(c=>normalizeCompany(c.company)===n)
       ||customers.find(c=>normalizeCompany(c.company).includes(n)||n.includes(normalizeCompany(c.company)));
 }
+
+function refreshAckCustomerDropdown(selectedId=""){
+  $("ackCustomer").innerHTML='<option value="__new__">＋ Add / Edit Customer Name</option>'+
+    customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+  if(selectedId)$("ackCustomer").value=selectedId;
+}
+function ensureAckCustomerFromName(){
+  const name=$("ackCustomerName").value.trim();
+  if(!name){alert("Enter a customer name.");return null}
+  let existing=customers.find(c=>normalizeCompany(c.company)===normalizeCompany(name));
+  if(existing){
+    existing.company=name;
+    refreshAckCustomerDropdown(existing.id);
+    $("ackCustomer").value=existing.id;
+    fillAckContactOptions();
+    fillAckRfqMatches();
+    save();
+    return existing;
+  }
+  const c={id:uid(),company:name,city:"",address:"",notes:"Created from acknowledgment import.",contacts:[],createdAt:new Date().toISOString()};
+  customers.push(c);save();
+  refreshAckCustomerDropdown(c.id);
+  $("ackCustomer").value=c.id;
+  fillAckContactOptions();
+  fillAckRfqMatches();
+  return c;
+}
+function editImportedOrder(id){
+  const o=orders.find(x=>x.id===id);if(!o)return;
+  editingOrderId=id;
+  pendingAck={fileName:o.fileName||"Imported acknowledgment"};
+  $("ackReviewTitle").textContent="Edit Imported Order";
+  $("confirmAck").textContent="Save Order Changes";
+  $("ackFileName").textContent=o.fileName||"Imported acknowledgment";
+  refreshAckCustomerDropdown(o.customerId||"");
+  $("ackCustomerName").value=orderCustomerName(o);
+  $("ackCompany").value=o.company||orderCustomerName(o);
+  $("ackParsedContact").value=o.contactName||"";
+  fillAckContactOptions(o.contactId||"");
+  $("ackSalesOrder").value=o.salesOrder||"";
+  $("ackPO").value=o.poNumber||"";
+  $("ackOrderDate").value=o.orderDate||"";
+  $("ackTotal").value=Number(o.total||0).toFixed(2);
+  $("ackRfqAction").value=o.linkedRfqId?"link":"none";
+  renderAckItems((o.items||[]).map(i=>({...i,lineTotal:(i.qty||0)*(i.price||0)})));
+  $("ackLineCount").textContent=`${(o.items||[]).length} item${(o.items||[]).length===1?"":"s"}`;
+  fillAckRfqMatches();
+  if(o.linkedRfqId)$("ackRfqMatch").value=o.linkedRfqId;
+  $("ackWarnings").textContent="You are editing an existing imported order.";
+  showView("ackReviewView",false);
+}
 function fillAckContactOptions(selected=""){
-  const c=customerById($("ackCustomer").value);
+  const c=$("ackCustomer").value==="__new__"?null:customerById($("ackCustomer").value);
   $("ackContact").innerHTML='<option value="">No specific contact</option>'+((c?.contacts)||[]).map(x=>`<option value="${x.id}">${esc(x.name)}${x.role?" — "+esc(x.role):""}${x.primary?" (Primary)":""}</option>`).join("");
   if(selected)$("ackContact").value=selected;
 }
@@ -869,6 +935,9 @@ function updateAckCalculatedTotal(){
   $("ackCalcTotal").textContent=money.format(t);
 }
 async function importAcknowledgment(file){
+  editingOrderId=null;
+  $("ackReviewTitle").textContent="Review PDF Import";
+  $("confirmAck").textContent="Confirm & Import Order";
   $("ackWarnings").textContent="Reading PDF… scanned/image PDFs may take longer because OCR is used.";
   try{
     const parsed=await readAmericanBlockAck(file);
@@ -881,18 +950,19 @@ async function importAcknowledgment(file){
     pendingAck=parsed;
     $("ackFileName").textContent=file.name;
     $("ackCompany").value=parsed.company;
+    $("ackCustomerName").value=parsed.company;
     $("ackParsedContact").value=parsed.parsedContact;
     $("ackSalesOrder").value=parsed.salesOrder;
     $("ackPO").value=parsed.poNumber;
     $("ackOrderDate").value=parsed.orderDate;
     $("ackTotal").value=parsed.total.toFixed(2);
     $("ackLineCount").textContent=`${parsed.items.length} item${parsed.items.length===1?"":"s"}`;
-    $("ackCustomer").innerHTML=customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+    refreshAckCustomerDropdown();
     let match=bestCustomerMatch(parsed.company);
     if(!match){
       match={id:uid(),company:parsed.company||"Imported Customer",city:"",address:"",notes:"Imported from acknowledgment PDF.",contacts:[],createdAt:new Date().toISOString()};
       customers.push(match);save();
-      $("ackCustomer").innerHTML=customers.sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+      refreshAckCustomerDropdown();
       $("ackWarnings").textContent="A new customer account was created from the PDF. Review it after import.";
     }
     $("ackCustomer").value=match.id;
@@ -989,30 +1059,93 @@ $("teamPdf").onclick=teamReport;
 $("importAck").onclick=chooseAckFile;
 $("importAckOrders").onclick=chooseAckFile;
 $("ackFile").onchange=e=>{const f=e.target.files?.[0];if(f)importAcknowledgment(f)};
-$("ackCustomer").onchange=()=>{fillAckContactOptions();fillAckRfqMatches()};
+$("ackCustomer").onchange=()=>{
+  if($("ackCustomer").value==="__new__"){
+    $("ackCustomerName").focus();
+    $("ackContact").innerHTML='<option value="">No specific contact</option>';
+    $("ackRfqMatch").innerHTML='<option value="">No RFQ selected</option>';
+    return;
+  }
+  const c=customerById($("ackCustomer").value);
+  if(c)$("ackCustomerName").value=c.company;
+  fillAckContactOptions();fillAckRfqMatches();
+};
+$("saveAckCustomerName").onclick=ensureAckCustomerFromName;
 $("ackTotal").oninput=fillAckRfqMatches;
 $("backFromAck").onclick=$("cancelAck").onclick=()=>showView(lastMainView,true);
 $("orderSearch").oninput=renderOrders;$("orderGroup").onchange=renderOrders;
 
 $("confirmAck").onclick=()=>{
   if(!pendingAck)return;
-  const customerId=$("ackCustomer").value;
+
+  let customerId=$("ackCustomer").value;
+  if(customerId==="__new__"||!customerId){
+    const c=ensureAckCustomerFromName();if(!c)return;customerId=c.id;
+  }else{
+    const editedName=$("ackCustomerName").value.trim();
+    const c=customerById(customerId);
+    if(c&&editedName&&normalizeCompany(c.company)!==normalizeCompany(editedName)){
+      const match=customers.find(x=>x.id!==c.id&&normalizeCompany(x.company)===normalizeCompany(editedName));
+      if(match){
+        customerId=match.id;
+        $("ackCustomer").value=match.id;
+      }else{
+        c.company=editedName;
+        rfqs.filter(r=>r.customerId===c.id).forEach(r=>r.company=editedName);
+        orders.filter(o=>o.customerId===c.id).forEach(o=>o.company=editedName);
+      }
+    }
+  }
+
   const contactId=$("ackContact").value||null;
   const salesOrder=$("ackSalesOrder").value.trim();
-  if(salesOrder&&orders.some(o=>o.salesOrder===salesOrder)){
+
+  // Only block duplicate sales order when creating a new import.
+  if(!editingOrderId&&salesOrder&&orders.some(o=>o.salesOrder===salesOrder)){
     alert("That sales order is already in Orders.");return;
   }
+
   const items=getAckItems();
   const calc=items.reduce((s,i)=>s+i.qty*i.price,0);
   const declared=Number($("ackTotal").value)||calc;
   const rfqId=$("ackRfqAction").value==="none"?null:($("ackRfqMatch").value||null);
   const contact=contactById(customerId,contactId);
+
+  const existing=editingOrderId?orders.find(o=>o.id===editingOrderId):null;
   const order={
-    id:uid(),customerId,company:customerById(customerId)?.company||$("ackCompany").value.trim(),
-    contactId,contactName:contact?.name||$("ackParsedContact").value.trim(),
-    salesOrder,poNumber:$("ackPO").value.trim(),orderDate:$("ackOrderDate").value,
-    total:declared,items,fileName:pendingAck.fileName,importedAt:new Date().toISOString(),linkedRfqId:rfqId
+    id:editingOrderId||uid(),
+    customerId,
+    company:customerById(customerId)?.company||$("ackCustomerName").value.trim()||$("ackCompany").value.trim(),
+    contactId,
+    contactName:contact?.name||$("ackParsedContact").value.trim(),
+    salesOrder,
+    poNumber:$("ackPO").value.trim(),
+    orderDate:$("ackOrderDate").value,
+    total:declared,
+    items,
+    fileName:existing?.fileName||pendingAck.fileName,
+    importedAt:existing?.importedAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+    linkedRfqId:rfqId
   };
+
+  if(editingOrderId)orders=orders.map(o=>o.id===editingOrderId?order:o);
+  else orders.unshift(order);
+
+  if(rfqId){
+    const r=rfqs.find(x=>x.id===rfqId);
+    if(r&&$("ackRfqAction").value==="close"){
+      r.status="Closed Won";
+      r.updatedAt=new Date().toISOString();
+      r.nextAction=`Order received — Sales Order ${salesOrder||"imported acknowledgment"}`;
+    }
+  }
+
+  save();
+  pendingAck=null;
+  editingOrderId=null;
+  showView("ordersView",true);
+};
   orders.unshift(order);
   if(rfqId){
     const r=rfqs.find(x=>x.id===rfqId);
