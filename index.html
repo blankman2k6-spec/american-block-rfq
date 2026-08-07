@@ -174,7 +174,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.6 Daily Activity Tracker</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.7 Closed Won Sales Sync</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -199,10 +199,11 @@
       </div>
       <div class="progress-wrap" style="margin-top:14px"><div id="goalProgress" class="progress"></div></div>
       <div class="grid metrics" style="margin-top:12px">
-        <div class="metric"><small>Orders Imported This Month</small><strong id="importedMonthSales">$0</strong></div>
+        <div class="metric"><small>Sales This Month</small><strong id="importedMonthSales">$0</strong><div class="sub">Orders + unlinked Closed Won RFQs</div></div>
         <div class="metric"><small>Remaining</small><strong id="goalRemaining">$0</strong></div>
         <div class="metric"><small>Daily Run Rate Needed</small><strong id="dailyNeeded">$0</strong><div class="sub"><span id="businessDaysLeft">0</span> business days left</div></div>
       </div>
+      <div id="monthlySalesBreakdown" class="mini" style="margin-top:9px;text-align:center"></div>
       <button id="saveGoal" class="secondary" style="width:100%;margin-top:10px">Save Goal Progress</button>
     </div>
 
@@ -261,7 +262,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.6</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.7</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -465,7 +466,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 3.6 — Daily Activity Tracker</h2>
+      <h2>Version 3.7 — Closed Won Sales Sync</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -829,6 +830,12 @@ function migrate(){
     }
   });
 
+  // Backfill a close date for RFQs that were already marked Closed Won in older versions.
+  // Their updatedAt is normally the time the user changed the status.
+  rfqs.forEach(r=>{
+    if(r.status==="Closed Won"&&!r.closedWonAt)r.closedWonAt=r.updatedAt||r.createdAt||new Date().toISOString();
+  });
+
   // Ensure only one primary contact per account.
   customers.forEach(c=>{
     let seen=false;
@@ -871,10 +878,11 @@ function renderDashboard(){
   const due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today);
   $("dDue").textContent=due.length;
   $("monthlyGoal").value=settings.goal||100000;$("monthlySales").value=settings.sales||0;
-  const goal=Number(settings.goal)||0,imported=currentMonthImportedSales(),sales=(Number(settings.sales)||0)+imported,remain=Math.max(0,goal-sales),days=businessDaysLeft();
+  const goal=Number(settings.goal)||0,autoSales=currentMonthSalesTotal(),sales=(Number(settings.sales)||0)+autoSales,remain=Math.max(0,goal-sales),days=businessDaysLeft();
   const pct=goal?Math.min(100,(sales/goal)*100):0;
-  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(imported);
+  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(autoSales);
   $("dailyNeeded").textContent=money.format(days?remain/days:remain);$("businessDaysLeft").textContent=days;
+  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Imported orders ${money.format(currentMonthImportedSales())} · Closed Won RFQs ${money.format(currentMonthClosedWonSales())}${Number(settings.sales)?` · Manual adjustment ${money.format(Number(settings.sales)||0)}`:""}`;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
   renderMiniList($("todayFollowups"),due.slice(0,5),true);
@@ -974,6 +982,26 @@ function renderCustomerOptions(){
 function orderCustomerName(o){return customerById(o.customerId)?.company||o.company||"Unknown Customer"}
 function orderDateObj(o){return o.orderDate?new Date(o.orderDate+"T00:00:00"):new Date(o.importedAt||0)}
 function orderMonthLabel(o){const d=orderDateObj(o);return isNaN(d)?"No Date":d.toLocaleDateString("en-US",{month:"long",year:"numeric"})}
+
+function rfqClosedWonDate(r){
+  if(r.status!=="Closed Won")return null;
+  const raw=r.closedWonAt||r.updatedAt||r.createdAt;
+  const d=raw?new Date(raw):null;
+  return d&&!isNaN(d)?d:null;
+}
+function orderLinkedToRfq(rfqId){
+  return orders.some(o=>o.linkedRfqId===rfqId);
+}
+function currentMonthClosedWonSales(){
+  const now=new Date(),m=now.getMonth(),y=now.getFullYear();
+  return rfqs.filter(r=>{
+    const d=rfqClosedWonDate(r);
+    return d && d.getMonth()===m && d.getFullYear()===y && !orderLinkedToRfq(r.id);
+  }).reduce((s,r)=>s+total(r),0);
+}
+function currentMonthSalesTotal(){
+  return currentMonthImportedSales()+currentMonthClosedWonSales();
+}
 function currentMonthImportedSales(){
   const now=new Date();
   return orders.filter(o=>{const d=orderDateObj(o);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()})
@@ -1964,11 +1992,16 @@ function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerI
 $("saveRfq").onclick=()=>{
   const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}
   const old=rfqs.find(r=>r.id===editingRfqId);
+  const newStatus=$("rfqStatus").value;
+  let closedWonAt=old?.closedWonAt||null;
+  if(newStatus==="Closed Won" && old?.status!=="Closed Won")closedWonAt=new Date().toISOString();
+  if(newStatus!=="Closed Won")closedWonAt=null;
   const rec={
     id:editingRfqId||uid(),customerId:cid,contactId:$("rfqContact").value||null,contactNote:$("rfqContactNote").value.trim(),
-    company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:$("rfqStatus").value,followup:$("rfqFollowup").value,
+    company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:newStatus,followup:$("rfqFollowup").value,
     feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),
     shipping:Number($("rfqShipping").value)||0,tax:Number($("rfqTax").value)||0,
+    closedWonAt,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
   };
   if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);
@@ -2118,6 +2151,7 @@ $("confirmAck").onclick=()=>{
   if(rfqId){
     const r=rfqs.find(x=>x.id===rfqId);
     if(r&&$("ackRfqAction").value==="close"){
+      if(r.status!=="Closed Won" || !r.closedWonAt)r.closedWonAt=new Date().toISOString();
       r.status="Closed Won";
       r.updatedAt=new Date().toISOString();
       r.nextAction=`Order received — Sales Order ${salesOrder||"imported acknowledgment"}`;
