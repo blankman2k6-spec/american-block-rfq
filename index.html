@@ -63,6 +63,18 @@
     .group-title{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0c1728;border:1px solid var(--line);padding:12px 14px;border-radius:14px;margin:16px 0 8px}
     .pill{display:inline-block;background:#15233a;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:#dbeafe}
     .customer-actions{display:flex;gap:8px;margin-top:12px}.customer-actions button{flex:1}
+    .order-card{position:relative}
+    .order-menu-wrap{position:absolute;right:12px;bottom:12px}
+    .menu-btn{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:#0b1424;color:var(--text);font-size:24px;line-height:1;padding:0}
+    .order-menu{position:absolute;right:0;bottom:52px;min-width:180px;background:#0b1424;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;z-index:30}
+    .order-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--text);padding:11px 12px;border-radius:10px}
+    .order-menu button:hover{background:#15233a}
+    .order-menu button.danger-item{color:#fecaca}
+    .confirm-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
+    .confirm-dialog{width:min(430px,100%);background:#101a2b;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+    .confirm-dialog h3{font-size:20px;margin-bottom:8px}
+    .confirm-dialog p{color:var(--muted);line-height:1.45}
+    .confirm-actions{display:flex;gap:10px;margin-top:16px}.confirm-actions button{flex:1}
     .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7da7e8;font-weight:800}
     .headline{font-size:26px;margin:4px 0 2px}
     @media(max-width:560px){.row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
@@ -73,7 +85,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v2.2.7</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v2.2.8</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -146,7 +158,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.7</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.8</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -171,7 +183,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2.2.7 — Customer Order History</h2>
+      <h2>Version 2.2.8 — Safer Order Actions</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -629,20 +641,35 @@ function renderOrders(){
     wrap.innerHTML=`<div class="group-title"><h3>${esc(name)}</h3><span class="mini">${records.length} order${records.length===1?"":"s"} · ${money.format(records.reduce((s,o)=>s+(Number(o.total)||0),0))}</span></div><div class="list"></div>`;
     const holder=wrap.querySelector(".list");
     records.forEach(o=>{
-      const div=document.createElement("div");div.className="list-card";
+      const div=document.createElement("div");div.className="list-card order-card";div.dataset.orderOpen=o.id;
       div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status green">ORDER</span></div>
         <div class="money">${money.format(Number(o.total)||0)}</div>
         <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"PDF acknowledgment")}</div>
-        <div class="customer-actions">
-          <button class="secondary" data-order-edit="${o.id}">Edit Import</button>
-          <button class="danger" data-order-delete="${o.id}">Delete</button>
+        <div class="order-menu-wrap">
+          <button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button>
+          <div class="order-menu hidden" data-order-menu-panel="${o.id}">
+            <button data-order-edit="${o.id}">✏️ Edit Import</button>
+            <button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button>
+          </div>
         </div>`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(wrap);
   });
-  document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=()=>editImportedOrder(b.dataset.orderEdit));
-  document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=()=>deleteImportedOrder(b.dataset.orderDelete));
+  document.querySelectorAll("[data-order-open]").forEach(card=>{
+    card.onclick=e=>{
+      if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu"))return;
+      editImportedOrder(card.dataset.orderOpen);
+    };
+  });
+  document.querySelectorAll("[data-order-menu]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const id=b.dataset.orderMenu;
+    document.querySelectorAll(".order-menu").forEach(m=>{if(m.dataset.orderMenuPanel!==id)m.classList.add("hidden")});
+    document.querySelector(`[data-order-menu-panel="${id}"]`)?.classList.toggle("hidden");
+  });
+  document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editImportedOrder(b.dataset.orderEdit)});
+  document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.stopPropagation();confirmDeleteImportedOrder(b.dataset.orderDelete)});
 }
 
 function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderFollowups();renderCustomerOptions()}
@@ -902,13 +929,31 @@ function newManualOrder(){
   fillAckRfqMatches();
   showView("ackReviewView",false);
 }
-function deleteImportedOrder(id){
+function confirmDeleteImportedOrder(id){
   const o=orders.find(x=>x.id===id);if(!o)return;
-  const label=`${orderCustomerName(o)} — SO ${o.salesOrder||"no sales order"} — ${money.format(Number(o.total)||0)}`;
-  if(!confirm(`Delete this imported order?\n\n${label}\n\nThis will remove it from the customer's order history and dashboard sales totals.`))return;
-  orders=orders.filter(x=>x.id!==id);
-  save();
-  renderAll();
+  const overlay=document.createElement("div");
+  overlay.className="confirm-backdrop";
+  overlay.innerHTML=`
+    <div class="confirm-dialog">
+      <h3>Delete Order?</h3>
+      <p><strong>${esc(orderCustomerName(o))}</strong><br>
+      Sales Order: ${esc(o.salesOrder||"Not entered")}<br>
+      Total: ${money.format(Number(o.total)||0)}</p>
+      <p>This will remove the order from the customer history, monthly sales totals, dashboard, and reports.</p>
+      <div class="confirm-actions">
+        <button class="secondary" data-cancel-delete>Cancel</button>
+        <button class="danger" data-confirm-delete>Delete Order</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector("[data-cancel-delete]").onclick=()=>overlay.remove();
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+  overlay.querySelector("[data-confirm-delete]").onclick=()=>{
+    orders=orders.filter(x=>x.id!==id);
+    save();
+    overlay.remove();
+    renderAll();
+  };
 }
 function editImportedOrder(id){
   const o=orders.find(x=>x.id===id);
@@ -1214,6 +1259,11 @@ $("confirmAck").onclick=()=>{
 };
 
 
+document.addEventListener("click",e=>{
+  if(!e.target.closest("[data-order-menu]")&&!e.target.closest(".order-menu")){
+    document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));
+  }
+});
 $("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 renderAll();
