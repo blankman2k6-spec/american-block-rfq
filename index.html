@@ -146,6 +146,24 @@
     .month-nav{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
     .excel-note{border:1px solid #28523d;background:#0d281e;color:#bbf7d0;border-radius:14px;padding:12px;font-size:12px;line-height:1.45}
 
+
+    .daily-tracker{display:grid;gap:10px}
+    .day-track-card{background:linear-gradient(180deg,#111f34,#0c1728);border:1px solid var(--line);border-radius:16px;padding:12px}
+    .day-track-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .day-track-date{font-weight:900;font-size:14px}
+    .day-track-count{font-weight:900;font-size:16px}
+    .day-track-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .track-chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:#14233a;color:#cbd5e1;font-size:10px;font-weight:800}
+    .daily-progress{height:10px;border-radius:999px;background:#0a1322;border:1px solid var(--line);overflow:hidden;margin-top:9px}
+    .daily-progress>span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#60a5fa,#34d399)}
+    .day-section{margin:18px 0 24px}
+    .day-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px 2px}
+    .day-section-title{font-size:16px;font-weight:900}
+    .tracker-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+    .mini-metric{background:#0b1424;border:1px solid var(--line);border-radius:14px;padding:10px}
+    .mini-metric span{display:block;color:var(--muted);font-size:10px}
+    .mini-metric strong{display:block;font-size:18px;margin-top:2px}
+
     @media(max-width:560px){.insight-grid{grid-template-columns:1fr}.momentum-row{grid-template-columns:1.25fr .62fr .62fr .7fr}}
     @media(max-width:560px){.donut-wrap{grid-template-columns:1fr}.product-stats{grid-template-columns:repeat(2,1fr)}.product-bar-row{grid-template-columns:minmax(100px,1.2fr) 1.4fr auto}.gap-row{grid-template-columns:1.4fr .55fr .55fr .7fr}}
     @media(max-width:560px){.row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
@@ -156,7 +174,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.5 Tax + Shipping</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v3.6 Daily Activity Tracker</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -243,7 +261,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.5</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v3.6</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -280,7 +298,29 @@
       <div class="metric"><small>Emails</small><strong id="activityEmailCount">0</strong><div class="sub">Email activity</div></div>
     </div>
 
-    <div id="activityLogList"></div>
+    <div class="card">
+      <div class="section-head" style="margin:0 0 10px">
+        <div><h2 style="margin:0">Daily Activity Tracker</h2><div class="mini">Target: 4–8 visits, calls, or emails per workday</div></div>
+        <span class="status blue">TRACKING</span>
+      </div>
+      <div class="row">
+        <div><label>Minimum Daily Goal</label><input id="dailyGoalMin" type="number" min="1" max="20" step="1" value="4"></div>
+        <div><label>Strong Day Goal</label><input id="dailyGoalMax" type="number" min="1" max="20" step="1" value="8"></div>
+      </div>
+      <div class="tracker-summary">
+        <div class="mini-metric"><span>Workdays Hit</span><strong id="trackerHitDays">0</strong></div>
+        <div class="mini-metric"><span>Below Goal</span><strong id="trackerBelowDays">0</strong></div>
+        <div class="mini-metric"><span>Average / Day</span><strong id="trackerAvg">0.0</strong></div>
+      </div>
+      <div id="dailyTracker" class="daily-tracker" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin:0 0 10px">
+        <div><h2 style="margin:0">Activities by Day</h2><div class="mini">Each day is separated so you can quickly verify 4–8 touches.</div></div>
+      </div>
+      <div id="activityLogList"></div>
+    </div>
   </section>
 
   <section id="activityFormView" class="view">
@@ -425,7 +465,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 3.5 — Tax + Shipping</h2>
+      <h2>Version 3.6 — Daily Activity Tracker</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1270,6 +1310,58 @@ function editActivity(id){
   $("activityDate").value=a.date||localIsoDate();$("activityType").value=a.type||"Visit";$("activityComments").value=a.comments||"";
   $("activityMessage").textContent="";showView("activityFormView",false);
 }
+
+function activityGoalMin(){return Math.max(1,Number(localStorage.getItem("abSalesOS_dailyGoalMin")||4)||4)}
+function activityGoalMax(){return Math.max(activityGoalMin(),Number(localStorage.getItem("abSalesOS_dailyGoalMax")||8)||8)}
+function activityDayLabel(dateStr){
+  const d=new Date(dateStr+"T12:00:00");
+  return d.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+}
+function isWorkday(dateStr){
+  const d=new Date(dateStr+"T12:00:00"),day=d.getDay();
+  return day!==0&&day!==6;
+}
+function monthWorkdays(month){
+  const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate(),arr=[];
+  for(let day=1;day<=last;day++){
+    const ds=`${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    if(isWorkday(ds))arr.push(ds);
+  }
+  return arr;
+}
+function renderDailyTracker(month,list){
+  const min=activityGoalMin(),max=activityGoalMax();
+  if($("dailyGoalMin"))$("dailyGoalMin").value=min;
+  if($("dailyGoalMax"))$("dailyGoalMax").value=max;
+  const byDay=new Map();
+  list.forEach(a=>{const k=a.date||"";if(!byDay.has(k))byDay.set(k,[]);byDay.get(k).push(a)});
+  const today=localIsoDate();
+  const isCurrent=month===today.slice(0,7);
+  const workdays=monthWorkdays(month).filter(d=>!isCurrent||d<=today);
+  const hit=workdays.filter(d=>(byDay.get(d)||[]).length>=min).length;
+  const below=workdays.filter(d=>(byDay.get(d)||[]).length<min).length;
+  const total=workdays.reduce((s,d)=>s+(byDay.get(d)||[]).length,0);
+  $("trackerHitDays").textContent=hit;
+  $("trackerBelowDays").textContent=below;
+  $("trackerAvg").textContent=(workdays.length?total/workdays.length:0).toFixed(1);
+  $("dailyTracker").innerHTML=workdays.slice().reverse().map(d=>{
+    const acts=byDay.get(d)||[],count=acts.length;
+    const visits=acts.filter(a=>a.type==="Visit").length,calls=acts.filter(a=>a.type==="Call").length,emails=acts.filter(a=>a.type==="Email").length;
+    const pct=Math.min(100,(count/max)*100);
+    const cls=count>=max?"green":count>=min?"blue":"red";
+    const label=count>=max?"Strong Day":count>=min?"Goal Met":"Below Goal";
+    return `<div class="day-track-card">
+      <div class="day-track-top">
+        <div><div class="day-track-date">${esc(activityDayLabel(d))}</div><div class="mini">${formatDate(d)}</div></div>
+        <div style="text-align:right"><div class="day-track-count">${count} / ${min}–${max}</div><span class="status compact-badge ${cls}">${label}</span></div>
+      </div>
+      <div class="daily-progress"><span style="width:${pct}%"></span></div>
+      <div class="day-track-meta">
+        <span class="track-chip">Visits ${visits}</span><span class="track-chip">Calls ${calls}</span><span class="track-chip">Emails ${emails}</span>
+      </div>
+    </div>`;
+  }).join("") || "<div class='empty'>No workdays found for this month.</div>";
+}
 function renderActivityLog(){
   if(!$("activityLogList"))return;
   if(!$("activityMonth").value)$("activityMonth").value=localIsoDate().slice(0,7);
@@ -1279,16 +1371,21 @@ function renderActivityLog(){
   $("activityVisitCount").textContent=list.filter(a=>a.type==="Visit").length;
   $("activityCallCount").textContent=list.filter(a=>a.type==="Call").length;
   $("activityEmailCount").textContent=list.filter(a=>a.type==="Email").length;
+  renderDailyTracker(month,list);
+
   if(!list.length){$("activityLogList").innerHTML="<div class='empty'>No activities saved for this month yet.</div>";return}
   const groups=new Map();
-  list.forEach(a=>{const k=weekRangeLabel(a);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(a)});
-  $("activityLogList").innerHTML=[...groups.entries()].map(([week,records])=>`<div class="week-block">
-    <div class="week-title"><strong>${esc(week)}</strong><span class="meta-badge compact-badge">${records.length} entr${records.length===1?"y":"ies"}</span></div>
+  list.forEach(a=>{const k=a.date;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(a)});
+  $("activityLogList").innerHTML=[...groups.entries()].map(([date,records])=>`<div class="day-section">
+    <div class="day-section-head">
+      <div><div class="day-section-title">${esc(activityDayLabel(date))}</div><div class="mini">${formatDate(date)}</div></div>
+      <span class="meta-badge compact-badge">${records.length} entr${records.length===1?"y":"ies"}</span>
+    </div>
     ${records.map(a=>{
       const c=activityCustomer(a),ct=activityContact(a);
       return `<div class="activity-card">
         <div class="activity-top">
-          <div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${formatDate(a.date)}${ct?.name?" · "+esc(ct.name):""}</div></div>
+          <div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${ct?.name?esc(ct.name):"No contact selected"}</div></div>
           <span class="activity-type">${esc(a.type||"Activity")}</span>
         </div>
         <div class="activity-comments">${esc(a.comments||"No comments")}</div>
@@ -2090,6 +2187,21 @@ if($("quickOpenLog"))$("quickOpenLog").onclick=()=>showView("activityLogView",tr
 if($("quickExportExcel"))$("quickExportExcel").onclick=exportCustomerLogWorkbook;
 if($("exportCustomerLogExcel"))$("exportCustomerLogExcel").onclick=exportCustomerLogWorkbook;
 if($("activityMonth"))$("activityMonth").onchange=renderActivityLog;
+if($("dailyGoalMin"))$("dailyGoalMin").onchange=()=>{
+  const min=Math.max(1,Number($("dailyGoalMin").value)||4);
+  const max=Math.max(min,Number($("dailyGoalMax").value)||8);
+  localStorage.setItem("abSalesOS_dailyGoalMin",String(min));
+  localStorage.setItem("abSalesOS_dailyGoalMax",String(max));
+  renderActivityLog();
+};
+if($("dailyGoalMax"))$("dailyGoalMax").onchange=()=>{
+  const min=Math.max(1,Number($("dailyGoalMin").value)||4);
+  const max=Math.max(min,Number($("dailyGoalMax").value)||8);
+  $("dailyGoalMax").value=max;
+  localStorage.setItem("abSalesOS_dailyGoalMin",String(min));
+  localStorage.setItem("abSalesOS_dailyGoalMax",String(max));
+  renderActivityLog();
+};
 if($("backFromActivity"))$("backFromActivity").onclick=()=>showView("activityLogView",true);
 if($("cancelActivity"))$("cancelActivity").onclick=()=>showView("activityLogView",true);
 if($("saveActivity"))$("saveActivity").onclick=()=>{
