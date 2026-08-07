@@ -111,10 +111,13 @@
 
       <div class="toolbar">
         <button id="save">Save RFQ</button>
+        <button id="teamReport" class="secondary">Team PDF</button>
+      </div>
+      <div class="toolbar">
         <button id="export" class="secondary">Export Backup</button>
+        <button id="import" class="secondary">Import Backup</button>
       </div>
       <input id="importFile" class="hidden" type="file" accept=".json,application/json">
-      <button id="import" class="secondary" style="margin-top:8px;width:100%">Import Backup</button>
       <div id="message" class="notice"></div>
     </section>
 
@@ -271,6 +274,132 @@
       saveLocal(); resetForm(); render(); $("message").textContent="Saved on this device.";
     };
     $("search").oninput=render; $("filter").onchange=render;
+
+    function buildTeamReport(){
+      const openRfqs = rfqs.filter(isOpen);
+      const generated = new Date().toLocaleString("en-US", {
+        month:"long", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit"
+      });
+      const grandTotal = openRfqs.reduce((sum,r)=>sum+totalOf(r),0);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const dueCount = openRfqs.filter(r=>r.followup && new Date(r.followup+"T00:00:00")<=today).length;
+
+      const quoteSections = openRfqs.map((r,index)=>{
+        const rows = r.items.map(i=>`
+          <tr>
+            <td>${esc(i.part || "")}</td>
+            <td>${esc(i.product || "")}</td>
+            <td class="num">${Number(i.qty)||0}</td>
+            <td class="num">${money.format(Number(i.price)||0)}</td>
+            <td class="num">${money.format((Number(i.qty)||0)*(Number(i.price)||0))}</td>
+          </tr>`).join("");
+
+        return `
+          <section class="quote">
+            <div class="quote-title">
+              <div>
+                <h2>${index+1}. ${esc(r.company)}</h2>
+                <div class="sub">Quote: ${esc(r.quoteNo || "Not entered")} | Status: ${esc(r.status)}</div>
+              </div>
+              <div class="quote-amount">${money.format(totalOf(r))}</div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Part Number</th>
+                  <th>Product</th>
+                  <th class="num">Qty</th>
+                  <th class="num">Unit Price</th>
+                  <th class="num">Line Total</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <div class="notes-grid">
+              <div><strong>Customer Feedback</strong><p>${esc(r.feedback || "No feedback entered.")}</p></div>
+              <div><strong>Next Action</strong><p>${esc(r.nextAction || "No next action entered.")}</p></div>
+              <div><strong>Follow-up Date</strong><p>${esc(r.followup || "Not scheduled")}</p></div>
+            </div>
+          </section>`;
+      }).join("");
+
+      return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open RFQ Report</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;color:#1f2937;margin:0;background:#eef2f7}
+  .page{max-width:1000px;margin:0 auto;background:#fff;padding:34px}
+  .header{border-bottom:4px solid #1f4e78;padding-bottom:18px;margin-bottom:22px}
+  h1{margin:0;color:#1f4e78;font-size:28px}
+  .generated{margin-top:6px;color:#64748b;font-size:13px}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 26px}
+  .metric{border:1px solid #cbd5e1;border-radius:10px;padding:14px}
+  .metric span{display:block;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .metric strong{display:block;font-size:22px;margin-top:5px;color:#0f172a}
+  .quote{break-inside:avoid;margin:0 0 24px;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden}
+  .quote-title{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;background:#f1f5f9;padding:15px 17px;border-bottom:1px solid #cbd5e1}
+  h2{font-size:18px;margin:0 0 4px;color:#0f172a}
+  .sub{font-size:12px;color:#64748b}
+  .quote-amount{font-size:20px;font-weight:bold;color:#1f4e78;white-space:nowrap}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#1f4e78;color:#fff;text-align:left;padding:9px}
+  td{padding:9px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+  .num{text-align:right;white-space:nowrap}
+  .notes-grid{display:grid;grid-template-columns:2fr 2fr 1fr;gap:14px;padding:14px 17px}
+  .notes-grid strong{font-size:12px;color:#475569}
+  .notes-grid p{margin:5px 0 0;white-space:pre-wrap;font-size:12px}
+  .empty{padding:30px;border:1px dashed #94a3b8;text-align:center;color:#64748b}
+  .print-note{margin-top:18px;color:#64748b;font-size:11px;text-align:center}
+  @media(max-width:700px){
+    .page{padding:18px}
+    .summary{grid-template-columns:1fr}
+    .notes-grid{grid-template-columns:1fr}
+    table{font-size:10px}
+    th,td{padding:6px}
+  }
+  @media print{
+    body{background:#fff}
+    .page{max-width:none;padding:0}
+    .print-note{display:none}
+    @page{size:letter;margin:.45in}
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="header">
+    <h1>American Block - Open RFQ Report</h1>
+    <div class="generated">Generated ${esc(generated)}</div>
+  </div>
+  <section class="summary">
+    <div class="metric"><span>Open RFQs</span><strong>${openRfqs.length}</strong></div>
+    <div class="metric"><span>Total Open Value</span><strong>${money.format(grandTotal)}</strong></div>
+    <div class="metric"><span>Follow-ups Due</span><strong>${dueCount}</strong></div>
+  </section>
+  ${quoteSections || '<div class="empty">There are no open RFQs to report.</div>'}
+  <div class="print-note">Use Print and select Save as PDF.</div>
+</main>
+<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),350));<\/script>
+</body>
+</html>`;
+    }
+
+    $("teamReport").onclick=()=>{
+      const report = buildTeamReport();
+      const win = window.open("", "_blank");
+      if(!win){
+        $("message").textContent="Please allow pop-ups, then try Team PDF again.";
+        return;
+      }
+      win.document.open();
+      win.document.write(report);
+      win.document.close();
+    };
+
     $("export").onclick=()=>{
       const blob=new Blob([JSON.stringify(rfqs,null,2)],{type:"application/json"});
       const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
