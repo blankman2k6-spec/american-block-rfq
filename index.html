@@ -73,7 +73,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v2.2.6</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v2.2.7</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -146,8 +146,11 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.6</div></div>
-      <button id="importAckOrders" class="primary">＋ Import PDF</button>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v2.2.7</div></div>
+      <div class="toolbar">
+        <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
+        <button id="importAckOrders" class="primary">＋ Import PDF</button>
+      </div>
     </div>
     <div class="row">
       <div><label>Search</label><input id="orderSearch" placeholder="Account, sales order, PO, part..."></div>
@@ -168,8 +171,8 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 2.2.6 — Editable Orders</h2>
-      <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, order history, PDF acknowledgment parsing, automatic customer matching, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
+      <h2>Version 2.2.7 — Customer Order History</h2>
+      <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
         <button id="settingsImport" class="secondary">Import Backup</button>
@@ -535,12 +538,22 @@ function renderCustomers(){
     const primary=(c.contacts||[]).find(x=>x.primary)||(c.contacts||[])[0];
     const div=document.createElement("div");div.className="list-card";
     div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(c.company)}</div><div class="mini">${esc(primary?.name||"No primary contact")} ${c.city?"· "+esc(c.city):""}</div></div><span class="pill">${(c.contacts||[]).length} contact${(c.contacts||[]).length===1?"":"s"} · ${cr.length} RFQs</span></div>
-      <div class="grid metrics" style="margin-top:10px"><div class="metric"><small>Open Value</small><strong>${money.format(openValue)}</strong></div><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div></div>
-      <div class="customer-actions"><button class="secondary" data-edit="${c.id}">Edit</button><button class="secondary" data-rfqs="${c.id}">View RFQs</button></div>`;
+      <div class="grid metrics" style="margin-top:10px">
+        <div class="metric"><small>Open Value</small><strong>${money.format(openValue)}</strong></div>
+        <div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div>
+        <div class="metric"><small>Order History</small><strong>${orders.filter(o=>o.customerId===c.id).length}</strong></div>
+        <div class="metric"><small>Order Sales</small><strong>${money.format(orders.filter(o=>o.customerId===c.id).reduce((s,o)=>s+(Number(o.total)||0),0))}</strong></div>
+      </div>
+      <div class="customer-actions">
+        <button class="secondary" data-edit="${c.id}">Edit</button>
+        <button class="secondary" data-rfqs="${c.id}">View RFQs</button>
+        <button class="secondary" data-orders="${c.id}">View Orders</button>
+      </div>`;
     $("customerList").appendChild(div);
   });
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editCustomer(b.dataset.edit)});
   document.querySelectorAll("[data-rfqs]").forEach(b=>b.onclick=e=>{e.stopPropagation();$("rfqSearch").value=customerById(b.dataset.rfqs)?.company||"";showView("rfqsView",true)});
+  document.querySelectorAll("[data-orders]").forEach(b=>b.onclick=e=>{e.stopPropagation();$("orderSearch").value=customerById(b.dataset.orders)?.company||"";showView("ordersView",true)});
 }
 
 function groupRecords(records,mode){
@@ -620,12 +633,16 @@ function renderOrders(){
       div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status green">ORDER</span></div>
         <div class="money">${money.format(Number(o.total)||0)}</div>
         <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"PDF acknowledgment")}</div>
-        <div class="customer-actions"><button class="secondary" data-order-edit="${o.id}">Edit Import</button></div>`;
+        <div class="customer-actions">
+          <button class="secondary" data-order-edit="${o.id}">Edit Import</button>
+          <button class="danger" data-order-delete="${o.id}">Delete</button>
+        </div>`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(wrap);
   });
   document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=()=>editImportedOrder(b.dataset.orderEdit));
+  document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=()=>deleteImportedOrder(b.dataset.orderDelete));
 }
 
 function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderFollowups();renderCustomerOptions()}
@@ -854,6 +871,45 @@ function matchOrCreateAckCustomer(){
   fillAckRfqMatches();
   return c;
 }
+
+function newManualOrder(){
+  if(!customers.length){alert("Add a customer first.");return}
+  editingOrderId=null;
+  pendingAck={fileName:"Manual entry"};
+  $("ackReviewTitle").textContent="Add Manual Order";
+  $("confirmAck").textContent="Save Manual Order";
+  $("ackFileName").textContent="Manual Order Entry";
+  refreshAckCustomerDropdown();
+  const first=customers.slice().sort((a,b)=>a.company.localeCompare(b.company))[0];
+  if(first){
+    $("ackCustomer").value=first.id;
+    $("ackCustomerName").value=first.company;
+  }else{
+    $("ackCustomer").value="__new__";
+    $("ackCustomerName").value="";
+  }
+  $("ackCompany").value="";
+  $("ackParsedContact").value="";
+  $("ackSalesOrder").value="";
+  $("ackPO").value="";
+  $("ackOrderDate").value=new Date().toISOString().slice(0,10);
+  $("ackTotal").value="0.00";
+  $("ackRfqAction").value="none";
+  $("ackWarnings").textContent="Manual order entry. Add line items and choose the correct account.";
+  renderAckItems([{part:"",product:"",qty:1,price:0}]);
+  $("ackLineCount").textContent="1 item";
+  fillAckContactOptions();
+  fillAckRfqMatches();
+  showView("ackReviewView",false);
+}
+function deleteImportedOrder(id){
+  const o=orders.find(x=>x.id===id);if(!o)return;
+  const label=`${orderCustomerName(o)} — SO ${o.salesOrder||"no sales order"} — ${money.format(Number(o.total)||0)}`;
+  if(!confirm(`Delete this imported order?\n\n${label}\n\nThis will remove it from the customer's order history and dashboard sales totals.`))return;
+  orders=orders.filter(x=>x.id!==id);
+  save();
+  renderAll();
+}
 function editImportedOrder(id){
   const o=orders.find(x=>x.id===id);
   if(!o)return;
@@ -1045,6 +1101,7 @@ function teamReport(){
 }
 $("teamPdf").onclick=teamReport;
 
+$("manualOrderBtn").onclick=newManualOrder;
 $("importAck").onclick=chooseAckFile;
 $("importAckOrders").onclick=chooseAckFile;
 $("ackFile").onchange=e=>{const f=e.target.files?.[0];if(f)importAcknowledgment(f)};
@@ -1117,6 +1174,29 @@ $("confirmAck").onclick=()=>{
 
   if(editingOrderId)orders=orders.map(o=>o.id===editingOrderId?order:o);
   else orders.unshift(order);
+
+  // Synchronize the order into the corresponding customer/account.
+  const acct=customerById(customerId);
+  if(acct){
+    acct.orderCount=orders.filter(o=>o.customerId===customerId).length;
+    acct.orderSales=orders.filter(o=>o.customerId===customerId).reduce((s,o)=>s+(Number(o.total)||0),0);
+    acct.lastOrderDate=$("ackOrderDate").value||acct.lastOrderDate||"";
+    acct.updatedAt=new Date().toISOString();
+
+    // If a contact name came from the acknowledgment/manual entry but no contact
+    // was selected, add it to the account so it is reusable on future RFQs/orders.
+    const enteredContact=$("ackParsedContact").value.trim();
+    if(enteredContact&&!contactId){
+      acct.contacts=acct.contacts||[];
+      let ct=acct.contacts.find(c=>normalizeCompany(c.name)===normalizeCompany(enteredContact));
+      if(!ct){
+        ct={id:uid(),name:enteredContact,role:"",phone:"",email:"",location:"",primary:!acct.contacts.length};
+        acct.contacts.push(ct);
+      }
+      order.contactId=ct.id;
+      order.contactName=ct.name;
+    }
+  }
 
   if(rfqId){
     const r=rfqs.find(x=>x.id===rfqId);
