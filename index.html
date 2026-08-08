@@ -649,6 +649,13 @@
     }
 
   .intel-actions{display:flex;gap:9px;flex-wrap:wrap}.intel-actions button{flex:1 1 165px}.intel-record{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px;margin:9px 0}.intel-record-head{display:flex;justify-content:space-between;gap:10px}.intel-pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}.intel-table{width:100%;border-collapse:collapse;font-size:12px}.intel-table th,.intel-table td{border-bottom:1px solid var(--line);padding:8px 5px;text-align:left}.intel-table th{font-size:10px;color:var(--muted);text-transform:uppercase}@media(max-width:560px){.intel-actions{display:grid;grid-template-columns:1fr}.intel-actions button{width:100%}.intel-table{font-size:11px}}
+
+/* v4.6.1 Intel mobile polish */
+#intelDate{min-height:46px!important;height:46px!important;padding:8px 12px!important;font-size:16px!important;line-height:1.2!important}
+#intelDate::-webkit-date-and-time-value{text-align:left}
+.meeting-contact-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--panel2)}
+.meeting-launch{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+@media(max-width:560px){#intelDate{width:100%!important;max-width:100%!important}.meeting-launch{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1080,8 +1087,10 @@
     <div class="card">
       <div class="kicker">Meeting Tools</div><h2>Meeting Invite Generator</h2>
       <div class="row"><div><label>Customer</label><select id="meetingCustomer"></select></div><div><label>Purpose</label><select id="meetingPurpose"><option value="partnership">Business Partnership Review</option><option value="constraints">Vendor & Product Review</option><option value="qbr">QBR / Customer Value Review</option></select></div></div>
+      <div id="meetingContactInfo" class="meeting-contact-card muted">Select a customer to use their primary contact email and phone.</div>
       <button id="generateMeetingTemplates" class="primary">Generate Email & Text</button>
-      <div id="meetingTemplates" class="hidden" style="margin-top:12px"><label>Email</label><textarea id="meetingEmailTemplate" rows="7"></textarea><label>Text</label><textarea id="meetingTextTemplate" rows="4"></textarea><div class="toolbar"><button id="copyMeetingEmail" class="secondary">Copy Email</button><button id="copyMeetingText" class="secondary">Copy Text</button></div></div>
+      <div id="meetingTemplates" class="hidden" style="margin-top:12px"><label>Email</label><textarea id="meetingEmailTemplate" rows="7"></textarea><label>Text</label><textarea id="meetingTextTemplate" rows="4"></textarea><div class="meeting-launch"><button id="sendMeetingEmail" class="primary">✉ Open Email App</button><button id="sendMeetingText" class="primary">💬 Open Text App</button></div>
+      <div class="toolbar"><button id="copyMeetingEmail" class="secondary">Copy Email</button><button id="copyMeetingText" class="secondary">Copy Text</button></div></div>
     </div>
     <div class="card">
       <div class="kicker">Management</div><h2>Reports</h2>
@@ -2685,8 +2694,45 @@ if(t==="geo"){let a=agg(intelligence.filter(r=>r.market),r=>r.market);intelTable
 if(t==="inventory"){let a=agg(intelligence.filter(r=>r.type==="lost"&&r.reason==="No Stock"),r=>r.product);intelTable("OKC Master Inventory Intelligence","No-stock demand ranked by documented lost value and request frequency.",["Product","No Stock Requests","Lost Units","Lost $","Priority"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td><td>${x.count>=3||x.amount>=10000?"MUST STOCK":x.count>=2||x.amount>=5000?"STRONG":"MONITOR"}</td></tr>`).join(""));return}
 if(t==="product"){if(typeof renderProducts==="function"){showView("productsView",true);return}$("intelReportOutput").innerHTML='<p>Use the Products page for product mix.</p>';return}
 if(t==="qbr"){let cid=$("meetingCustomer").value;if(!cid){$("intelReportOutput").innerHTML='<p class="muted">Choose a customer above first.</p>';return}let rs=intelligence.filter(r=>String(r.customerId)===String(cid)),s=rs.filter(r=>r.type==="discount").reduce((a,r)=>a+(+r.amount||0),0),d=rs.filter(r=>r.type==="delivery").reduce((a,r)=>a+(+r.amount||0),0);$("intelReportOutput").innerHTML=`<h2>${esc(intelName(cid))} — QBR Value</h2><div class="metrics"><div class="metric"><span>Product Savings</span><strong>${intelMoney(s)}</strong></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(d)}</strong></div><div class="metric"><span>Total Value</span><strong>${intelMoney(s+d)}</strong></div></div>`}}
-function generateMeetingTemplates(){let cid=$("meetingCustomer").value;if(!cid){alert("Choose a customer.");return}let c=intelCust(cid),n=c.company||"your team",p=$("meetingPurpose").value,rs=intelligence.filter(r=>String(r.customerId)===String(cid)),v=rs.filter(r=>r.type==="discount"||r.type==="delivery").reduce((s,r)=>s+(+r.amount||0),0),b={partnership:`I'd like to stop by and spend a few minutes reviewing how ABCO is supporting ${n}, learn where we can make sourcing easier, and identify additional areas where we may be able to help your operation.`,constraints:`I'd like to stop by and discuss any current vendor, product availability, lead-time or service constraints you're dealing with and see where ABCO may be able to provide additional support.`,qbr:`I'd like to schedule a brief business review with ${n} to look at your activity with ABCO, the value we've been able to provide${v?`, including approximately ${intelMoney(v)} in documented pricing and delivery value`:""}, and opportunities to support you better going forward.`}[p];$("meetingEmailTemplate").value=`Subject: Quick Business Review — ABCO\n\nHi,\n\n${b}\n\nWould you have a few minutes for me to stop by sometime soon?\n\nThank you,`; $("meetingTextTemplate").value=`Hi, this is Alex with ABCO. ${b} Would you have a few minutes for me to stop by sometime soon?`;$("meetingTemplates").classList.remove("hidden")}
-
+function meetingContact(){
+  const c=intelCust($("meetingCustomer")?.value);
+  const contacts=Array.isArray(c.contacts)?c.contacts:[];
+  return contacts.find(x=>String(x.primary||"").toLowerCase()==="yes")||contacts.find(x=>x.email||x.phone)||{};
+}
+function updateMeetingContactInfo(){
+  if(!$("meetingContactInfo"))return;
+  const cid=$("meetingCustomer")?.value,c=intelCust(cid),ct=meetingContact();
+  if(!cid){$("meetingContactInfo").textContent="Select a customer to use their primary contact email and phone.";return}
+  const bits=[];
+  if(ct.name)bits.push(ct.name);
+  if(ct.email)bits.push(ct.email);
+  if(ct.phone)bits.push(ct.phone);
+  $("meetingContactInfo").innerHTML=bits.length?`<strong>${esc(c.company||"Customer")}</strong><br>${bits.map(esc).join(" · ")}`:`<strong>${esc(c.company||"Customer")}</strong><br>No contact email or phone is saved yet. Add it under the customer account.`;
+}
+function generateMeetingTemplates(){
+  let cid=$("meetingCustomer").value;if(!cid){alert("Choose a customer.");return}
+  let c=intelCust(cid),ct=meetingContact(),n=c.company||"your team",first=(ct.name||"").trim().split(/\s+/)[0]||"",greeting=first?`Hi ${first},`:"Hi,";
+  let p=$("meetingPurpose").value,rs=intelligence.filter(r=>String(r.customerId)===String(cid)),v=rs.filter(r=>r.type==="discount"||r.type==="delivery").reduce((s,r)=>s+(+r.amount||0),0);
+  let b={
+    partnership:`I'd like to stop by and spend a few minutes reviewing how ABCO is supporting ${n}, learn what is working well, and discuss where we may be able to support more of your flowline and pressure-control needs.`,
+    constraints:`I'd like to stop by and discuss any current vendor, product availability, lead-time or service challenges you're dealing with and see where ABCO may be able to help.`,
+    qbr:`I'd like to schedule a brief business review with ${n} to review your activity with ABCO, the value we've been able to provide${v?`, including approximately ${intelMoney(v)} in documented pricing and delivery value`:""}, and discuss ways we can support you better going forward.`
+  }[p];
+  $("meetingEmailTemplate").value=`Subject: Quick Business Review — ABCO\n\n${greeting}\n\n${b}\n\nWould you have a few minutes for me to stop by sometime soon?\n\nThank you,\nAlex`;
+  $("meetingTextTemplate").value=`${greeting} this is Alex with ABCO. ${b} Would you have a few minutes for me to stop by sometime soon?`;
+  $("meetingTemplates").classList.remove("hidden");updateMeetingContactInfo();
+}
+function openMeetingEmail(){
+  const ct=meetingContact();if(!ct.email){alert("This customer's contact does not have an email address saved.");return}
+  const txt=$("meetingEmailTemplate").value||"";const lines=txt.split("\n");let subject="Quick Business Review — ABCO",body=txt;
+  if(lines[0].toLowerCase().startsWith("subject:")){subject=lines[0].slice(8).trim();body=lines.slice(2).join("\n")}
+  window.location.href=`mailto:${encodeURIComponent(ct.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+function openMeetingText(){
+  const ct=meetingContact();if(!ct.phone){alert("This customer's contact does not have a phone number saved.");return}
+  const phone=String(ct.phone).replace(/[^\d+]/g,""),body=$("meetingTextTemplate").value||"";
+  window.location.href=`sms:${phone}?&body=${encodeURIComponent(body)}`;
+}
 function renderAll(){
 renderIntelligence();renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
@@ -4181,6 +4227,9 @@ document.querySelectorAll("[data-intel-report]").forEach(b=>b.onclick=()=>render
 if($("closeIntelForm"))$("closeIntelForm").onclick=()=>$("intelFormCard").classList.add("hidden");
 if($("saveIntelRecord"))$("saveIntelRecord").onclick=saveIntelRecord;
 if($("generateMeetingTemplates"))$("generateMeetingTemplates").onclick=generateMeetingTemplates;
+if($("meetingCustomer"))$("meetingCustomer").onchange=updateMeetingContactInfo;
+if($("sendMeetingEmail"))$("sendMeetingEmail").onclick=openMeetingEmail;
+if($("sendMeetingText"))$("sendMeetingText").onclick=openMeetingText;
 if($("copyMeetingEmail"))$("copyMeetingEmail").onclick=()=>navigator.clipboard.writeText($("meetingEmailTemplate").value);
 if($("copyMeetingText"))$("copyMeetingText").onclick=()=>navigator.clipboard.writeText($("meetingTextTemplate").value);
 renderAll();
