@@ -648,7 +648,8 @@
       body[data-layout="mobile"] .view-mode-selector{grid-template-columns:1fr!important}
     }
 
-  </style>
+  .intel-actions{display:flex;gap:9px;flex-wrap:wrap}.intel-actions button{flex:1 1 165px}.intel-record{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px;margin:9px 0}.intel-record-head{display:flex;justify-content:space-between;gap:10px}.intel-pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}.intel-table{width:100%;border-collapse:collapse;font-size:12px}.intel-table th,.intel-table td{border-bottom:1px solid var(--line);padding:8px 5px;text-align:left}.intel-table th{font-size:10px;color:var(--muted);text-transform:uppercase}@media(max-width:560px){.intel-actions{display:grid;grid-template-columns:1fr}.intel-actions button{width:100%}.intel-table{font-size:11px}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1051,6 +1052,45 @@
     </div>
   </section>
 
+  <section id="intelligenceView" class="view">
+    <div class="kicker">Territory Intelligence</div><h2 style="margin-top:4px">Field Intelligence & Customer Value</h2>
+    <div class="metrics">
+      <div class="metric"><span>Lost Sales</span><strong id="intelLostTotal">$0</strong><small id="intelLostCount">0 records</small></div>
+      <div class="metric"><span>Documented Savings</span><strong id="intelSavingsTotal">$0</strong><small>pricing value</small></div>
+      <div class="metric"><span>Delivery Value</span><strong id="intelDeliveryTotal">$0</strong><small>service value</small></div>
+      <div class="metric"><span>Feedback Impact</span><strong id="intelFeedbackTotal">$0</strong><small>business impact</small></div>
+    </div>
+    <div class="card">
+      <h2>Document Intelligence</h2>
+      <div class="intel-actions">
+        <button class="primary" data-intel-form="lost">＋ Lost Sale / No Stock</button>
+        <button class="secondary" data-intel-form="feedback">＋ Customer Feedback</button>
+        <button class="secondary" data-intel-form="discount">＋ Discount Pricing</button>
+        <button class="secondary" data-intel-form="delivery">＋ Delivery Value</button>
+      </div>
+    </div>
+    <div id="intelFormCard" class="card hidden">
+      <div class="section-head"><div><div class="kicker">New Record</div><h2 id="intelFormTitle">Record</h2></div><button id="closeIntelForm" class="secondary">Close</button></div>
+      <input id="intelRecordType" type="hidden">
+      <div class="row"><div><label>Customer</label><select id="intelCustomer"></select></div><div><label>Date</label><input id="intelDate" type="date"></div></div>
+      <div id="intelDynamicFields"></div>
+      <label>Notes / Customer Comments</label><textarea id="intelNotes" rows="4"></textarea>
+      <div class="toolbar" style="margin-top:12px"><button id="saveIntelRecord" class="primary">Save Record</button></div>
+    </div>
+    <div class="card">
+      <div class="kicker">Meeting Tools</div><h2>Meeting Invite Generator</h2>
+      <div class="row"><div><label>Customer</label><select id="meetingCustomer"></select></div><div><label>Purpose</label><select id="meetingPurpose"><option value="partnership">Business Partnership Review</option><option value="constraints">Vendor & Product Review</option><option value="qbr">QBR / Customer Value Review</option></select></div></div>
+      <button id="generateMeetingTemplates" class="primary">Generate Email & Text</button>
+      <div id="meetingTemplates" class="hidden" style="margin-top:12px"><label>Email</label><textarea id="meetingEmailTemplate" rows="7"></textarea><label>Text</label><textarea id="meetingTextTemplate" rows="4"></textarea><div class="toolbar"><button id="copyMeetingEmail" class="secondary">Copy Email</button><button id="copyMeetingText" class="secondary">Copy Text</button></div></div>
+    </div>
+    <div class="card">
+      <div class="kicker">Management</div><h2>Reports</h2>
+      <div class="intel-actions"><button class="secondary" data-intel-report="lost">Lost Orders</button><button class="secondary" data-intel-report="product">Product Mix</button><button class="secondary" data-intel-report="inventory">OKC Inventory</button><button class="secondary" data-intel-report="geo">Geography</button><button class="secondary" data-intel-report="feedback">Business Case</button><button class="secondary" data-intel-report="qbr">Customer QBR</button></div>
+      <div id="intelReportOutput" style="margin-top:14px"></div>
+    </div>
+    <div class="card"><h2>Recent Intelligence</h2><div id="intelRecordList"></div></div>
+  </section>
+
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
@@ -1406,6 +1446,7 @@
     <button class="tab" data-view="productsView"><strong>▥</strong>Products</button>
     <button class="tab" data-view="communicationsView"><strong>✉</strong>Comms</button>
     <button class="tab" data-view="followupsView"><strong>✓</strong>Follow-ups</button>
+    <button class="tab" data-view="intelligenceView"><strong>◆</strong>Intel</button>
     <button class="tab" data-view="settingsView"><strong>⚙</strong>Settings</button>
   </div>
 </nav>
@@ -1431,6 +1472,7 @@ let customers=JSON.parse(localStorage.getItem(KEYS.customers)||"null");
 let orders=JSON.parse(localStorage.getItem(KEYS.orders)||"[]");
 let communications=JSON.parse(localStorage.getItem(KEYS.communications)||"[]");
 let activities=JSON.parse(localStorage.getItem(KEYS.activities)||"[]");
+let intelligence=JSON.parse(localStorage.getItem("abSalesOS_intelligence_v1")||"[]");
 let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:""};
 // Recovery handoff: the installed Home Screen PWA and Safari can have separate
 // storage on iOS. A password-recovery request therefore carries the *public*
@@ -1512,6 +1554,7 @@ function save(markDirty=true){
   localStorage.setItem(KEYS.orders,JSON.stringify(orders));
   localStorage.setItem(KEYS.communications,JSON.stringify(communications));
   localStorage.setItem(KEYS.activities,JSON.stringify(activities));
+  localStorage.setItem("abSalesOS_intelligence_v1",JSON.stringify(intelligence));
   localStorage.setItem(KEYS.settings,JSON.stringify(settings));
   if(markDirty&&!applyingCloudState)cloud.localDirtyAt=new Date().toISOString();
   localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
@@ -2620,7 +2663,32 @@ async function exportCustomerLogWorkbook(){
   }
 }
 
-function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
+function intelMoney(v){return money.format(Number(v)||0)}
+function intelCust(id){return customers.find(c=>String(c.id)===String(id))||{}}
+function intelName(id){return intelCust(id).company||"Unknown Customer"}
+function populateIntelCustomers(){const o='<option value="">Select customer…</option>'+customers.slice().sort((a,b)=>(a.company||"").localeCompare(b.company||"")).map(c=>`<option value="${c.id}">${esc(c.company||"Unnamed")}</option>`).join("");if($("intelCustomer"))$("intelCustomer").innerHTML=o;if($("meetingCustomer"))$("meetingCustomer").innerHTML=o}
+function intelFields(t){
+if(t==="lost")return `<div class="row"><div><label>Product / Part Number</label><input id="intelProduct"></div><div><label>Quantity Requested</label><input id="intelQty" type="number" min="0"></div></div><div class="row"><div><label>Estimated Lost Value</label><input id="intelAmount" type="number" min="0" step=".01"></div><div><label>Reason Lost</label><select id="intelReason"><option>No Stock</option><option>Lead Time</option><option>Price</option><option>Delivery / Logistics</option><option>Product Not Offered</option><option>Competitor / Vendor Preference</option><option>Other</option></select></div></div><div class="row"><div><label>Market / Location</label><input id="intelMarket" placeholder="OKC, Tulsa…"></div><div><label>Competitor</label><input id="intelCompetitor"></div></div>`;
+if(t==="feedback")return `<div class="row"><div><label>Category</label><select id="intelCategory"><option>Inventory / Product Availability</option><option>Delivery / Logistics</option><option>Staffing / Response Time</option><option>Pricing</option><option>Product Offering</option><option>Technical Support</option><option>Service Capability</option><option>Quality</option><option>Lead Time</option><option>Documentation</option><option>Other</option></select></div><div><label>Specific Need / Improvement</label><input id="intelNeed" placeholder="Delivery driver, more OKC stock…"></div></div><div class="row"><div><label>Impact</label><select id="intelImpactStatus"><option>Opportunity Potential</option><option>Sale At Risk</option><option>Confirmed Lost Sale</option><option>Service Improvement</option></select></div><div><label>Dollar Impact</label><input id="intelAmount" type="number" min="0" step=".01"></div></div><div class="row"><div><label>Frequency</label><select id="intelFrequency"><option>One Time</option><option>Occasional</option><option>Monthly</option><option>Weekly</option><option>Ongoing / High Frequency</option></select></div><div><label>Product / Service Affected</label><input id="intelProduct"></div></div>`;
+if(t==="discount")return `<div class="row"><div><label>Product / Part Number</label><input id="intelProduct"></div><div><label>Quantity Sold</label><input id="intelQty" type="number" min="1" value="1"></div></div><div class="row"><div><label>Original Unit Price</label><input id="intelOriginal" type="number" min="0" step=".01"></div><div><label>Discounted Unit Price</label><input id="intelDiscounted" type="number" min="0" step=".01"></div></div>`;
+return `<div class="row"><div><label>Delivery / Order Reference</label><input id="intelProduct"></div><div><label>Delivery Value</label><input id="intelAmount" type="number" min="0" step=".01"></div></div><div class="row"><div><label>Market / Location</label><input id="intelMarket"></div><div><label>Delivered By</label><input id="intelDeliveredBy"></div></div>`}
+function openIntelForm(t){$("intelRecordType").value=t;$("intelFormCard").classList.remove("hidden");$("intelDate").value=new Date().toISOString().slice(0,10);$("intelFormTitle").textContent={lost:"Lost Sale / No Stock",feedback:"Customer Feedback & Business Impact",discount:"Discount Pricing",delivery:"Delivery Value"}[t];$("intelDynamicFields").innerHTML=intelFields(t);$("intelNotes").value="";$("intelFormCard").scrollIntoView({behavior:"smooth"})}
+function saveIntelRecord(){const t=$("intelRecordType").value,cid=$("intelCustomer").value;if(!cid){alert("Choose a customer.");return}const g=id=>$(id)?.value||"";let r={id:"intel_"+Date.now(),type:t,customerId:cid,date:g("intelDate"),notes:g("intelNotes"),createdAt:new Date().toISOString()};if(t==="lost")Object.assign(r,{product:g("intelProduct"),qty:+g("intelQty")||0,amount:+g("intelAmount")||0,reason:g("intelReason"),market:g("intelMarket"),competitor:g("intelCompetitor")});if(t==="feedback")Object.assign(r,{category:g("intelCategory"),need:g("intelNeed"),impactStatus:g("intelImpactStatus"),amount:+g("intelAmount")||0,frequency:g("intelFrequency"),product:g("intelProduct")});if(t==="discount"){let o=+g("intelOriginal")||0,d=+g("intelDiscounted")||0,q=+g("intelQty")||1;Object.assign(r,{product:g("intelProduct"),qty:q,original:o,discounted:d,savingsPerUnit:Math.max(0,o-d),amount:Math.max(0,o-d)*q})}if(t==="delivery")Object.assign(r,{reference:g("intelProduct"),amount:+g("intelAmount")||0,market:g("intelMarket"),deliveredBy:g("intelDeliveredBy")});intelligence.push(r);save();$("intelFormCard").classList.add("hidden");renderIntelligence()}
+function renderIntelligence(){if(!$("intelligenceView"))return;populateIntelCustomers();let lost=intelligence.filter(r=>r.type==="lost"),d=intelligence.filter(r=>r.type==="discount"),dv=intelligence.filter(r=>r.type==="delivery"),f=intelligence.filter(r=>r.type==="feedback");$("intelLostTotal").textContent=intelMoney(lost.reduce((s,r)=>s+(+r.amount||0),0));$("intelLostCount").textContent=lost.length+" records";$("intelSavingsTotal").textContent=intelMoney(d.reduce((s,r)=>s+(+r.amount||0),0));$("intelDeliveryTotal").textContent=intelMoney(dv.reduce((s,r)=>s+(+r.amount||0),0));$("intelFeedbackTotal").textContent=intelMoney(f.reduce((s,r)=>s+(+r.amount||0),0));$("intelRecordList").innerHTML=intelligence.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30).map(r=>`<div class="intel-record"><div class="intel-record-head"><div><span class="intel-pill">${esc(r.type.toUpperCase())}</span><strong style="display:block;margin-top:5px">${esc(intelName(r.customerId))}</strong><span class="mini">${esc(r.date||"")} · ${esc(r.product||r.need||r.reference||r.category||"")}</span></div><strong>${intelMoney(r.amount)}</strong></div><div class="mini" style="margin-top:6px">${esc(r.reason||r.impactStatus||r.notes||"")}</div><button class="secondary" style="margin-top:7px" onclick="deleteIntel('${r.id}')">Delete</button></div>`).join("")||'<p class="muted">No intelligence records yet.</p>'}
+function deleteIntel(id){if(confirm("Delete this record?")){intelligence=intelligence.filter(r=>r.id!==id);save();renderIntelligence()}}
+function agg(rs,key){let m=new Map();rs.forEach(r=>{let k=key(r)||"Unspecified",x=m.get(k)||{name:k,count:0,amount:0,qty:0};x.count++;x.amount+=+r.amount||0;x.qty+=+r.qty||0;m.set(k,x)});return [...m.values()].sort((a,b)=>b.amount-a.amount||b.count-a.count)}
+function intelTable(title,desc,heads,rows){$("intelReportOutput").innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
+function renderIntelReport(t){
+if(t==="lost"){let a=agg(intelligence.filter(r=>r.type==="lost"),r=>r.product);intelTable("Lost Orders Report","Lost demand including No Stock.",["Product","Requests","Units","Lost $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
+if(t==="feedback"){let a=agg(intelligence.filter(r=>r.type==="feedback"),r=>r.need||r.category);intelTable("Feedback / Business Case","Measurable justification for staffing, delivery, inventory and services.",["Need","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
+if(t==="geo"){let a=agg(intelligence.filter(r=>r.market),r=>r.market);intelTable("Geographical Impact","Documented demand and value by market.",["Market","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
+if(t==="inventory"){let a=agg(intelligence.filter(r=>r.type==="lost"&&r.reason==="No Stock"),r=>r.product);intelTable("OKC Master Inventory Intelligence","No-stock demand ranked by documented lost value and request frequency.",["Product","No Stock Requests","Lost Units","Lost $","Priority"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td><td>${x.count>=3||x.amount>=10000?"MUST STOCK":x.count>=2||x.amount>=5000?"STRONG":"MONITOR"}</td></tr>`).join(""));return}
+if(t==="product"){if(typeof renderProducts==="function"){showView("productsView",true);return}$("intelReportOutput").innerHTML='<p>Use the Products page for product mix.</p>';return}
+if(t==="qbr"){let cid=$("meetingCustomer").value;if(!cid){$("intelReportOutput").innerHTML='<p class="muted">Choose a customer above first.</p>';return}let rs=intelligence.filter(r=>String(r.customerId)===String(cid)),s=rs.filter(r=>r.type==="discount").reduce((a,r)=>a+(+r.amount||0),0),d=rs.filter(r=>r.type==="delivery").reduce((a,r)=>a+(+r.amount||0),0);$("intelReportOutput").innerHTML=`<h2>${esc(intelName(cid))} — QBR Value</h2><div class="metrics"><div class="metric"><span>Product Savings</span><strong>${intelMoney(s)}</strong></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(d)}</strong></div><div class="metric"><span>Total Value</span><strong>${intelMoney(s+d)}</strong></div></div>`}}
+function generateMeetingTemplates(){let cid=$("meetingCustomer").value;if(!cid){alert("Choose a customer.");return}let c=intelCust(cid),n=c.company||"your team",p=$("meetingPurpose").value,rs=intelligence.filter(r=>String(r.customerId)===String(cid)),v=rs.filter(r=>r.type==="discount"||r.type==="delivery").reduce((s,r)=>s+(+r.amount||0),0),b={partnership:`I'd like to stop by and spend a few minutes reviewing how ABCO is supporting ${n}, learn where we can make sourcing easier, and identify additional areas where we may be able to help your operation.`,constraints:`I'd like to stop by and discuss any current vendor, product availability, lead-time or service constraints you're dealing with and see where ABCO may be able to provide additional support.`,qbr:`I'd like to schedule a brief business review with ${n} to look at your activity with ABCO, the value we've been able to provide${v?`, including approximately ${intelMoney(v)} in documented pricing and delivery value`:""}, and opportunities to support you better going forward.`}[p];$("meetingEmailTemplate").value=`Subject: Quick Business Review — ABCO\n\nHi,\n\n${b}\n\nWould you have a few minutes for me to stop by sometime soon?\n\nThank you,`; $("meetingTextTemplate").value=`Hi, this is Alex with ABCO. ${b} Would you have a few minutes for me to stop by sometime soon?`;$("meetingTemplates").classList.remove("hidden")}
+
+function renderAll(){
+renderIntelligence();renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
 let editingOrderId=null;
@@ -3530,7 +3598,7 @@ function updateCloudAccountUI(){
 function cloudSnapshot(){
   return {
     schemaVersion:1,
-    rfqs,customers,orders,communications,activities,settings,
+    rfqs,customers,orders,communications,activities,settings,intelligence,
     preferences:{
       dailyGoalMin:localStorage.getItem("abSalesOS_dailyGoalMin")||"4",
       dailyGoalMax:localStorage.getItem("abSalesOS_dailyGoalMax")||"8"
@@ -3547,6 +3615,7 @@ function applyCloudSnapshot(state){
     orders=Array.isArray(state.orders)?state.orders:[];
     communications=Array.isArray(state.communications)?state.communications:[];
     activities=Array.isArray(state.activities)?state.activities:[];
+    intelligence=Array.isArray(state.intelligence)?state.intelligence:[];
     settings={...(state.settings||{goal:100000,sales:0})};
     if(!settings.skin)settings.skin="midnight-executive";
     if(state.preferences?.dailyGoalMin)localStorage.setItem("abSalesOS_dailyGoalMin",String(state.preferences.dailyGoalMin));
@@ -4107,6 +4176,13 @@ applySkin(settings.skin||"midnight-executive");
 applyLayoutMode(layoutMode);
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
+document.querySelectorAll("[data-intel-form]").forEach(b=>b.onclick=()=>openIntelForm(b.dataset.intelForm));
+document.querySelectorAll("[data-intel-report]").forEach(b=>b.onclick=()=>renderIntelReport(b.dataset.intelReport));
+if($("closeIntelForm"))$("closeIntelForm").onclick=()=>$("intelFormCard").classList.add("hidden");
+if($("saveIntelRecord"))$("saveIntelRecord").onclick=saveIntelRecord;
+if($("generateMeetingTemplates"))$("generateMeetingTemplates").onclick=generateMeetingTemplates;
+if($("copyMeetingEmail"))$("copyMeetingEmail").onclick=()=>navigator.clipboard.writeText($("meetingEmailTemplate").value);
+if($("copyMeetingText"))$("copyMeetingText").onclick=()=>navigator.clipboard.writeText($("meetingTextTemplate").value);
 renderAll();
 initializeCloudSync();
 </script>
