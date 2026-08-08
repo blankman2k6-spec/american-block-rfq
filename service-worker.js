@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-5-9-upload-diagnostics";
+const CACHE="ab-sales-os-v4-5-10-download-diagnostics";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{
