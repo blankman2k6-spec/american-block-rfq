@@ -1,8 +1,44 @@
-const CACHE="ab-sales-os-v4-5-3-cloud-recovery";
+const CACHE="ab-sales-os-v4-5-4-cloud-recovery";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting()});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
-self.addEventListener("fetch",e=>{
-  if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match("./")));return}
-  e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(cache=>cache.put(e.request,copy));return r})))
+
+self.addEventListener("install",event=>{
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate",event=>{
+  event.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch",event=>{
+  const request=event.request;
+  const url=new URL(request.url);
+
+  // Never intercept API/auth requests, cross-origin traffic, or non-GET requests.
+  // This is especially important for Supabase password recovery on iOS Safari/PWA.
+  if(request.method!=="GET" || url.origin!==self.location.origin) return;
+
+  if(request.mode==="navigate"){
+    event.respondWith(
+      fetch(request,{cache:"no-store"})
+        .then(response=>{
+          const copy=response.clone();
+          event.waitUntil(caches.open(CACHE).then(cache=>cache.put("./",copy)).catch(()=>{}));
+          return response;
+        })
+        .catch(()=>caches.match("./"))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then(cached=>cached || fetch(request).then(response=>{
+      const copy=response.clone();
+      event.waitUntil(caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{}));
+      return response;
+    }))
+  );
 });

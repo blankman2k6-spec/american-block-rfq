@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.3 Cloud Recovery</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.4 Cloud Recovery</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -1282,7 +1282,7 @@ let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:
 if(!String(cloud.url||"").trim()) cloud.url=BUILTIN_CLOUD.url;
 if(!String(cloud.anonKey||"").trim()) cloud.anonKey=BUILTIN_CLOUD.anonKey;
 localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
-let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false;
+let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false,cloudRecoveryMode=false;
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
 if(!settings.skin)settings.skin="midnight-executive";
 let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
@@ -1311,7 +1311,7 @@ function save(markDirty=true){
   localStorage.setItem(KEYS.settings,JSON.stringify(settings));
   if(markDirty&&!applyingCloudState)cloud.localDirtyAt=new Date().toISOString();
   localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
-  if(markDirty&&cloudSyncReady&&cloud.session?.access_token&&!applyingCloudState)scheduleCloudPush();
+  if(markDirty&&cloudSyncReady&&cloud.session?.access_token&&!applyingCloudState&&!cloudRecoveryMode)scheduleCloudPush();
 }
 function itemSubtotal(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
 function extraCharges(r){return (Number(r.shipping)||0)+(Number(r.tax)||0)}
@@ -3463,7 +3463,7 @@ async function syncCloudNow(){
 function scheduleCloudPush(){
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer=setTimeout(async()=>{
-    if(!cloud.firstSyncComplete||!navigator.onLine)return;
+    if(cloudRecoveryMode||!cloud.firstSyncComplete||!navigator.onLine)return;
     try{await pushCloudState({silent:true})}
     catch(e){setCloudSyncStatus(`Auto-sync paused — ${e.message}`,"bad")}
   },1400);
@@ -3471,6 +3471,7 @@ function scheduleCloudPush(){
 function captureCloudRecoverySession(){
   const hash=new URLSearchParams((window.location.hash||"").replace(/^#/,""));
   if(hash.get("type")!=="recovery"||!hash.get("access_token"))return false;
+  cloudRecoveryMode=true;
   cloud.session={
     access_token:hash.get("access_token"),
     refresh_token:hash.get("refresh_token")||"",
@@ -3489,17 +3490,19 @@ async function hydrateCloudUser(){
 async function initializeCloudSync(){
   const recovering=captureCloudRecoverySession();
   updateCloudAccountUI();
-  cloudSyncReady=true;
-  if(!cloud.session?.access_token)return;
+  if(!cloud.session?.access_token){cloudSyncReady=true;return;}
   if(recovering){
     try{
       await hydrateCloudUser();
       updateCloudAccountUI();
       showView("settingsView",true);
-      setCloudSyncStatus("✓ Password recovery verified with Supabase. Enter and confirm your new password below, then tap Change Password.","good");
-    }catch(e){setCloudSyncStatus(`Recovery link opened, but the session could not be verified — ${e.message}`,"bad");}
+      setCloudSyncStatus("✓ Recovery session verified. Auto-sync is paused until the password change finishes.","good");
+    }catch(e){
+      setCloudSyncStatus(`Recovery link opened, but Supabase could not verify the session — ${e.message}`,"bad");
+    }
     return;
   }
+  cloudSyncReady=true;
   try{
     await ensureCloudToken();
     updateCloudAccountUI();
@@ -3554,15 +3557,25 @@ if($("cloudCreateAccount"))$("cloudCreateAccount").onclick=async()=>{
 if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
   const password=$("cloudNewPassword").value;
   const confirm=$("cloudConfirmPassword").value;
-  if(!cloud.session?.access_token){setCloudSyncStatus("Sign in first.","warn");return}
+  if(!cloud.session?.access_token){setCloudSyncStatus("Open a fresh password-recovery link or sign in first.","warn");return}
   if(password.length<6){setCloudSyncStatus("New password must be at least 6 characters.","warn");return}
   if(password!==confirm){setCloudSyncStatus("The two new-password entries do not match.","warn");return}
   setCloudSyncStatus("Changing cloud password…");
   try{
-    const token=await ensureCloudToken();
-    const r=await fetch(`${cloudBase()}/auth/v1/user`,{
+    // During password recovery, use the recovery access token exactly as issued.
+    // Do not refresh it first; a recovery session may not yet have a normal refresh lifecycle.
+    const token=cloud.session.access_token;
+    const endpoint=`${BUILTIN_CLOUD.url}/auth/v1/user`;
+    const r=await fetch(endpoint,{
       method:"PUT",
-      headers:{apikey:cloudKey(),Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
+      mode:"cors",
+      cache:"no-store",
+      credentials:"omit",
+      headers:{
+        apikey:BUILTIN_CLOUD.anonKey,
+        Authorization:`Bearer ${token}`,
+        "Content-Type":"application/json"
+      },
       body:JSON.stringify({password})
     });
     const text=await r.text();
@@ -3572,10 +3585,22 @@ if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
       const message=data.msg||data.message||data.error_description||data.error||`HTTP ${r.status}`;
       throw new Error(message);
     }
-    if(data?.id){cloud.session.user={...(cloud.session.user||{}),...data};saveCloudMeta()}
+    if(data?.id){
+      cloud.session.user={...(cloud.session.user||{}),...data};
+      cloud.userEmail=data.email||cloud.userEmail||"";
+    }
+    cloudRecoveryMode=false;
+    cloudSyncReady=true;
+    saveCloudMeta();
     $("cloudNewPassword").value="";$("cloudConfirmPassword").value="";
-    setCloudSyncStatus("✓ Password changed for this cloud account. Your CRM ownership is unchanged.","good");
-  }catch(e){setCloudSyncStatus(`Password change failed — ${e.message}`,"bad")}
+    updateCloudAccountUI();
+    setCloudSyncStatus("✓ Password changed successfully. Your existing cloud user and CRM ownership are unchanged.","good");
+    // Now that recovery is complete, normal CRM sync may safely resume.
+    try{await syncCloudNow()}catch(_){/* Password change succeeded even if CRM sync needs a later retry. */}
+  }catch(e){
+    const msg=(e&&e.message)?e.message:String(e||"Unknown error");
+    setCloudSyncStatus(`Password change failed — ${msg}`,"bad");
+  }
 };
 if($("cloudSignOut"))$("cloudSignOut").onclick=async()=>{
   try{
