@@ -277,6 +277,123 @@
     body[data-skin="clean-corporate"] .account-menu button,body[data-skin="clean-corporate"] .order-menu button{color:#172033}
     body[data-skin="clean-corporate"] .mix-track{background:#e7edf5}
 
+
+    /* v4.4.1 light-skin contrast fix:
+       several workflow components had legacy hard-coded navy backgrounds.
+       Light skins now restyle those surfaces AND their text together. */
+    body[data-skin="classic-office"] .day-track-card,
+    body[data-skin="classic-office"] .insight-card,
+    body[data-skin="classic-office"] .activity-card,
+    body[data-skin="classic-office"] .account-list-row,
+    body[data-skin="classic-office"] .opportunity-card,
+    body[data-skin="classic-office"] .inline-customer-panel,
+    body[data-skin="classic-office"] .verify-banner,
+    body[data-skin="classic-office"] .verify-stat,
+    body[data-skin="classic-office"] .auto-log-box,
+    body[data-skin="classic-office"] .auto-log-preview,
+    body[data-skin="classic-office"] .product-stat,
+    body[data-skin="classic-office"] .mini-metric,
+    body[data-skin="classic-office"] .group-title,
+    body[data-skin="classic-office"] .total{
+      background:linear-gradient(#f7f7f7,#e2e2e2);
+      color:#171717;
+      border-color:#9f9f9f;
+      box-shadow:inset 0 1px #fff,0 1px 3px rgba(0,0,0,.10);
+    }
+    body[data-skin="classic-office"] .day-track-card *,
+    body[data-skin="classic-office"] .insight-card *,
+    body[data-skin="classic-office"] .activity-card *,
+    body[data-skin="classic-office"] .account-list-row *,
+    body[data-skin="classic-office"] .opportunity-card *,
+    body[data-skin="classic-office"] .inline-customer-panel *,
+    body[data-skin="classic-office"] .verify-banner *,
+    body[data-skin="classic-office"] .verify-stat *,
+    body[data-skin="classic-office"] .auto-log-box *,
+    body[data-skin="classic-office"] .auto-log-preview *,
+    body[data-skin="classic-office"] .product-stat *,
+    body[data-skin="classic-office"] .mini-metric *,
+    body[data-skin="classic-office"] .group-title *,
+    body[data-skin="classic-office"] .total *{
+      color:inherit;
+    }
+    body[data-skin="classic-office"] .mini,
+    body[data-skin="classic-office"] .muted,
+    body[data-skin="classic-office"] .sub,
+    body[data-skin="classic-office"] .day-track-card .mini,
+    body[data-skin="classic-office"] .activity-card .mini{
+      color:#565656!important;
+    }
+    body[data-skin="classic-office"] .track-chip,
+    body[data-skin="classic-office"] .count-badge,
+    body[data-skin="classic-office"] .meta-badge,
+    body[data-skin="classic-office"] .activity-type,
+    body[data-skin="classic-office"] .pill,
+    body[data-skin="classic-office"] .rank-badge{
+      background:#e8e8e8;
+      color:#202020;
+      border-color:#969696;
+    }
+    body[data-skin="classic-office"] .daily-progress,
+    body[data-skin="classic-office"] .progress-wrap,
+    body[data-skin="classic-office"] .product-bar-track,
+    body[data-skin="classic-office"] .mini-bar,
+    body[data-skin="classic-office"] .mix-track{
+      background:#c7c7c7;
+      border-color:#8f8f8f;
+    }
+    body[data-skin="classic-office"] .status.green{background:#d7eedb;color:#175c2b;border-color:#699b73}
+    body[data-skin="classic-office"] .status.blue{background:#dbe8fa;color:#174f9e;border-color:#7899c6}
+    body[data-skin="classic-office"] .status.red{background:#f2d9db;color:#8b1f26;border-color:#bd7378}
+    body[data-skin="classic-office"] .status.yellow{background:#f7ebc9;color:#76510a;border-color:#c0a45b}
+
+    body[data-skin="clean-corporate"] .day-track-card,
+    body[data-skin="clean-corporate"] .insight-card,
+    body[data-skin="clean-corporate"] .activity-card,
+    body[data-skin="clean-corporate"] .account-list-row,
+    body[data-skin="clean-corporate"] .opportunity-card,
+    body[data-skin="clean-corporate"] .inline-customer-panel,
+    body[data-skin="clean-corporate"] .verify-banner,
+    body[data-skin="clean-corporate"] .verify-stat,
+    body[data-skin="clean-corporate"] .auto-log-box,
+    body[data-skin="clean-corporate"] .auto-log-preview,
+    body[data-skin="clean-corporate"] .product-stat,
+    body[data-skin="clean-corporate"] .mini-metric,
+    body[data-skin="clean-corporate"] .group-title,
+    body[data-skin="clean-corporate"] .total{
+      background:#fff;
+      color:#172033;
+      border-color:#d4dde8;
+      box-shadow:0 4px 14px rgba(24,39,75,.06);
+    }
+    body[data-skin="clean-corporate"] .day-track-card *,
+    body[data-skin="clean-corporate"] .insight-card *,
+    body[data-skin="clean-corporate"] .activity-card *,
+    body[data-skin="clean-corporate"] .opportunity-card *,
+    body[data-skin="clean-corporate"] .verify-banner *,
+    body[data-skin="clean-corporate"] .auto-log-box *{
+      color:inherit;
+    }
+    body[data-skin="clean-corporate"] .track-chip,
+    body[data-skin="clean-corporate"] .count-badge,
+    body[data-skin="clean-corporate"] .meta-badge,
+    body[data-skin="clean-corporate"] .activity-type,
+    body[data-skin="clean-corporate"] .pill,
+    body[data-skin="clean-corporate"] .rank-badge{
+      background:#eef4fb;color:#334155;border-color:#cbd8e8;
+    }
+    body[data-skin="clean-corporate"] .daily-progress,
+    body[data-skin="clean-corporate"] .progress-wrap,
+    body[data-skin="clean-corporate"] .product-bar-track,
+    body[data-skin="clean-corporate"] .mini-bar,
+    body[data-skin="clean-corporate"] .mix-track{
+      background:#e2e8f0;border-color:#cbd5e1;
+    }
+
+    /* Give standalone iPhone mode a little extra breathing room below the status area. */
+    @supports (padding-top: env(safe-area-inset-top)){
+      .app{padding-top:calc(18px + env(safe-area-inset-top))}
+    }
+
     @media(max-width:560px){.auto-log-grid{grid-template-columns:1fr}}
 
     @media(max-width:560px){.verify-grid{grid-template-columns:repeat(3,1fr)}.source-pdf-frame{height:350px}}
@@ -297,7 +414,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4 UI & Skins</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.1 UI Contrast Fix</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -706,7 +823,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.4 — UI & Skins</h2>
+      <h2>Version 4.4.1 — UI Contrast Fix</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
