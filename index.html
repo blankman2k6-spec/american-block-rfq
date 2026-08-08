@@ -713,6 +713,40 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 }
 
 
+
+/* v4.7.0 Annual Goal + Collapsible Orders + Backorder Product Exposure */
+.annual-goal-card{margin-top:15px}
+.annual-goal-track{height:20px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;overflow:hidden;position:relative}
+.annual-goal-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#16a34a);transition:width .35s ease}
+.annual-goal-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:10px;color:var(--muted);font-weight:700}
+.annual-goal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+.annual-goal-stat{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px}
+.annual-goal-stat span{display:block;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.annual-goal-stat strong{display:block;font-size:18px;margin-top:3px}
+.year-manager-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.year-history-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.year-history-row:last-child{border-bottom:0}
+.order-month-group{border:1px solid var(--line);border-radius:16px;background:var(--panel);margin:0 0 11px;overflow:hidden}
+.order-month-group>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;font-weight:900;user-select:none}
+.order-month-group>summary::-webkit-details-marker{display:none}
+.order-month-group>summary:before{content:"›";font-size:24px;line-height:1;transform:rotate(0deg);transition:transform .15s ease;color:var(--muted)}
+.order-month-group[open]>summary:before{transform:rotate(90deg)}
+.order-month-group .order-month-title{display:flex;align-items:center;gap:9px;flex:1}
+.order-month-group .order-month-meta{font-size:11px;color:var(--muted);font-weight:700;text-align:right}
+.order-month-group .order-month-body{padding:0 10px 10px}
+.backorder-product-grid{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.backorder-product-grid:last-child{border-bottom:0}
+.backorder-product-grid strong{display:block}
+.backorder-product-grid .bo-dollar{font-weight:900;font-size:16px;text-align:right}
+.backorder-product-grid .bo-units{font-size:11px;color:var(--muted);text-align:right}
+@media(max-width:700px){
+  .annual-goal-stats{grid-template-columns:1fr}
+  .order-month-group>summary{align-items:flex-start}
+  .order-month-meta{max-width:140px}
+  .backorder-product-grid{grid-template-columns:1fr auto}
+  .backorder-product-grid .bo-units{grid-column:2}
+}
+
 /* v4.6.9 Back Orders */
 .backorder-card{position:relative;border-left:5px solid #f59e0b}
 .backorder-card.completed{border-left-color:#22c55e;opacity:.84}
@@ -782,7 +816,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.9 Opportunity → RFQ Integration</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.7.0 Annual Goals + Order Folders</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -821,6 +855,26 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
         <span><i class="legend-dot legend-blue"></i>Current month</span>
         <span><i class="legend-dot legend-purple"></i>Momentum</span>
         <span><i class="legend-dot legend-gray"></i>Remaining</span>
+      </div>
+    </div>
+
+    <div class="card annual-goal-card">
+      <div class="section-head" style="margin:0 0 10px">
+        <div>
+          <div class="kicker">Yearly Goal Tracker</div>
+          <h2 id="annualGoalTitle" style="margin:4px 0 0">2026 Annual Goal</h2>
+          <div class="mini">Automatically calculated from credited closed orders / Closed Won business.</div>
+        </div>
+        <span id="annualGoalStatus" class="status blue">IN PROGRESS</span>
+      </div>
+      <div class="annual-goal-track" role="img" aria-label="Annual sales goal progress">
+        <div id="annualGoalFill" class="annual-goal-fill"></div>
+      </div>
+      <div class="annual-goal-scale"><span>$0</span><strong id="annualGoalPct">0%</strong><span id="annualGoalScaleMax">$0</span></div>
+      <div class="annual-goal-stats">
+        <div class="annual-goal-stat"><span>Credited YTD Sales</span><strong id="annualGoalSales">$0</strong></div>
+        <div class="annual-goal-stat"><span>Remaining</span><strong id="annualGoalRemaining">$0</strong></div>
+        <div class="annual-goal-stat"><span>Average / Month Needed</span><strong id="annualGoalMonthlyNeeded">$0</strong></div>
       </div>
     </div>
 
@@ -1166,6 +1220,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
       <div class="metric"><small>Units Sold</small><strong id="pUnits">0</strong><div class="sub">All line-item quantities</div></div>
       <div class="metric"><small>Product Revenue</small><strong id="pRevenue">$0</strong><div class="sub">Qty × unit price</div></div>
       <div class="metric"><small>Buying Customers</small><strong id="pCustomers">0</strong><div class="sub">Accounts with purchases</div></div>
+      <div class="metric"><small>Held on Back Order</small><strong id="pBackorderValue">$0</strong><div class="sub">Open dollar value not yet delivered</div></div>
     </div>
     <div class="card">
       <div class="row">
@@ -1185,6 +1240,14 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     <div class="card">
       <div class="section-head" style="margin:0 0 12px"><div><h2 style="margin:0">Product Ranking</h2><div class="mini">Purchase history with customer reach and last sale</div></div></div>
       <div id="productRanking" class="list"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin:0 0 12px">
+        <div><h2 style="margin:0">Back Order Exposure by Product</h2><div class="mini">Open dollars and units currently held up on back order.</div></div>
+        <span id="productBackorderBadge" class="status yellow">$0 OPEN</span>
+      </div>
+      <div id="productBackorderExposure"></div>
     </div>
 
     <div class="card">
@@ -1355,7 +1418,28 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
 
     <div class="card">
-      <h2>Version 4.6.9 — Opportunity → RFQ Integration</h2>
+      <div class="kicker">Sales Year</div>
+      <div class="section-head" style="margin:4px 0 8px">
+        <div><h2 id="salesYearTitle" style="margin:0">2026 Sales Year</h2><div class="mini">The active year advances automatically when the calendar year changes.</div></div>
+        <span id="salesYearStatus" class="status green">ACTIVE</span>
+      </div>
+      <div class="row">
+        <div><label>Annual Sales Goal</label><input id="annualGoalInput" type="number" min="0" step="10000" value="1200000"></div>
+        <div><label>Active Calendar Year</label><input id="activeSalesYear" type="number" min="2020" max="2100" step="1" readonly></div>
+      </div>
+      <div class="year-manager-actions">
+        <button id="saveAnnualGoal" class="primary" type="button">Save Annual Goal</button>
+        <button id="closeSalesYear" class="secondary" type="button">Close Current Year</button>
+        <button id="startNewSalesYear" class="secondary" type="button">Start / Switch to Current Year</button>
+      </div>
+      <div class="mini" style="margin-top:8px">Closing a year stores a snapshot for reference. Orders are never deleted and remain available in Order History.</div>
+      <div style="height:1px;background:var(--line);margin:14px 0"></div>
+      <strong>Closed Year History</strong>
+      <div id="closedYearHistory" class="mini" style="margin-top:8px">No closed years yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>Version 4.7.0 — Annual Goals + Order Folders</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1765,6 +1849,17 @@ localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
 let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false,cloudRecoveryMode=false;
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
 if(!settings.skin)settings.skin="midnight-executive";
+function ensureYearSettings(){
+  const calendarYear=new Date().getFullYear();
+  settings.yearGoals=settings.yearGoals&&typeof settings.yearGoals==="object"?settings.yearGoals:{};
+  settings.yearArchives=settings.yearArchives&&typeof settings.yearArchives==="object"?settings.yearArchives:{};
+  if(!Number(settings.activeYear)||Number(settings.activeYear)!==calendarYear)settings.activeYear=calendarYear;
+  if(!Number(settings.yearGoals[calendarYear])){
+    const monthly=Number(settings.goal)||100000;
+    settings.yearGoals[calendarYear]=monthly*12;
+  }
+}
+ensureYearSettings();
 let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
@@ -1972,6 +2067,41 @@ function businessDaysLeft(){
   return count;
 }
 
+
+function salesYearRange(year=Number(settings.activeYear)||new Date().getFullYear()){
+  return {start:new Date(year,0,1,0,0,0,0),end:new Date(year,11,31,23,59,59,999)};
+}
+function annualClosedSales(year=Number(settings.activeYear)||new Date().getFullYear()){
+  const {start,end}=salesYearRange(year);
+  const real=orders.reduce((s,o)=>s+boRecognizedValueInRange(o,start,end),0);
+  const synthetic=rfqs.filter(r=>r.status==="Closed Won"&&!orderLinkedToRfq(r.id))
+    .reduce((s,r)=>s+boRecognizedValueInRange(boSyntheticSource(r),start,end),0);
+  return real+synthetic;
+}
+function remainingMonthsInYear(year){
+  const now=new Date();
+  if(year<now.getFullYear())return 0;
+  if(year>now.getFullYear())return 12;
+  return Math.max(1,12-now.getMonth());
+}
+function renderYearManagement(){
+  ensureYearSettings();
+  const year=Number(settings.activeYear)||new Date().getFullYear();
+  const goal=Number(settings.yearGoals?.[year])||((Number(settings.goal)||100000)*12);
+  if($("salesYearTitle"))$("salesYearTitle").textContent=`${year} Sales Year`;
+  if($("activeSalesYear"))$("activeSalesYear").value=year;
+  if($("annualGoalInput"))$("annualGoalInput").value=goal;
+  if($("salesYearStatus")){
+    const closed=!!settings.yearArchives?.[year];
+    $("salesYearStatus").textContent=closed?"CLOSED":"ACTIVE";
+    $("salesYearStatus").className="status "+(closed?"blue":"green");
+  }
+  if($("closedYearHistory")){
+    const rows=Object.entries(settings.yearArchives||{}).sort((a,b)=>Number(b[0])-Number(a[0]));
+    $("closedYearHistory").innerHTML=rows.length?rows.map(([y,a])=>`<div class="year-history-row"><span><strong>${esc(y)}</strong><br><span class="mini">Closed ${a.closedAt?new Date(a.closedAt).toLocaleDateString():""}</span></span><span style="text-align:right"><strong>${money.format(Number(a.sales)||0)}</strong><br><span class="mini">Goal ${money.format(Number(a.goal)||0)}</span></span></div>`).join(""):"No closed years yet.";
+  }
+}
+
 function renderDashboard(){
   const open=rfqs.filter(isOpen),today=today0();
   $("dOpenCount").textContent=open.length;
@@ -2001,6 +2131,26 @@ function renderDashboard(){
   if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Credited orders ${money.format(currentMonthImportedSales())} · Credited Closed Won ${money.format(currentMonthClosedWonSales())}${Number(settings.sales)?` · Manual adjustment ${money.format(Number(settings.sales)||0)}`:""}`;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
+
+  ensureYearSettings();
+  const salesYear=Number(settings.activeYear)||new Date().getFullYear();
+  const annualGoal=Number(settings.yearGoals?.[salesYear])||((Number(settings.goal)||100000)*12);
+  const annualSales=annualClosedSales(salesYear);
+  const annualRemaining=Math.max(0,annualGoal-annualSales);
+  const annualPct=annualGoal?Math.min(100,(annualSales/annualGoal)*100):0;
+  const monthsLeft=remainingMonthsInYear(salesYear);
+  if($("annualGoalTitle"))$("annualGoalTitle").textContent=`${salesYear} Annual Goal`;
+  if($("annualGoalFill"))$("annualGoalFill").style.width=annualPct+"%";
+  if($("annualGoalPct"))$("annualGoalPct").textContent=`${Math.round(annualPct)}%`;
+  if($("annualGoalScaleMax"))$("annualGoalScaleMax").textContent=money.format(annualGoal);
+  if($("annualGoalSales"))$("annualGoalSales").textContent=money.format(annualSales);
+  if($("annualGoalRemaining"))$("annualGoalRemaining").textContent=money.format(annualRemaining);
+  if($("annualGoalMonthlyNeeded"))$("annualGoalMonthlyNeeded").textContent=money.format(monthsLeft?annualRemaining/monthsLeft:annualRemaining);
+  if($("annualGoalStatus")){
+    $("annualGoalStatus").textContent=annualPct>=100?"GOAL MET":annualPct>=50?"IN PROGRESS":"BUILDING";
+    $("annualGoalStatus").className="status "+(annualPct>=100?"green":annualPct>=50?"yellow":"red");
+  }
+  renderYearManagement();
   renderMiniList($("todayFollowups"),due.slice(0,5),true);
   const top=[...open].sort((a,b)=>total(b)-total(a)).slice(0,5);
   renderMiniList($("topRfqs"),top,false);
@@ -2191,7 +2341,7 @@ function renderCustomerOptions(){
 
 function orderCustomerName(o){return customerById(o.customerId)?.company||o.company||"Unknown Customer"}
 function orderDateObj(o){return o.orderDate?new Date(o.orderDate+"T00:00:00"):new Date(o.importedAt||0)}
-function orderMonthLabel(o){const d=orderDateObj(o);return isNaN(d)?"No Date":d.toLocaleDateString("en-US",{month:"long",year:"numeric"})}
+function orderMonthLabel(o){const d=orderDateObj(o);return isNaN(d)?"No Date":`${d.toLocaleDateString("en-US",{month:"long"})} ${String(d.getFullYear()).slice(-2)}`}
 
 function rfqClosedWonDate(r){
   if(r.status!=="Closed Won")return null;
@@ -2506,14 +2656,19 @@ function renderOrders(){
   $("orderList").innerHTML=list.length?"":"<div class='empty'>No orders or Closed Won RFQs yet.</div>";
   const map=new Map();
   list.forEach(o=>{const key=mode==="account"?orderCustomerName(o):orderMonthLabel(o);if(!map.has(key))map.set(key,[]);map.get(key).push(o)});
+  const stateKey="abSalesOS_orderGroups_v1";
+  let groupState={};try{groupState=JSON.parse(localStorage.getItem(stateKey)||"{}")||{}}catch{}
+  const currentMonthLabel=`${new Date().toLocaleDateString("en-US",{month:"long"})} ${String(new Date().getFullYear()).slice(-2)}`;
   [...map.entries()].forEach(([name,records])=>{
-    const wrap=document.createElement("section");
-    wrap.innerHTML=`<div class="group-title"><h3>${esc(name)}</h3><span class="mini">${records.length} order${records.length===1?"":"s"} · ${money.format(records.reduce((s,o)=>s+(Number(o.total)||0),0))}</span></div><div class="list"></div>`;
-    const holder=wrap.querySelector(".list");
+    const details=document.createElement("details");details.className="order-month-group";
+    const stored=Object.prototype.hasOwnProperty.call(groupState,name)?!!groupState[name]:null;
+    details.open=mode==="account"?(stored===null?true:stored):(stored===null?name===currentMonthLabel:stored);
+    details.innerHTML=`<summary><span class="order-month-title"><span>${esc(name)}</span></span><span class="order-month-meta">${records.length} order${records.length===1?"":"s"} · ${money.format(records.reduce((s,o)=>s+(Number(o.total)||0),0))}</span></summary><div class="order-month-body"><div class="list"></div></div>`;
+    details.addEventListener("toggle",()=>{groupState[name]=details.open;localStorage.setItem(stateKey,JSON.stringify(groupState))});
+    const holder=details.querySelector(".list");
     records.forEach(o=>{
       const div=document.createElement("div");div.className="list-card order-card";
-      if(!o.synthetic)div.dataset.orderOpen=o.id;
-      if(o.synthetic)div.dataset.rFqOpen=o.sourceRfqId;
+      if(!o.synthetic)div.dataset.orderOpen=o.id;if(o.synthetic)div.dataset.rFqOpen=o.sourceRfqId;
       div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">${o.synthetic?`RFQ ${esc(o.poNumber||"—")}`:`SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}`}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status ${o.synthetic?"blue":"green"}">${o.synthetic?"CLOSED WON":"ORDER"}</span></div>
         <div class="money">${money.format(Number(o.total)||0)}</div>
         ${boHasBackorder(o)?`<div class="mini" style="margin-top:4px"><span class="status yellow" style="min-height:26px;padding:5px 9px">${boOpenLineCount(o)} BACK ORDER LINE${boOpenLineCount(o)===1?"":"S"}</span> · Open value ${money.format(boOpenValue(o))}</div>`:""}
@@ -2522,7 +2677,7 @@ function renderOrders(){
         `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-manage-backorder-order="${o.id}">↻ Manage Back Order</button><button data-order-edit="${o.id}">✏️ Edit Order</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
       holder.appendChild(div);
     });
-    $("orderList").appendChild(wrap);
+    $("orderList").appendChild(details);
   });
   document.querySelectorAll("[data-order-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu")||e.target.closest("[data-manage-backorder-order]"))return;editImportedOrder(card.dataset.orderOpen)});
   document.querySelectorAll("[data-r-fq-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-manage-backorder-rfq]"))return;editRfq(card.dataset.rFqOpen)});
@@ -2532,7 +2687,6 @@ function renderOrders(){
   document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editImportedOrder(b.dataset.orderEdit)});
   document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.stopPropagation();confirmDeleteImportedOrder(b.dataset.orderDelete)});
 }
-
 
 
 function normalizeProductKey(item){
@@ -2677,6 +2831,20 @@ function renderProducts(){
   const rows=data.rows.sort((a,b)=>mode==="qty"?b.qty-a.qty:mode==="customers"?b.customers.size-a.customers.size||b.revenue-a.revenue:b.revenue-a.revenue);
   renderDecisionInsights(rows);
   $("pUnique").textContent=rows.length.toLocaleString();$("pUnits").textContent=Math.round(data.units).toLocaleString();$("pRevenue").textContent=money.format(data.revenue);$("pCustomers").textContent=data.customers.toLocaleString();
+  const openBackorders=boBackorderRows().filter(r=>r.remainingQty>0);
+  const openBackorderValue=openBackorders.reduce((s,r)=>s+(Number(r.openValue)||0),0);
+  if($("pBackorderValue"))$("pBackorderValue").textContent=money.format(openBackorderValue);
+  if($("productBackorderBadge"))$("productBackorderBadge").textContent=`${money.format(openBackorderValue)} OPEN`;
+  if($("productBackorderExposure")){
+    const boMap=new Map();
+    openBackorders.forEach(r=>{
+      const key=String(r.part||r.product||"Unknown").toUpperCase();
+      if(!boMap.has(key))boMap.set(key,{part:r.part||"",product:r.product||r.part||"Unknown",units:0,value:0,customers:new Set()});
+      const x=boMap.get(key);x.units+=Number(r.remainingQty)||0;x.value+=Number(r.openValue)||0;x.customers.add(r.customer);
+    });
+    const boRows=[...boMap.values()].sort((a,b)=>b.value-a.value);
+    $("productBackorderExposure").innerHTML=boRows.length?boRows.map(x=>`<div class="backorder-product-grid"><div><strong>${esc(x.product)}</strong><div class="mini">${esc(x.part||"No part #")} · ${esc([...x.customers].join(", "))}</div></div><div class="bo-dollar">${money.format(x.value)}</div><div class="bo-units">${Math.round(x.units).toLocaleString()} units open</div></div>`).join(""):"<div class='empty'>No open back orders. Nothing is currently holding up product revenue.</div>";
+  }
   $("productChartMetric").textContent=mode==="qty"?"Quantity":mode==="customers"?"Customers":"Revenue";
   const top=rows.slice(0,10),max=Math.max(1,...top.map(r=>mode==="qty"?r.qty:mode==="customers"?r.customers.size:r.revenue));
   $("productBars").innerHTML=top.length?top.map(r=>{const value=mode==="qty"?r.qty:mode==="customers"?r.customers.size:r.revenue;const label=mode==="revenue"?money.format(value):Math.round(value).toLocaleString();const pct=Math.max(3,(value/max)*100);return `<div class="product-bar-row"><div class="product-bar-label"><strong>${esc(r.product)}</strong><span>${esc(r.part||"No part number")}</span></div><div class="product-bar-track"><div class="product-bar-fill" style="width:${pct}%"></div></div><div class="product-bar-value">${label}</div></div>`}).join(""):"<div class='empty'>Import or enter orders with line items to build product rankings.</div>";
@@ -3445,7 +3613,7 @@ function openMeetingText(){
   window.location.href=`sms:${phone}?&body=${encodeURIComponent(body)}`;
 }
 function refreshLinkedOpportunityValues(){rfqs.forEach(syncOpportunityActivityFromRfq)}
-function renderAll(){refreshLinkedOpportunityValues();
+function renderAll(){ensureYearSettings();refreshLinkedOpportunityValues();
   renderBackorders();
 renderIntelligence();renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
@@ -4265,6 +4433,9 @@ $("saveRfq").onclick=()=>{
 }
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
+if($("saveAnnualGoal"))$("saveAnnualGoal").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();settings.yearGoals[y]=Math.max(0,Number($("annualGoalInput").value)||0);save();renderAll();};
+if($("closeSalesYear"))$("closeSalesYear").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();const goal=Number(settings.yearGoals[y])||0,sales=annualClosedSales(y);if(!confirm(`Close ${y} with credited sales of ${money.format(sales)} against a goal of ${money.format(goal)}? Orders will remain in history.`))return;settings.yearArchives[y]={year:y,goal,sales,closedAt:new Date().toISOString()};save();renderAll();};
+if($("startNewSalesYear"))$("startNewSalesYear").onclick=()=>{const y=new Date().getFullYear();settings.activeYear=y;settings.yearGoals=settings.yearGoals||{};if(!Number(settings.yearGoals[y]))settings.yearGoals[y]=(Number(settings.goal)||100000)*12;save();renderAll();};
 $("rfqCustomer").onchange=()=>{renderContactOptions();refreshRfqAutoLog()};$("addContact").onclick=()=>addContactRow();
 $("rfqStatus").onchange=()=>{refreshRfqAutoLog();refreshRfqLostDetails()};
 ["rfqContact","rfqNumber","rfqFeedback","rfqNextAction","rfqShipping","rfqTax"].forEach(id=>$(id)&&$(id).addEventListener("input",()=>{if(!$("rfqAutoLogBox").classList.contains("hidden"))refreshRfqAutoLog()}));
