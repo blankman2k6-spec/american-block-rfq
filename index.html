@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.8 Recovery Key Handoff</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.9 Upload Diagnostics</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -3665,14 +3665,49 @@ if($("cloudPullNow"))$("cloudPullNow").onclick=async()=>{
   catch(e){setCloudSyncStatus(`Download failed — ${e.message}`,"bad")}
 };
 if($("cloudPushNow"))$("cloudPushNow").onclick=async()=>{
+  const btn=$("cloudPushNow");
+  const original=btn.textContent;
+  btn.disabled=true;
+  btn.textContent="Checking…";
   try{
+    setCloudSyncStatus("Upload diagnostic 1/4 — verifying signed-in session…");
+    await ensureCloudToken();
+    if(!cloud.session?.user?.id)throw new Error("Signed-in session has no cloud user ID. Sign out and sign in again.");
+
+    setCloudSyncStatus("Upload diagnostic 2/4 — reading current cloud revision…");
     const remote=await getCloudStateRow();
-    if(remote&&Number(remote.revision)!==Number(cloud.lastRevision||0)){
-      const ok=confirm("The cloud contains changes this device has not downloaded. Uploading this device will overwrite the cloud copy. Continue only if this device is the copy you want to keep.");
-      if(!ok)return;
+    const remoteRevision=Number(remote?.revision)||0;
+    const localRevision=Number(cloud.lastRevision)||0;
+    if(remote&&remoteRevision!==localRevision){
+      const ok=confirm(`Cloud is revision ${remoteRevision}; this device remembers revision ${localRevision}. Uploading will intentionally replace the cloud CRM with the restored CRM on this device. Continue?`);
+      if(!ok){setCloudSyncStatus("Upload cancelled. Local restored CRM was not changed.","warn");return}
     }
-    await pushCloudState({force:true});
-  }catch(e){setCloudSyncStatus(`Upload failed — ${e.message}`,"bad")}
+
+    setCloudSyncStatus(`Upload diagnostic 3/4 — uploading restored CRM (${customers.length} customers, ${rfqs.length} RFQs, ${orders.length} orders)…`);
+    btn.textContent="Uploading…";
+    await pushCloudState({force:true,silent:true});
+
+    setCloudSyncStatus("Upload diagnostic 4/4 — verifying cloud copy…");
+    const verify=await getCloudStateRow();
+    if(!verify)throw new Error("Upload returned without error, but no cloud CRM row could be verified.");
+    const snap=verify.state||{};
+    const counts=`${(snap.customers||[]).length} customers, ${(snap.rfqs||[]).length} RFQs, ${(snap.orders||[]).length} orders`;
+    cloud.lastRevision=Number(verify.revision)||cloud.lastRevision||0;
+    cloud.lastSyncedAt=verify.updated_at||cloud.lastSyncedAt||new Date().toISOString();
+    cloud.localDirtyAt="";
+    cloud.firstSyncComplete=true;
+    saveCloudMeta();
+    const msg=`✓ Upload verified — cloud revision ${cloud.lastRevision} contains ${counts}.`;
+    setCloudSyncStatus(msg,"good");
+    alert(msg);
+  }catch(e){
+    const msg=`Upload diagnostic failed — ${e?.message||String(e)}`;
+    setCloudSyncStatus(msg,"bad");
+    alert(msg);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=original;
+  }
 };
 
 if($("testCloudConnection"))$("testCloudConnection").onclick=async()=>{
