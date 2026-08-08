@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-6-6-territory-review";
+const CACHE="ab-sales-os-v4-6-7-detailed-territory-narrative";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{
