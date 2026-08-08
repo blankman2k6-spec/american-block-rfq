@@ -662,12 +662,12 @@
 .savings-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid #70a37c;background:#e8f5eb;color:#1d5b2d;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-top:5px}
 body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-black"] .savings-badge{background:#0f2f22;color:#bbf7d0;border-color:#1f5a42}
 
-/* v4.6.8 Navigation Icons */
+/* v4.6.9 Navigation Icons */
 .tabs .nav-icon{font-size:22px;line-height:1;display:block;margin-bottom:4px}
 .tabs .nav-hammer{color:#d71920;font-size:25px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 .tabs .nav-emerald{color:#00a86b;font-size:27px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 
-/* v4.6.8 Dashboard Monthly Goal Pie */
+/* v4.6.9 Dashboard Monthly Goal Pie */
 .dashboard-goal-pie-card{margin-top:15px;overflow:hidden}
 .goal-pie-layout{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:center}
 .goal-pie{
@@ -713,7 +713,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 }
 
 
-/* v4.6.8 Back Orders */
+/* v4.6.9 Back Orders */
 .backorder-card{position:relative;border-left:5px solid #f59e0b}
 .backorder-card.completed{border-left-color:#22c55e;opacity:.84}
 .backorder-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
@@ -744,7 +744,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 }
 
 
-/* v4.6.8 Territory Review */
+/* v4.6.9 Territory Review */
 .territory-review-card{border-top:5px solid #177245}
 .tr-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
 .tr-summary{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px}
@@ -754,7 +754,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 @media(max-width:560px){.tr-summary-grid{grid-template-columns:1fr 1fr}.tr-grid{grid-template-columns:1fr}}
 
 
-    /* v4.6.8 clean corporate status contrast */
+    /* v4.6.9 clean corporate status contrast */
     body[data-skin="clean-corporate"] .status{
       background:#eef4fb!important;color:#26435f!important;border:1px solid #b8cbe0!important;
       box-shadow:none!important;font-weight:800;
@@ -782,7 +782,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.8 Territory Sections + Corporate Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.9 Opportunity → RFQ Integration</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1355,7 +1355,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
 
     <div class="card">
-      <h2>Version 4.6.8 — Territory Sections + Corporate Fix</h2>
+      <h2>Version 4.6.9 — Opportunity → RFQ Integration</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1437,6 +1437,9 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <section id="rfqFormView" class="view">
     <div class="section-head"><button id="backFromRfq" class="secondary">← Back</button><h2 id="rfqFormTitle" style="margin:0">New RFQ</h2></div>
     <div class="card">
+      <div id="rfqOpportunityConvertBanner" class="auto-log-box hidden" style="margin-bottom:14px">
+        <div class="section-head" style="margin:0"><div><strong>Converting Logged Opportunity to RFQ</strong><div id="rfqOpportunityConvertText" class="mini">Once this RFQ is saved, its line-item total becomes the authoritative opportunity value.</div></div><span class="status blue">LINKED</span></div>
+      </div>
       <div class="row">
         <div><label>Customer / Account</label><select id="rfqCustomer"></select></div>
         <div><label>Contact for This RFQ</label><select id="rfqContact"></select></div>
@@ -2126,7 +2129,7 @@ function renderCustomerAccount(){
   const rfqCards=open.map(r=>`<div class="opportunity-card"><div class="list-head"><div><strong>${esc(r.quoteNo||"RFQ Opportunity")}</strong><div class="mini">${esc(r.nextAction||r.feedback||"Open RFQ")}</div></div><span class="status blue">${esc(r.status)}</span></div><div class="money" style="font-size:18px">${money.format(total(r))}</div></div>`);
   const actCards=activityOpps.map(a=>{
     const linked=a.opportunityRfqId?rfqs.find(r=>r.id===a.opportunityRfqId):null;
-    return `<div class="opportunity-card"><div class="list-head"><div><strong>${esc(a.opportunityTitle||(linked?.quoteNo||"Logged Opportunity"))}</strong><div class="mini">${formatDate(a.date)} · ${esc(a.opportunityStage||linked?.status||"Opportunity")}</div></div>${a.opportunityValue?`<span class="pill">${money.format(Number(a.opportunityValue)||0)}</span>`:""}</div><div class="activity-comments">${esc(a.opportunityDetails||a.comments||"")}</div></div>`;
+    return `<div class="opportunity-card"><div class="list-head"><div><strong>${esc(a.opportunityTitle||(linked?.quoteNo||"Logged Opportunity"))}</strong><div class="mini">${formatDate(a.date)} · ${esc(linked?.status||a.opportunityStage||"Opportunity")}${linked?" · RFQ linked":" · Pre-RFQ"}</div></div><span class="pill">${money.format(linked?total(linked):(Number(a.opportunityValue)||0))}</span></div><div class="activity-comments">${esc(a.opportunityDetails||a.comments||"")}</div><div class="toolbar" style="margin-top:9px"><button class="secondary" data-opportunity-convert="${esc(a.id)}">${linked?"Open Linked RFQ":"Convert to RFQ"}</button></div></div>`;
   });
   $("accountOpportunities").innerHTML=[...rfqCards,...actCards].join("")||"<div class='empty'>No opportunities yet.</div>";
   $("accountActivityList").innerHTML=acts.map(a=>`<div class="activity-card"><div class="activity-top"><div><strong>${esc(a.type)}</strong><div class="mini">${formatDate(a.date)}</div></div><span class="activity-type">${esc(a.type)}</span></div><div class="activity-comments">${esc(a.comments||"")}</div></div>`).join("")||"<div class='empty'>No activity yet.</div>";
@@ -3275,7 +3278,7 @@ function buildTerritoryReviewData(){
  const trend=trMonthlyTrend(),products=trTerritoryProducts();
  const lost=intelligence.filter(r=>r.type==="lost").reduce((s,r)=>s+(Number(r.amount)||0),0);
  const back=boBackorderRows().filter(r=>r.remainingQty>0).reduce((s,r)=>s+(Number(r.openValue)||0),0);
- const activeOpp=rfqs.filter(isOpen).reduce((s,r)=>s+total(r),0)+activities.filter(a=>a.opportunityValue&&a.opportunityStage&&!/closed|lost/i.test(a.opportunityStage)).reduce((s,a)=>s+(Number(a.opportunityValue)||0),0);
+ const activeOpp=rfqs.filter(isOpen).reduce((s,r)=>s+total(r),0)+activities.filter(a=>a.opportunityValue&&!a.opportunityRfqId&&a.opportunityStage&&!/closed|lost/i.test(a.opportunityStage)).reduce((s,a)=>s+(Number(a.opportunityValue)||0),0);
  const comp=new Map();accounts.forEach(a=>a.competitors.forEach(c=>{let k=c.name.toLowerCase(),x=comp.get(k)||{name:c.name,count:0,reasons:[]};x.count++;if(c.reason&&!x.reasons.includes(c.reason))x.reasons.push(c.reason);comp.set(k,x)}));
  return {generatedAt:new Date(),accounts,trend,products,lost,back,activeOpp,competitors:[...comp.values()].sort((a,b)=>b.count-a.count)}
 }
@@ -3441,7 +3444,8 @@ function openMeetingText(){
   const phone=String(ct.phone).replace(/[^\d+]/g,""),body=$("meetingTextTemplate").value||"";
   window.location.href=`sms:${phone}?&body=${encodeURIComponent(body)}`;
 }
-function renderAll(){
+function refreshLinkedOpportunityValues(){rfqs.forEach(syncOpportunityActivityFromRfq)}
+function renderAll(){refreshLinkedOpportunityValues();
   renderBackorders();
 renderIntelligence();renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
@@ -4000,7 +4004,54 @@ function updateDraft(){
   $("rfqDraftTotal").textContent=money.format(subtotal+shipping+tax);
 }
 
+
+let convertingOpportunityActivityId=null;
+function opportunityActivityById(id){return activities.find(a=>String(a.id)===String(id))}
+function opportunityLinkedRfq(a){return a?.opportunityRfqId?rfqs.find(r=>String(r.id)===String(a.opportunityRfqId)):null}
+function syncOpportunityActivityFromRfq(r){
+  if(!r?.id)return;
+  activities.forEach(a=>{
+    if(String(a.opportunityRfqId)===String(r.id)){
+      a.opportunityValue=total(r);
+      a.opportunityStage=r.status;
+      if(!a.opportunityTitle||a.opportunityTitle==="RFQ Opportunity")a.opportunityTitle=r.quoteNo||a.opportunityTitle||"RFQ Opportunity";
+      a.updatedAt=new Date().toISOString();
+    }
+  });
+}
+function convertOpportunityToRfq(activityId){
+  const a=opportunityActivityById(activityId);if(!a)return;
+  if(a.opportunityRfqId){
+    const linked=opportunityLinkedRfq(a);
+    if(linked){editRfq(linked.id);return}
+  }
+  if(!a.customerId){alert("This opportunity needs a customer before it can be converted to an RFQ.");return}
+  convertingOpportunityActivityId=a.id;
+  newRfq();
+  $("rfqCustomer").value=a.customerId||"";
+  renderContactOptions(a.contactId||"");
+  $("rfqContact").value=a.contactId||"";
+  $("rfqFeedback").value=a.opportunityDetails||a.comments||"";
+  $("rfqNextAction").value="Build and submit quote";
+  if($("rfqOpportunityConvertBanner"))$("rfqOpportunityConvertBanner").classList.remove("hidden");
+  if($("rfqOpportunityConvertText"))$("rfqOpportunityConvertText").textContent=`${a.opportunityTitle||"Logged opportunity"} · Estimated ${money.format(Number(a.opportunityValue)||0)}. Enter the actual quoted line items below.`;
+  $("rfqFormTitle").textContent="Convert Opportunity to RFQ";
+  updateDraft();
+}
+function linkConvertedOpportunityToRfq(activityId,r){
+  const a=opportunityActivityById(activityId);if(!a||!r)return;
+  a.opportunityRfqId=r.id;
+  a.opportunityValue=total(r);
+  a.opportunityStage=r.status;
+  a.opportunityTitle=r.quoteNo||a.opportunityTitle||"RFQ Opportunity";
+  a.convertedToRfqAt=new Date().toISOString();
+  a.updatedAt=new Date().toISOString();
+}
+
 function newRfq(){
+  const keepConversion=!!convertingOpportunityActivityId;
+  if(!keepConversion)convertingOpportunityActivityId=null;
+  if($("rfqOpportunityConvertBanner"))$("rfqOpportunityConvertBanner").classList.add("hidden");
   if($("rfqAutoLogBox"))$("rfqAutoLogBox").classList.add("hidden"); if($("rfqAutoLogEnabled"))$("rfqAutoLogEnabled").checked=true; if($("rfqAutoLogDate"))$("rfqAutoLogDate").value=localIsoDate();
 
   if(!customers.length){alert("Add a customer first.");return}
@@ -4017,6 +4068,8 @@ function newRfq(){
   $("rfqItems").innerHTML="";addItem();updateDraft();showView("rfqFormView",false)
 }
 function editRfq(id){
+  convertingOpportunityActivityId=null;
+  if($("rfqOpportunityConvertBanner"))$("rfqOpportunityConvertBanner").classList.add("hidden");
   if($("rfqAutoLogBox"))$("rfqAutoLogBox").classList.add("hidden"); if($("rfqAutoLogEnabled"))$("rfqAutoLogEnabled").checked=true; if($("rfqAutoLogDate"))$("rfqAutoLogDate").value=localIsoDate();
 
   const r=rfqs.find(x=>x.id===id);if(!r)return;
@@ -4203,8 +4256,11 @@ $("saveRfq").onclick=()=>{
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
   };
   if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);
+  if(convertingOpportunityActivityId)linkConvertedOpportunityToRfq(convertingOpportunityActivityId,rec);
+  syncOpportunityActivityFromRfq(rec);
   logRfqStatusActivity(old,rec);
   syncLostSaleIntelligence(old,rec);
+  convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
 }
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
@@ -4214,7 +4270,7 @@ $("rfqStatus").onchange=()=>{refreshRfqAutoLog();refreshRfqLostDetails()};
 ["rfqContact","rfqNumber","rfqFeedback","rfqNextAction","rfqShipping","rfqTax"].forEach(id=>$(id)&&$(id).addEventListener("input",()=>{if(!$("rfqAutoLogBox").classList.contains("hidden"))refreshRfqAutoLog()}));
 $("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
-$("backFromRfq").onclick=$("cancelRfq").onclick=()=>showView(lastMainView,true);$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
+$("backFromRfq").onclick=$("cancelRfq").onclick=()=>{convertingOpportunityActivityId=null;showView(lastMainView,true)};$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
 $("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>showView("followupsView",true);
 ["rfqSearch","customerSearch","followupSearch","productSearch"].forEach(id=>$(id)&&($(id).oninput=renderAll));
 ["rfqStatusFilter","rfqGroup","rfqSort","followupFilter","productPeriod","productRankBy"].forEach(id=>$(id)&&($(id).onchange=renderAll));
@@ -5048,6 +5104,13 @@ if($("saveActivity"))$("saveActivity").onclick=()=>{
   save();editingActivityId=null;showView("activityLogView",true);
 };
 
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-opportunity-convert]");
+  if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  convertOpportunityToRfq(b.dataset.opportunityConvert);
+});
 
 if($("globalLogActivity"))$("globalLogActivity").onclick=()=>openNewActivity(currentViewId==="customerAccountView"?(activeCustomerId||""):"");
 if($("globalExportPdf"))$("globalExportPdf").onclick=exportCurrentViewPDF;

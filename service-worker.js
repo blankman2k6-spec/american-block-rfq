@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-6-8-territory-sections";
+const CACHE="ab-sales-os-v4-6-9-opportunity-rfq";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{
