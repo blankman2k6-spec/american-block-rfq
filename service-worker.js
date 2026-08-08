@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-6-5-backorders";
+const CACHE="ab-sales-os-v4-6-6-territory-review";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{
