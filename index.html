@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5 Cloud Sync</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.1 Cloud Sync</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -933,7 +933,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.5 — Cloud Sync</h2>
+      <h2>Version 4.5.1 — Cloud Sync</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -980,6 +980,15 @@
           <button id="cloudPullNow" class="secondary" type="button">Download Cloud</button>
           <button id="cloudPushNow" class="secondary" type="button">Upload This Device</button>
           <button id="cloudSignOut" class="secondary" type="button">Sign Out</button>
+        </div>
+        <div style="height:1px;background:var(--line);margin:16px 0"></div>
+        <div class="kicker">Account Security</div>
+        <h3 style="margin:5px 0 8px">Set / Change Cloud Password</h3>
+        <p class="muted">Changes the password for this exact signed-in cloud user. Your user ID and cloud CRM stay the same.</p>
+        <label>New Password</label><input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters">
+        <label>Confirm New Password</label><input id="cloudConfirmPassword" type="password" autocomplete="new-password" placeholder="Enter it again">
+        <div class="toolbar" style="margin-top:10px">
+          <button id="cloudChangePassword" class="secondary" type="button">Change Password</button>
         </div>
         <div class="mini" style="margin-top:8px">After the first successful sync, normal CRM changes auto-sync shortly after you save them.</div>
       </div>
@@ -3492,6 +3501,29 @@ if($("cloudCreateAccount"))$("cloudCreateAccount").onclick=async()=>{
       setCloudSyncStatus("Account created. If email confirmation is enabled, confirm it and then sign in.","good");
     }
   }catch(e){setCloudSyncStatus(`Account creation failed — ${e.message}`,"bad")}
+};
+if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
+  const password=$("cloudNewPassword").value;
+  const confirm=$("cloudConfirmPassword").value;
+  if(!cloud.session?.access_token){setCloudSyncStatus("Sign in first.","warn");return}
+  if(password.length<6){setCloudSyncStatus("New password must be at least 6 characters.","warn");return}
+  if(password!==confirm){setCloudSyncStatus("The two new-password entries do not match.","warn");return}
+  setCloudSyncStatus("Changing cloud password…");
+  try{
+    const token=await ensureCloudToken();
+    const r=await fetch(`${cloudBase()}/auth/v1/user`,{
+      method:"PUT",
+      headers:{apikey:cloudKey(),Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
+      body:JSON.stringify({password})
+    });
+    const text=await r.text();
+    let data={};
+    if(text){try{data=JSON.parse(text)}catch(_){data={message:text}}}
+    if(!r.ok)throw new Error(data.msg||data.message||data.error_description||data.error||`HTTP ${r.status}`);
+    if(data?.id){cloud.session.user={...(cloud.session.user||{}),...data};saveCloudMeta()}
+    $("cloudNewPassword").value="";$("cloudConfirmPassword").value="";
+    setCloudSyncStatus("✓ Password changed for this cloud account. Your CRM ownership is unchanged.","good");
+  }catch(e){setCloudSyncStatus(`Password change failed — ${e.message}`,"bad")}
 };
 if($("cloudSignOut"))$("cloudSignOut").onclick=async()=>{
   try{
