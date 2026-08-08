@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-6-1-intel-contact-launch";
+const CACHE="ab-sales-os-v4-6-2-workflow-integration";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{

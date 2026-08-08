@@ -656,6 +656,11 @@
 .meeting-contact-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--panel2)}
 .meeting-launch{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
 @media(max-width:560px){#intelDate{width:100%!important;max-width:100%!important}.meeting-launch{grid-template-columns:1fr}}
+
+#rfqLostDetails{margin-top:14px}
+#rfqLostDetails input[type="date"]{min-height:46px;height:46px;padding:8px 12px;font-size:16px}
+.savings-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid #70a37c;background:#e8f5eb;color:#1d5b2d;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-top:5px}
+body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-black"] .savings-badge{background:#0f2f22;color:#bbf7d0;border-color:#1f5a42}
 </style>
 </head>
 <body>
@@ -1237,6 +1242,34 @@
       <div class="total"><span>Quote Total</span><strong id="rfqDraftTotal">$0.00</strong></div>
       <label>Customer Feedback</label><textarea id="rfqFeedback" placeholder="What did the customer say?"></textarea>
       <label>Next Action</label><input id="rfqNextAction" placeholder="Call, visit, revise quote, check inventory...">
+
+      <div id="rfqLostDetails" class="auto-log-box hidden">
+        <div class="section-head" style="margin:0">
+          <div><strong>Lost Order Details</strong><div class="mini">When the RFQ is saved as Lost, these details feed the Lost Sales and Inventory Intelligence reports automatically.</div></div>
+          <span class="status red">LOST</span>
+        </div>
+        <div class="row">
+          <div><label>Reason Lost</label>
+            <select id="rfqLostReason">
+              <option value="">Choose reason…</option>
+              <option>No Stock</option>
+              <option>Lead Time</option>
+              <option>Price</option>
+              <option>Delivery / Logistics</option>
+              <option>Product Not Offered</option>
+              <option>Competitor / Vendor Preference</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div><label>Market / Location</label><input id="rfqLostMarket" placeholder="OKC, Tulsa, Liberal…"></div>
+        </div>
+        <div class="row">
+          <div><label>Competitor (if known)</label><input id="rfqLostCompetitor" placeholder="Optional"></div>
+          <div><label>Lost Date</label><input id="rfqLostDate" type="date"></div>
+        </div>
+        <label class="verify-check" style="margin-top:10px"><input id="rfqCreateLostIntel" type="checkbox" checked> Automatically add RFQ line items to Lost Sales / Inventory Intelligence</label>
+        <div class="mini" style="margin-top:7px">Each line item is recorded separately, so high-request/no-stock products can be ranked accurately.</div>
+      </div>
 
       <div id="rfqAutoLogBox" class="auto-log-box hidden">
         <div class="section-head" style="margin:0">
@@ -1859,7 +1892,7 @@ function renderCustomerAccount(){
   $("accountOpportunities").innerHTML=[...rfqCards,...actCards].join("")||"<div class='empty'>No opportunities yet.</div>";
   $("accountActivityList").innerHTML=acts.map(a=>`<div class="activity-card"><div class="activity-top"><div><strong>${esc(a.type)}</strong><div class="mini">${formatDate(a.date)}</div></div><span class="activity-type">${esc(a.type)}</span></div><div class="activity-comments">${esc(a.comments||"")}</div></div>`).join("")||"<div class='empty'>No activity yet.</div>";
   const os=unifiedOrders().filter(o=>o.customerId===c.id).sort((a,b)=>orderDateObj(b)-orderDateObj(a));
-  $("accountOrdersList").innerHTML=os.map(o=>`<div class="list-card"><div class="list-head"><div><strong>${esc(o.synthetic?`RFQ ${o.poNumber||"Closed Won"}`:`SO ${o.salesOrder||"—"}`)}</strong><div class="mini">${formatDate(o.orderDate)} · ${o.synthetic?"Closed Won RFQ":"Order"}</div></div><span class="status ${o.synthetic?"blue":"green"}">${o.synthetic?"CLOSED WON":"ORDER"}</span></div><div class="money">${money.format(Number(o.total)||0)}</div></div>`).join("")||"<div class='empty'>No orders yet.</div>";
+  $("accountOrdersList").innerHTML=os.map(o=>`<div class="list-card"><div class="list-head"><div><strong>${esc(o.synthetic?`RFQ ${o.poNumber||"Closed Won"}`:`SO ${o.salesOrder||"—"}`)}</strong><div class="mini">${formatDate(o.orderDate)} · ${o.synthetic?"Closed Won RFQ":"Order"}</div></div><span class="status ${o.synthetic?"blue":"green"}">${o.synthetic?"CLOSED WON":"ORDER"}</span></div><div class="money">${money.format(Number(o.total)||0)}</div>${Number(o.savingsTotal)>0?`<div class="savings-badge">Customer savings ${money.format(Number(o.savingsTotal)||0)}</div>`:""}</div>`).join("")||"<div class='empty'>No orders yet.</div>";
 }
 function groupRecords(records,mode){
   const map=new Map();records.forEach(r=>{const key=mode==="account"?customerName(r):mode==="rfq"?(r.quoteNo||"No RFQ Number"):monthLabel(r);if(!map.has(key))map.set(key,[]);map.get(key).push(r)});
@@ -2679,11 +2712,11 @@ function populateIntelCustomers(){const o='<option value="">Select customer…</
 function intelFields(t){
 if(t==="lost")return `<div class="row"><div><label>Product / Part Number</label><input id="intelProduct"></div><div><label>Quantity Requested</label><input id="intelQty" type="number" min="0"></div></div><div class="row"><div><label>Estimated Lost Value</label><input id="intelAmount" type="number" min="0" step=".01"></div><div><label>Reason Lost</label><select id="intelReason"><option>No Stock</option><option>Lead Time</option><option>Price</option><option>Delivery / Logistics</option><option>Product Not Offered</option><option>Competitor / Vendor Preference</option><option>Other</option></select></div></div><div class="row"><div><label>Market / Location</label><input id="intelMarket" placeholder="OKC, Tulsa…"></div><div><label>Competitor</label><input id="intelCompetitor"></div></div>`;
 if(t==="feedback")return `<div class="row"><div><label>Category</label><select id="intelCategory"><option>Inventory / Product Availability</option><option>Delivery / Logistics</option><option>Staffing / Response Time</option><option>Pricing</option><option>Product Offering</option><option>Technical Support</option><option>Service Capability</option><option>Quality</option><option>Lead Time</option><option>Documentation</option><option>Other</option></select></div><div><label>Specific Need / Improvement</label><input id="intelNeed" placeholder="Delivery driver, more OKC stock…"></div></div><div class="row"><div><label>Impact</label><select id="intelImpactStatus"><option>Opportunity Potential</option><option>Sale At Risk</option><option>Confirmed Lost Sale</option><option>Service Improvement</option></select></div><div><label>Dollar Impact</label><input id="intelAmount" type="number" min="0" step=".01"></div></div><div class="row"><div><label>Frequency</label><select id="intelFrequency"><option>One Time</option><option>Occasional</option><option>Monthly</option><option>Weekly</option><option>Ongoing / High Frequency</option></select></div><div><label>Product / Service Affected</label><input id="intelProduct"></div></div>`;
-if(t==="discount")return `<div class="row"><div><label>Product / Part Number</label><input id="intelProduct"></div><div><label>Quantity Sold</label><input id="intelQty" type="number" min="1" value="1"></div></div><div class="row"><div><label>Original Unit Price</label><input id="intelOriginal" type="number" min="0" step=".01"></div><div><label>Discounted Unit Price</label><input id="intelDiscounted" type="number" min="0" step=".01"></div></div>`;
+if(t==="discount")return `<div class="row"><div><label>Product / Part Number</label><input id="intelProduct"></div><div><label>Effective Date</label><div class="mini" style="padding-top:13px">Uses the record date above</div></div></div><div class="row"><div><label>Original / Standard Unit Price</label><input id="intelOriginal" type="number" min="0" step=".01"></div><div><label>Customer Discounted Unit Price</label><input id="intelDiscounted" type="number" min="0" step=".01"></div></div><div class="mini" style="margin-top:8px">This creates a customer pricing agreement. Savings are counted only when an actual order for this product is saved.</div>`;
 return `<div class="row"><div><label>Delivery / Order Reference</label><input id="intelProduct"></div><div><label>Delivery Value</label><input id="intelAmount" type="number" min="0" step=".01"></div></div><div class="row"><div><label>Market / Location</label><input id="intelMarket"></div><div><label>Delivered By</label><input id="intelDeliveredBy"></div></div>`}
 function openIntelForm(t){$("intelRecordType").value=t;$("intelFormCard").classList.remove("hidden");$("intelDate").value=new Date().toISOString().slice(0,10);$("intelFormTitle").textContent={lost:"Lost Sale / No Stock",feedback:"Customer Feedback & Business Impact",discount:"Discount Pricing",delivery:"Delivery Value"}[t];$("intelDynamicFields").innerHTML=intelFields(t);$("intelNotes").value="";$("intelFormCard").scrollIntoView({behavior:"smooth"})}
-function saveIntelRecord(){const t=$("intelRecordType").value,cid=$("intelCustomer").value;if(!cid){alert("Choose a customer.");return}const g=id=>$(id)?.value||"";let r={id:"intel_"+Date.now(),type:t,customerId:cid,date:g("intelDate"),notes:g("intelNotes"),createdAt:new Date().toISOString()};if(t==="lost")Object.assign(r,{product:g("intelProduct"),qty:+g("intelQty")||0,amount:+g("intelAmount")||0,reason:g("intelReason"),market:g("intelMarket"),competitor:g("intelCompetitor")});if(t==="feedback")Object.assign(r,{category:g("intelCategory"),need:g("intelNeed"),impactStatus:g("intelImpactStatus"),amount:+g("intelAmount")||0,frequency:g("intelFrequency"),product:g("intelProduct")});if(t==="discount"){let o=+g("intelOriginal")||0,d=+g("intelDiscounted")||0,q=+g("intelQty")||1;Object.assign(r,{product:g("intelProduct"),qty:q,original:o,discounted:d,savingsPerUnit:Math.max(0,o-d),amount:Math.max(0,o-d)*q})}if(t==="delivery")Object.assign(r,{reference:g("intelProduct"),amount:+g("intelAmount")||0,market:g("intelMarket"),deliveredBy:g("intelDeliveredBy")});intelligence.push(r);save();$("intelFormCard").classList.add("hidden");renderIntelligence()}
-function renderIntelligence(){if(!$("intelligenceView"))return;populateIntelCustomers();let lost=intelligence.filter(r=>r.type==="lost"),d=intelligence.filter(r=>r.type==="discount"),dv=intelligence.filter(r=>r.type==="delivery"),f=intelligence.filter(r=>r.type==="feedback");$("intelLostTotal").textContent=intelMoney(lost.reduce((s,r)=>s+(+r.amount||0),0));$("intelLostCount").textContent=lost.length+" records";$("intelSavingsTotal").textContent=intelMoney(d.reduce((s,r)=>s+(+r.amount||0),0));$("intelDeliveryTotal").textContent=intelMoney(dv.reduce((s,r)=>s+(+r.amount||0),0));$("intelFeedbackTotal").textContent=intelMoney(f.reduce((s,r)=>s+(+r.amount||0),0));$("intelRecordList").innerHTML=intelligence.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30).map(r=>`<div class="intel-record"><div class="intel-record-head"><div><span class="intel-pill">${esc(r.type.toUpperCase())}</span><strong style="display:block;margin-top:5px">${esc(intelName(r.customerId))}</strong><span class="mini">${esc(r.date||"")} · ${esc(r.product||r.need||r.reference||r.category||"")}</span></div><strong>${intelMoney(r.amount)}</strong></div><div class="mini" style="margin-top:6px">${esc(r.reason||r.impactStatus||r.notes||"")}</div><button class="secondary" style="margin-top:7px" onclick="deleteIntel('${r.id}')">Delete</button></div>`).join("")||'<p class="muted">No intelligence records yet.</p>'}
+function saveIntelRecord(){const t=$("intelRecordType").value,cid=$("intelCustomer").value;if(!cid){alert("Choose a customer.");return}const g=id=>$(id)?.value||"";let r={id:"intel_"+Date.now(),type:t,customerId:cid,date:g("intelDate"),notes:g("intelNotes"),createdAt:new Date().toISOString()};if(t==="lost")Object.assign(r,{product:g("intelProduct"),qty:+g("intelQty")||0,amount:+g("intelAmount")||0,reason:g("intelReason"),market:g("intelMarket"),competitor:g("intelCompetitor")});if(t==="feedback")Object.assign(r,{category:g("intelCategory"),need:g("intelNeed"),impactStatus:g("intelImpactStatus"),amount:+g("intelAmount")||0,frequency:g("intelFrequency"),product:g("intelProduct")});if(t==="discount"){let o=+g("intelOriginal")||0,d=+g("intelDiscounted")||0;Object.assign(r,{product:g("intelProduct"),original:o,discounted:d,savingsPerUnit:Math.max(0,o-d),amount:0,recordKind:"pricingAgreement"})}if(t==="delivery")Object.assign(r,{reference:g("intelProduct"),amount:+g("intelAmount")||0,market:g("intelMarket"),deliveredBy:g("intelDeliveredBy")});intelligence.push(r);save();$("intelFormCard").classList.add("hidden");renderIntelligence()}
+function renderIntelligence(){if(!$("intelligenceView"))return;populateIntelCustomers();let lost=intelligence.filter(r=>r.type==="lost"),d=intelligence.filter(r=>r.type==="discount"),dv=intelligence.filter(r=>r.type==="delivery"),f=intelligence.filter(r=>r.type==="feedback");$("intelLostTotal").textContent=intelMoney(lost.reduce((s,r)=>s+(+r.amount||0),0));$("intelLostCount").textContent=lost.length+" records";$("intelSavingsTotal").textContent=intelMoney(orders.reduce((s,o)=>s+(Number(o.savingsTotal)||0),0));$("intelDeliveryTotal").textContent=intelMoney(dv.reduce((s,r)=>s+(+r.amount||0),0));$("intelFeedbackTotal").textContent=intelMoney(f.reduce((s,r)=>s+(+r.amount||0),0));$("intelRecordList").innerHTML=intelligence.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30).map(r=>`<div class="intel-record"><div class="intel-record-head"><div><span class="intel-pill">${esc(r.type.toUpperCase())}</span><strong style="display:block;margin-top:5px">${esc(intelName(r.customerId))}</strong><span class="mini">${esc(r.date||"")} · ${esc(r.product||r.need||r.reference||r.category||"")}</span></div><strong>${intelMoney(r.amount)}</strong></div><div class="mini" style="margin-top:6px">${esc(r.reason||r.impactStatus||r.notes||"")}</div><button class="secondary" style="margin-top:7px" onclick="deleteIntel('${r.id}')">Delete</button></div>`).join("")||'<p class="muted">No intelligence records yet.</p>'}
 function deleteIntel(id){if(confirm("Delete this record?")){intelligence=intelligence.filter(r=>r.id!==id);save();renderIntelligence()}}
 function agg(rs,key){let m=new Map();rs.forEach(r=>{let k=key(r)||"Unspecified",x=m.get(k)||{name:k,count:0,amount:0,qty:0};x.count++;x.amount+=+r.amount||0;x.qty+=+r.qty||0;m.set(k,x)});return [...m.values()].sort((a,b)=>b.amount-a.amount||b.count-a.count)}
 function intelTable(title,desc,heads,rows){$("intelReportOutput").innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
@@ -2691,9 +2724,20 @@ function renderIntelReport(t){
 if(t==="lost"){let a=agg(intelligence.filter(r=>r.type==="lost"),r=>r.product);intelTable("Lost Orders Report","Lost demand including No Stock.",["Product","Requests","Units","Lost $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
 if(t==="feedback"){let a=agg(intelligence.filter(r=>r.type==="feedback"),r=>r.need||r.category);intelTable("Feedback / Business Case","Measurable justification for staffing, delivery, inventory and services.",["Need","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
 if(t==="geo"){let a=agg(intelligence.filter(r=>r.market),r=>r.market);intelTable("Geographical Impact","Documented demand and value by market.",["Market","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
-if(t==="inventory"){let a=agg(intelligence.filter(r=>r.type==="lost"&&r.reason==="No Stock"),r=>r.product);intelTable("OKC Master Inventory Intelligence","No-stock demand ranked by documented lost value and request frequency.",["Product","No Stock Requests","Lost Units","Lost $","Priority"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td><td>${x.count>=3||x.amount>=10000?"MUST STOCK":x.count>=2||x.amount>=5000?"STRONG":"MONITOR"}</td></tr>`).join(""));return}
+if(t==="inventory"){
+  const sold=new Map();
+  orders.forEach(o=>(o.items||[]).forEach(i=>{
+    const name=i.part||i.product||"Unspecified",key=normalizeIntelProductKey(i.part,i.product);
+    const x=sold.get(key)||{name,soldQty:0,soldValue:0};
+    x.soldQty+=Number(i.qty)||0;x.soldValue+=(Number(i.qty)||0)*(Number(i.price)||0);sold.set(key,x);
+  }));
+  const lost=agg(intelligence.filter(r=>r.type==="lost"&&r.reason==="No Stock"),r=>r.part||r.product);
+  const lm=new Map(lost.map(x=>[normalizeIntelProductKey(x.name,x.name),x]));
+  const keys=new Set([...sold.keys(),...lm.keys()]);
+  const rows=[...keys].map(k=>{const s=sold.get(k)||{name:lm.get(k)?.name||"Unspecified",soldQty:0,soldValue:0},l=lm.get(k)||{count:0,qty:0,amount:0};const score=(s.soldQty||0)+(l.qty||0)*2+(l.count||0)*5+(l.amount||0)/1000;return {...s,lostReq:l.count,lostQty:l.qty,lostValue:l.amount,score}}).sort((a,b)=>b.score-a.score);
+  intelTable("OKC Master Inventory Intelligence","Combines actual moving items with documented No Stock demand.",["Product","Sold Units","Sales $","No Stock Requests","Lost Units","Lost $","Priority"],rows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.soldQty}</td><td>${intelMoney(x.soldValue)}</td><td>${x.lostReq}</td><td>${x.lostQty}</td><td>${intelMoney(x.lostValue)}</td><td>${x.score>=35?"MUST STOCK":x.score>=18?"STRONG":x.score>=7?"MONITOR":"LOW"}</td></tr>`).join(""));return}
 if(t==="product"){if(typeof renderProducts==="function"){showView("productsView",true);return}$("intelReportOutput").innerHTML='<p>Use the Products page for product mix.</p>';return}
-if(t==="qbr"){let cid=$("meetingCustomer").value;if(!cid){$("intelReportOutput").innerHTML='<p class="muted">Choose a customer above first.</p>';return}let rs=intelligence.filter(r=>String(r.customerId)===String(cid)),s=rs.filter(r=>r.type==="discount").reduce((a,r)=>a+(+r.amount||0),0),d=rs.filter(r=>r.type==="delivery").reduce((a,r)=>a+(+r.amount||0),0);$("intelReportOutput").innerHTML=`<h2>${esc(intelName(cid))} — QBR Value</h2><div class="metrics"><div class="metric"><span>Product Savings</span><strong>${intelMoney(s)}</strong></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(d)}</strong></div><div class="metric"><span>Total Value</span><strong>${intelMoney(s+d)}</strong></div></div>`}}
+if(t==="qbr"){let cid=$("meetingCustomer").value;if(!cid){$("intelReportOutput").innerHTML='<p class="muted">Choose a customer above first.</p>';return}let rs=intelligence.filter(r=>String(r.customerId)===String(cid)),s=customerOrderSavings(cid),d=rs.filter(r=>r.type==="delivery").reduce((a,r)=>a+(+r.amount||0),0);$("intelReportOutput").innerHTML=`<h2>${esc(intelName(cid))} — QBR Value</h2><div class="metrics"><div class="metric"><span>Product Savings</span><strong>${intelMoney(s)}</strong><div class="sub">Captured from actual orders</div></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(d)}</strong></div><div class="metric"><span>Total Documented Value</span><strong>${intelMoney(s+d)}</strong></div></div>`}}
 function meetingContact(){
   const c=intelCust($("meetingCustomer")?.value);
   const contacts=Array.isArray(c.contacts)?c.contacts:[];
@@ -2712,7 +2756,7 @@ function updateMeetingContactInfo(){
 function generateMeetingTemplates(){
   let cid=$("meetingCustomer").value;if(!cid){alert("Choose a customer.");return}
   let c=intelCust(cid),ct=meetingContact(),n=c.company||"your team",first=(ct.name||"").trim().split(/\s+/)[0]||"",greeting=first?`Hi ${first},`:"Hi,";
-  let p=$("meetingPurpose").value,rs=intelligence.filter(r=>String(r.customerId)===String(cid)),v=rs.filter(r=>r.type==="discount"||r.type==="delivery").reduce((s,r)=>s+(+r.amount||0),0);
+  let p=$("meetingPurpose").value,rs=intelligence.filter(r=>String(r.customerId)===String(cid)),v=customerOrderSavings(cid)+rs.filter(r=>r.type==="delivery").reduce((s,r)=>s+(+r.amount||0),0);
   let b={
     partnership:`I'd like to stop by and spend a few minutes reviewing how ABCO is supporting ${n}, learn what is working well, and discuss where we may be able to support more of your flowline and pressure-control needs.`,
     constraints:`I'd like to stop by and discuss any current vendor, product availability, lead-time or service challenges you're dealing with and see where ABCO may be able to help.`,
@@ -3298,7 +3342,14 @@ function newRfq(){
   editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";
   ["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");
   $("rfqShipping").value="0.00";$("rfqTax").value="0.00";
-  $("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();updateDraft();showView("rfqFormView",false)
+  $("rfqStatus").value="Waiting on Customer";
+  if($("rfqLostReason"))$("rfqLostReason").value="";
+  if($("rfqLostMarket"))$("rfqLostMarket").value="";
+  if($("rfqLostCompetitor"))$("rfqLostCompetitor").value="";
+  if($("rfqLostDate"))$("rfqLostDate").value=localIsoDate();
+  if($("rfqCreateLostIntel"))$("rfqCreateLostIntel").checked=true;
+  refreshRfqLostDetails();
+  $("rfqItems").innerHTML="";addItem();updateDraft();showView("rfqFormView",false)
 }
 function editRfq(id){
   if($("rfqAutoLogBox"))$("rfqAutoLogBox").classList.add("hidden"); if($("rfqAutoLogEnabled"))$("rfqAutoLogEnabled").checked=true; if($("rfqAutoLogDate"))$("rfqAutoLogDate").value=localIsoDate();
@@ -3306,6 +3357,12 @@ function editRfq(id){
   const r=rfqs.find(x=>x.id===id);if(!r)return;
   editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");
   $("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";
+  if($("rfqLostReason"))$("rfqLostReason").value=r.lostReason||"";
+  if($("rfqLostMarket"))$("rfqLostMarket").value=r.lostMarket||"";
+  if($("rfqLostCompetitor"))$("rfqLostCompetitor").value=r.lostCompetitor||"";
+  if($("rfqLostDate"))$("rfqLostDate").value=r.lostDate||localIsoDate();
+  if($("rfqCreateLostIntel"))$("rfqCreateLostIntel").checked=r.createLostIntel!==false;
+  refreshRfqLostDetails();
   $("rfqShipping").value=Number(r.shipping||0).toFixed(2);$("rfqTax").value=Number(r.tax||0).toFixed(2);
   $("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();updateDraft();showView("rfqFormView",false)
 }
@@ -3337,6 +3394,84 @@ function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent
 function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
 
+
+function normalizeIntelProductKey(part,product){
+  return String(part||product||"").trim().toLowerCase().replace(/\s+/g," ");
+}
+function refreshRfqLostDetails(){
+  if(!$("rfqLostDetails"))return;
+  const lost=$("rfqStatus").value==="Lost";
+  $("rfqLostDetails").classList.toggle("hidden",!lost);
+  if(lost&&!$("rfqLostDate").value)$("rfqLostDate").value=localIsoDate();
+}
+function syncLostSaleIntelligence(oldRec,newRec){
+  if(!newRec?.id)return;
+  // Remove only auto-generated lost records for this RFQ, never manual intelligence.
+  intelligence=intelligence.filter(x=>!(x.type==="lost"&&x.autoGenerated&&x.sourceRfqId===newRec.id));
+  if(newRec.status!=="Lost"||!newRec.createLostIntel||!newRec.lostReason)return;
+
+  const c=customerById(newRec.customerId)||{};
+  (newRec.items||[]).forEach((item,index)=>{
+    const qty=Number(item.qty)||0,price=Number(item.price)||0;
+    intelligence.push({
+      id:`lost_${newRec.id}_${index}`,
+      type:"lost",
+      customerId:newRec.customerId,
+      date:newRec.lostDate||localIsoDate(),
+      product:item.part||item.product||`RFQ line ${index+1}`,
+      part:item.part||"",
+      description:item.product||"",
+      qty,
+      amount:qty*price,
+      reason:newRec.lostReason,
+      market:newRec.lostMarket||c.city||"",
+      competitor:newRec.lostCompetitor||"",
+      notes:newRec.feedback||newRec.nextAction||"",
+      sourceRfqId:newRec.id,
+      sourceQuoteNo:newRec.quoteNo||"",
+      sourceLineIndex:index,
+      autoGenerated:true,
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    });
+  });
+}
+function discountAgreementsFor(customerId,part,product,orderDate){
+  const key=normalizeIntelProductKey(part,product);
+  return intelligence.filter(r=>{
+    if(r.type!=="discount"||String(r.customerId)!==String(customerId))return false;
+    const rk=normalizeIntelProductKey(r.product,r.product);
+    const matches=rk&&key&&(rk===key||key.includes(rk)||rk.includes(key));
+    const effective=!r.date||!orderDate||r.date<=orderDate;
+    return matches&&effective;
+  }).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||"").localeCompare(a.createdAt||""));
+}
+function snapshotOrderSavings(order){
+  const breakdown=[];
+  (order.items||[]).forEach((item,index)=>{
+    const agreement=discountAgreementsFor(order.customerId,item.part,item.product,order.orderDate)[0];
+    if(!agreement)return;
+    const qty=Number(item.qty)||0;
+    const original=Number(agreement.original)||0;
+    const discounted=Number(item.price)||Number(agreement.discounted)||0;
+    const perUnit=Math.max(0,original-discounted);
+    if(perUnit<=0)return;
+    breakdown.push({
+      lineIndex:index,part:item.part||"",product:item.product||"",
+      qty,originalUnitPrice:original,actualUnitPrice:discounted,
+      savingsPerUnit:perUnit,totalSavings:qty*perUnit,
+      pricingAgreementId:agreement.id,
+      capturedAt:new Date().toISOString()
+    });
+  });
+  order.savingsBreakdown=breakdown;
+  order.savingsTotal=breakdown.reduce((s,x)=>s+(Number(x.totalSavings)||0),0);
+  order.savingsCapturedAt=new Date().toISOString();
+}
+function customerOrderSavings(customerId){
+  return orders.filter(o=>String(o.customerId)===String(customerId))
+    .reduce((s,o)=>s+(Number(o.savingsTotal)||0),0);
+}
 function rfqStatusActivityTemplate(oldStatus,newStatus){
   const cid=$("rfqCustomer").value,c=customerById(cid);
   const contact=contactById(cid,$("rfqContact").value);
@@ -3382,6 +3517,10 @@ $("saveRfq").onclick=()=>{
   const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}
   const old=rfqs.find(r=>r.id===editingRfqId);
   const newStatus=$("rfqStatus").value;
+  if(newStatus==="Lost"&&!$("rfqLostReason").value){
+    $("rfqMessage").textContent="Choose a reason the RFQ was lost.";
+    $("rfqLostReason").focus();return;
+  }
   let closedWonAt=old?.closedWonAt||null;
   if(newStatus==="Closed Won" && old?.status!=="Closed Won")closedWonAt=new Date().toISOString();
   if(newStatus!=="Closed Won")closedWonAt=null;
@@ -3390,17 +3529,23 @@ $("saveRfq").onclick=()=>{
     company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:newStatus,followup:$("rfqFollowup").value,
     feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),
     shipping:Number($("rfqShipping").value)||0,tax:Number($("rfqTax").value)||0,
+    lostReason:newStatus==="Lost"?$("rfqLostReason").value:"",
+    lostMarket:newStatus==="Lost"?$("rfqLostMarket").value.trim():"",
+    lostCompetitor:newStatus==="Lost"?$("rfqLostCompetitor").value.trim():"",
+    lostDate:newStatus==="Lost"?($("rfqLostDate").value||localIsoDate()):"",
+    createLostIntel:newStatus==="Lost"?$("rfqCreateLostIntel").checked:false,
     closedWonAt,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
   };
   if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);
   logRfqStatusActivity(old,rec);
+  syncLostSaleIntelligence(old,rec);
   save();showView("rfqsView",true)
 }
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),accountType:$("cAccountType").value,notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
 $("rfqCustomer").onchange=()=>{renderContactOptions();refreshRfqAutoLog()};$("addContact").onclick=()=>addContactRow();
-$("rfqStatus").onchange=refreshRfqAutoLog;
+$("rfqStatus").onchange=()=>{refreshRfqAutoLog();refreshRfqLostDetails()};
 ["rfqContact","rfqNumber","rfqFeedback","rfqNextAction","rfqShipping","rfqTax"].forEach(id=>$(id)&&$(id).addEventListener("input",()=>{if(!$("rfqAutoLogBox").classList.contains("hidden"))refreshRfqAutoLog()}));
 $("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
@@ -3410,12 +3555,12 @@ $("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>s
 ["rfqStatusFilter","rfqGroup","rfqSort","followupFilter","productPeriod","productRankBy"].forEach(id=>$(id)&&($(id).onchange=renderAll));
 
 function exportBackup(){
-  const data={version:4,exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,settings,cloud};
+  const data={version:6,exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings,cloud};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
   a.href=URL.createObjectURL(blob);a.download=`american-block-sales-os-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)
 }
 function importBackup(){ $("importFile").click() }
-$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];communications=data.communications||[];if(Object.prototype.hasOwnProperty.call(data,"activities")){activities=Array.isArray(data.activities)?data.activities:activities}settings=data.settings||settings;cloud=data.cloud||cloud}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
+$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];communications=data.communications||[];if(Object.prototype.hasOwnProperty.call(data,"activities")){activities=Array.isArray(data.activities)?data.activities:activities}if(Object.prototype.hasOwnProperty.call(data,"intelligence")){intelligence=Array.isArray(data.intelligence)?data.intelligence:intelligence}settings=data.settings||settings;cloud=data.cloud||cloud}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
 ["exportBackup","settingsExport"].forEach(id=>$(id).onclick=exportBackup);
 ["importBackup","settingsImport"].forEach(id=>$(id).onclick=importBackup);
 function importActivitiesOnly(){ $("activityImportFile").click() }
@@ -3543,6 +3688,10 @@ $("confirmAck").onclick=()=>{
     updatedAt:new Date().toISOString(),
     linkedRfqId:rfqId
   };
+
+  // Freeze customer savings at the time this order is saved. Historical orders
+  // keep this snapshot even if the pricing agreement changes later.
+  snapshotOrderSavings(order);
 
   if(editingOrderId)orders=orders.map(o=>o.id===editingOrderId?order:o);
   else orders.unshift(order);
