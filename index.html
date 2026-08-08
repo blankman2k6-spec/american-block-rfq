@@ -210,6 +210,13 @@
     .contact-call-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
     .contact-call-card:first-child{border-top:0}
     .contact-call-actions{display:flex;gap:7px;align-items:center}
+
+    .auto-log-box{margin-top:14px;padding:13px;border:1px solid #315a86;background:#0d1c31;border-radius:16px}
+    .auto-log-box.hidden{display:none}
+    .auto-log-preview{background:#091321;border:1px solid var(--line);border-radius:12px;padding:11px;margin-top:9px;font-size:12px;line-height:1.45}
+    .auto-log-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+    @media(max-width:560px){.auto-log-grid{grid-template-columns:1fr}}
+
     @media(max-width:560px){.verify-grid{grid-template-columns:repeat(3,1fr)}.source-pdf-frame{height:350px}}
 
     @media(max-width:560px){
@@ -228,7 +235,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.2 Verified Import + Calling</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.3 Automatic RFQ Activity</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -372,7 +379,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.2</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.3</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -624,7 +631,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 4.2 — Verified Import + Calling</h2>
+      <h2>Version 4.3 — Automatic RFQ Activity</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -682,6 +689,22 @@
       <div class="total"><span>Quote Total</span><strong id="rfqDraftTotal">$0.00</strong></div>
       <label>Customer Feedback</label><textarea id="rfqFeedback" placeholder="What did the customer say?"></textarea>
       <label>Next Action</label><input id="rfqNextAction" placeholder="Call, visit, revise quote, check inventory...">
+
+      <div id="rfqAutoLogBox" class="auto-log-box hidden">
+        <div class="section-head" style="margin:0">
+          <div><strong>Log This Customer Activity</strong><div class="mini">The RFQ status changed, so this can be added to your monthly activity report automatically.</div></div>
+          <label class="verify-check"><input id="rfqAutoLogEnabled" type="checkbox" checked> Log</label>
+        </div>
+        <div class="auto-log-grid">
+          <div><label>How did you connect?</label><select id="rfqAutoLogType"><option>Call</option><option>Email</option><option>Visit</option><option>Internal Update</option></select></div>
+          <div><label>Activity Date</label><input id="rfqAutoLogDate" type="date"></div>
+        </div>
+        <label>Activity Comment</label>
+        <textarea id="rfqAutoLogComment" placeholder="Activity note"></textarea>
+        <div id="rfqAutoLogPreview" class="auto-log-preview"></div>
+        <div class="mini" style="margin-top:7px">Call, Email, and Visit count toward your daily activity target and Excel export. Internal Update stays in the account timeline only.</div>
+      </div>
+
       <div class="toolbar" style="margin-top:14px">
         <button id="saveRfq" class="primary">Save RFQ</button>
         <button id="cancelRfq" class="secondary">Cancel</button>
@@ -1650,7 +1673,7 @@ function exportCurrentViewPDF(){
     return reportShell("RFQ Pipeline Report","Open and closed RFQ activity",body);
   }
   if(view==="activityLogView"){
-    const month=$("activityMonth")?.value||localIsoDate().slice(0,7),list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(a)-activityDateObj(b));
+    const month=$("activityMonth")?.value||localIsoDate().slice(0,7),list=activities.filter(a=>activityMonthKey(a)===month&&!a.internalOnly&&a.type!=="Internal Update").sort((a,b)=>activityDateObj(a)-activityDateObj(b));
     const body=`<table><tr><th>Date</th><th>Customer</th><th>Type</th><th>Contact</th><th>Opportunity</th><th>Comments</th></tr>${list.map(a=>`<tr><td>${formatDate(a.date)}</td><td>${reportEscape(activityCustomer(a)?.company||"")}</td><td>${reportEscape(a.type)}</td><td>${reportEscape(activityContact(a)?.name||"")}</td><td>${reportEscape(a.opportunityTitle||"")}</td><td>${reportEscape(a.comments||"")}</td></tr>`).join("")}</table>`;
     return reportShell("Monthly Customer Activity Log",month,body);
   }
@@ -1847,11 +1870,12 @@ function renderActivityLog(){
   if(!$("activityMonth").value)$("activityMonth").value=localIsoDate().slice(0,7);
   const month=$("activityMonth").value;
   const list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
-  $("activityMonthCount").textContent=list.length;
-  $("activityVisitCount").textContent=list.filter(a=>a.type==="Visit").length;
-  $("activityCallCount").textContent=list.filter(a=>a.type==="Call").length;
-  $("activityEmailCount").textContent=list.filter(a=>a.type==="Email").length;
-  renderDailyTracker(month,list);
+  const reportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
+  $("activityMonthCount").textContent=reportable.length;
+  $("activityVisitCount").textContent=reportable.filter(a=>a.type==="Visit").length;
+  $("activityCallCount").textContent=reportable.filter(a=>a.type==="Call").length;
+  $("activityEmailCount").textContent=reportable.filter(a=>a.type==="Email").length;
+  renderDailyTracker(month,reportable);
 
   if(!list.length){$("activityLogList").innerHTML="<div class='empty'>No activities saved for this month yet.</div>";return}
   const groups=new Map();
@@ -2514,6 +2538,8 @@ function updateDraft(){
 }
 
 function newRfq(){
+  if($("rfqAutoLogBox"))$("rfqAutoLogBox").classList.add("hidden"); if($("rfqAutoLogEnabled"))$("rfqAutoLogEnabled").checked=true; if($("rfqAutoLogDate"))$("rfqAutoLogDate").value=localIsoDate();
+
   if(!customers.length){alert("Add a customer first.");return}
   editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";
   ["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");
@@ -2521,6 +2547,8 @@ function newRfq(){
   $("rfqStatus").value="Waiting on Customer";$("rfqItems").innerHTML="";addItem();updateDraft();showView("rfqFormView",false)
 }
 function editRfq(id){
+  if($("rfqAutoLogBox"))$("rfqAutoLogBox").classList.add("hidden"); if($("rfqAutoLogEnabled"))$("rfqAutoLogEnabled").checked=true; if($("rfqAutoLogDate"))$("rfqAutoLogDate").value=localIsoDate();
+
   const r=rfqs.find(x=>x.id===id);if(!r)return;
   editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");
   $("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";
@@ -2554,6 +2582,48 @@ function getContactRows(){
 function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cNotes"].forEach(id=>$(id).value="");$("cAccountType").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
 function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
+
+function rfqStatusActivityTemplate(oldStatus,newStatus){
+  const cid=$("rfqCustomer").value,c=customerById(cid);
+  const contact=contactById(cid,$("rfqContact").value);
+  const who=contact?.name||"customer";
+  const quote=$("rfqNumber").value.trim();
+  const value=getItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)+(Number($("rfqShipping").value)||0)+(Number($("rfqTax").value)||0);
+  const q=quote?`RFQ ${quote}`:"the RFQ";
+  if(newStatus==="Closed Won")return `Connected with ${who} regarding ${q}. Customer confirmed moving forward. Opportunity moved from ${oldStatus||"open"} to Closed Won for ${money.format(value)}.`;
+  if(newStatus==="Lost")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Lost.${$("rfqFeedback").value.trim()?` Customer feedback: ${$("rfqFeedback").value.trim()}`:""}`;
+  if(newStatus==="Verbal Yes")return `Connected with ${who} regarding ${q}. Customer indicated they intend to move forward. Opportunity moved from ${oldStatus||"open"} to Verbal Yes for ${money.format(value)}.`;
+  if(newStatus==="Waiting on Customer")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Waiting on Customer.${$("rfqNextAction").value.trim()?` Next action: ${$("rfqNextAction").value.trim()}.`:""}`;
+  if(newStatus==="Pricing Review")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Pricing Review.${$("rfqFeedback").value.trim()?` Customer feedback: ${$("rfqFeedback").value.trim()}`:""}`;
+  if(newStatus==="Hold")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Hold.${$("rfqFeedback").value.trim()?` Customer feedback: ${$("rfqFeedback").value.trim()}`:""}`;
+  return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to ${newStatus}.`;
+}
+function refreshRfqAutoLog(){
+  if(!$("rfqAutoLogBox"))return;
+  const old=rfqs.find(r=>r.id===editingRfqId),newStatus=$("rfqStatus").value;
+  const changed=!!old&&old.status!==newStatus;
+  $("rfqAutoLogBox").classList.toggle("hidden",!changed);
+  if(!changed)return;
+  $("rfqAutoLogDate").value=$("rfqAutoLogDate").value||localIsoDate();
+  const generated=rfqStatusActivityTemplate(old.status,newStatus);
+  $("rfqAutoLogComment").value=generated;
+  $("rfqAutoLogPreview").textContent=`${old.status} → ${newStatus} · ${money.format(getItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)+(Number($("rfqShipping").value)||0)+(Number($("rfqTax").value)||0))}`;
+}
+function logRfqStatusActivity(old,rec){
+  if(!old||old.status===rec.status||!$("rfqAutoLogEnabled").checked)return;
+  const type=$("rfqAutoLogType").value;
+  const comment=$("rfqAutoLogComment").value.trim()||rfqStatusActivityTemplate(old.status,rec.status);
+  const ct=contactById(rec.customerId,rec.contactId);
+  activities.unshift({
+    id:uid(),date:$("rfqAutoLogDate").value||localIsoDate(),type,
+    customerId:rec.customerId,contactId:rec.contactId||null,comments:comment,
+    opportunityRfqId:rec.id,opportunityTitle:rec.quoteNo||"RFQ Opportunity",
+    opportunityValue:total(rec),opportunityStage:rec.status,opportunityDetails:rec.nextAction||rec.feedback||"",
+    internalOnly:type==="Internal Update",
+    autoLogged:true,source:"RFQ Status Change",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+  });
+}
+
 $("saveRfq").onclick=()=>{
   const cid=$("rfqCustomer").value;if(!cid){$("rfqMessage").textContent="Choose a customer.";return}
   const old=rfqs.find(r=>r.id===editingRfqId);
@@ -2570,11 +2640,14 @@ $("saveRfq").onclick=()=>{
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
   };
   if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);
+  logRfqStatusActivity(old,rec);
   save();showView("rfqsView",true)
 }
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),accountType:$("cAccountType").value,notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
-$("rfqCustomer").onchange=()=>renderContactOptions();$("addContact").onclick=()=>addContactRow();
+$("rfqCustomer").onchange=()=>{renderContactOptions();refreshRfqAutoLog()};$("addContact").onclick=()=>addContactRow();
+$("rfqStatus").onchange=refreshRfqAutoLog;
+["rfqContact","rfqNumber","rfqFeedback","rfqNextAction","rfqShipping","rfqTax"].forEach(id=>$(id)&&$(id).addEventListener("input",()=>{if(!$("rfqAutoLogBox").classList.contains("hidden"))refreshRfqAutoLog()}));
 $("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
 $("backFromRfq").onclick=$("cancelRfq").onclick=()=>showView(lastMainView,true);$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
