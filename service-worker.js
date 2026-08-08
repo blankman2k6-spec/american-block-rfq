@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-6-4-goal-pie";
+const CACHE="ab-sales-os-v4-6-5-backorders";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{

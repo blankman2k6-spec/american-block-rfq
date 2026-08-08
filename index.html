@@ -662,12 +662,12 @@
 .savings-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid #70a37c;background:#e8f5eb;color:#1d5b2d;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-top:5px}
 body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-black"] .savings-badge{background:#0f2f22;color:#bbf7d0;border-color:#1f5a42}
 
-/* v4.6.4 Navigation Icons */
+/* v4.6.5 Navigation Icons */
 .tabs .nav-icon{font-size:22px;line-height:1;display:block;margin-bottom:4px}
 .tabs .nav-hammer{color:#d71920;font-size:25px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 .tabs .nav-emerald{color:#00a86b;font-size:27px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 
-/* v4.6.4 Dashboard Monthly Goal Pie */
+/* v4.6.5 Dashboard Monthly Goal Pie */
 .dashboard-goal-pie-card{margin-top:15px;overflow:hidden}
 .goal-pie-layout{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:center}
 .goal-pie{
@@ -712,6 +712,37 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
   .goal-pie-legend{gap:8px}
 }
 
+
+/* v4.6.5 Back Orders */
+.backorder-card{position:relative;border-left:5px solid #f59e0b}
+.backorder-card.completed{border-left-color:#22c55e;opacity:.84}
+.backorder-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.backorder-product{font-size:15px;font-weight:850;margin-top:7px}
+.backorder-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
+.backorder-mini{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:8px}
+.backorder-mini span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.backorder-mini strong{display:block;font-size:12px;margin-top:3px}
+.bo-line-editor{border:1px solid var(--line);border-radius:15px;padding:12px;margin:10px 0;background:var(--panel2)}
+.bo-line-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.bo-switch-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:10px}
+.bo-switch{
+  appearance:none;-webkit-appearance:none;width:54px!important;height:31px;border-radius:999px!important;padding:0!important;
+  background:#cbd5e1!important;border:1px solid #94a3b8!important;position:relative;transition:.2s
+}
+.bo-switch:before{content:"";position:absolute;width:25px;height:25px;left:2px;top:2px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,.22);transition:.2s}
+.bo-switch:checked{background:#f59e0b!important;border-color:#d97706!important}
+.bo-switch:checked:before{transform:translateX(23px)}
+.bo-details.hidden{display:none}
+.bo-history{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.bo-history-row{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:4px 0}
+.bo-credit-note{border:1px solid #29724c;background:#e9f7ef;color:#155a34;border-radius:12px;padding:9px 10px;font-size:11px;margin-top:8px}
+body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-black"] .bo-credit-note{background:#0f2f22;color:#bbf7d0;border-color:#1f5a42}
+@media(max-width:560px){
+  .backorder-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bo-switch-row{grid-template-columns:1fr auto!important}
+  .bo-line-editor .row{grid-template-columns:1fr!important}
+}
+
 </style>
 </head>
 <body>
@@ -719,7 +750,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.4 Goal Pie Dashboard</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.5 Back Orders</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -776,7 +807,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
       </div>
       <div class="progress-wrap" style="margin-top:14px"><div id="goalProgress" class="progress"></div></div>
       <div class="grid metrics" style="margin-top:12px">
-        <div class="metric"><small>Sales This Month</small><strong id="importedMonthSales">$0</strong><div class="sub">Orders + unlinked Closed Won RFQs</div></div>
+        <div class="metric"><small>Sales This Month</small><strong id="importedMonthSales">$0</strong><div class="sub">Delivered/invoiced qty only</div></div>
         <div class="metric"><small>Remaining</small><strong id="goalRemaining">$0</strong></div>
         <div class="metric"><small>Daily Run Rate Needed</small><strong id="dailyNeeded">$0</strong><div class="sub"><span id="businessDaysLeft">0</span> business days left</div></div>
       </div>
@@ -908,6 +939,55 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
     <div id="orderList" style="margin-top:10px"></div>
   </section>
 
+
+
+  <section id="backordersView" class="view">
+    <div class="section-head">
+      <div>
+        <div class="kicker">Fulfillment</div>
+        <h2 style="margin-top:4px">Back Orders</h2>
+        <div class="mini">Only delivered/invoiced quantities count toward credited sales.</div>
+      </div>
+      <span id="backorderOpenBadge" class="status yellow">0 OPEN</span>
+    </div>
+
+    <div class="grid metrics" style="margin-top:12px">
+      <div class="metric"><small>Open Back Order Value</small><strong id="backorderOpenValue">$0</strong><div class="sub">Not yet credited</div></div>
+      <div class="metric"><small>Open Units</small><strong id="backorderOpenUnits">0</strong><div class="sub">Across all customers</div></div>
+      <div class="metric"><small>Due / Past Promise</small><strong id="backorderDueCount">0</strong><div class="sub">Needs follow-up</div></div>
+      <div class="metric"><small>Delivered This Month</small><strong id="backorderDeliveredMonth">$0</strong><div class="sub">Credited on delivery date</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><label>Search</label><input id="backorderSearch" placeholder="Customer, PO, SO, product, part number..."></div>
+        <div><label>View</label><select id="backorderFilter"><option value="open">Open Back Orders</option><option value="all">Open + Completed</option><option value="due">Due / Past Promise</option></select></div>
+      </div>
+    </div>
+
+    <div id="backorderList" style="margin-top:10px"></div>
+  </section>
+
+  <section id="backorderEditorView" class="view">
+    <div class="section-head">
+      <button id="backFromBackorderEditor" class="secondary">← Back</button>
+      <div style="flex:1">
+        <div class="kicker">Order Fulfillment</div>
+        <h2 id="backorderEditorTitle" style="margin:3px 0">Manage Back Order</h2>
+      </div>
+    </div>
+    <div class="card">
+      <div id="backorderEditorMeta" class="mini"></div>
+      <div class="report-hint" style="margin-top:10px">
+        Mark only the quantity that is actually unavailable. Available quantity remains credited. When backordered product is delivered, record the delivered quantity and date so sales credit moves to that delivery month.
+      </div>
+      <div id="backorderEditorItems" style="margin-top:12px"></div>
+      <div class="toolbar" style="margin-top:14px">
+        <button id="saveBackorderChanges" class="primary">Save Back Order Changes</button>
+        <button id="cancelBackorderChanges" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </section>
 
   <section id="activityLogView" class="view">
     <div class="section-head">
@@ -1564,6 +1644,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
     <button class="tab" data-view="customersView"><strong>👥</strong>Customers</button>
     <button class="tab" data-view="rfqsView"><strong class="nav-icon">📄</strong>RFQs</button>
     <button class="tab" data-view="ordersView"><strong class="nav-icon">🛒</strong>Orders</button>
+    <button class="tab" data-view="backordersView"><strong>↻</strong>Back Orders</button>
     <button class="tab" data-view="activityLogView"><strong class="nav-icon">📝</strong>Log</button>
     <button class="tab" data-view="productsView"><strong class="nav-icon nav-hammer" aria-label="Hammer union">⬢</strong>Products</button>
     <button class="tab" data-view="communicationsView"><strong class="nav-icon">✉️</strong>Comms</button>
@@ -1851,7 +1932,7 @@ function renderDashboard(){
     $("goalPieStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
     $("goalPie").setAttribute("aria-label",`${Math.round(pct)} percent of monthly sales goal complete`);
   }
-  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Imported orders ${money.format(currentMonthImportedSales())} · Closed Won RFQs ${money.format(currentMonthClosedWonSales())}${Number(settings.sales)?` · Manual adjustment ${money.format(Number(settings.sales)||0)}`:""}`;
+  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Credited orders ${money.format(currentMonthImportedSales())} · Credited Closed Won ${money.format(currentMonthClosedWonSales())}${Number(settings.sales)?` · Manual adjustment ${money.format(Number(settings.sales)||0)}`:""}`;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
   renderMiniList($("todayFollowups"),due.slice(0,5),true);
@@ -2054,12 +2135,253 @@ function rfqClosedWonDate(r){
 function orderLinkedToRfq(rfqId){
   return orders.some(o=>o.linkedRfqId===rfqId);
 }
+
+let activeBackorderSource=null;
+
+function boLineOriginalQty(item){return Number(item?.qty)||0}
+function boDeliveredQty(item){return (item?.backorderDeliveries||[]).reduce((s,e)=>s+(Number(e.qty)||0),0)}
+function boOriginalQty(item){return Math.max(0,Math.min(boLineOriginalQty(item),Number(item?.backorderOriginalQty)||0))}
+function boRemainingQty(item){return Math.max(0,boOriginalQty(item)-boDeliveredQty(item))}
+function boInitialCreditedQty(item){return Math.max(0,boLineOriginalQty(item)-boOriginalQty(item))}
+function boLineProductValue(item,qty){return (Number(qty)||0)*(Number(item?.price)||0)}
+function boSourceProductSubtotal(source){return (source?.items||[]).reduce((s,i)=>s+boLineProductValue(i,boLineOriginalQty(i)),0)}
+function boAllocatedValue(source,productValue){
+  const subtotal=boSourceProductSubtotal(source),totalValue=Number(source?.total);
+  if(subtotal>0&&Number.isFinite(totalValue)&&totalValue>=0)return productValue*(totalValue/subtotal);
+  return productValue;
+}
+function boInitialCreditedValue(source){
+  const pv=(source?.items||[]).reduce((s,i)=>s+boLineProductValue(i,boInitialCreditedQty(i)),0);
+  return boAllocatedValue(source,pv);
+}
+function boDeliveryEvents(source){
+  const out=[];
+  (source?.items||[]).forEach((item,lineIndex)=>{
+    (item.backorderDeliveries||[]).forEach((e,eventIndex)=>{
+      const qty=Number(e.qty)||0;
+      if(qty<=0||!e.date)return;
+      out.push({
+        sourceId:source.id,lineIndex,eventIndex,date:e.date,qty,
+        part:item.part||"",product:item.product||"",
+        value:boAllocatedValue(source,boLineProductValue(item,qty))
+      });
+    });
+  });
+  return out;
+}
+function boRecognizedValueInRange(source,start,end){
+  let value=0;
+  const d=orderDateObj(source);
+  if(!isNaN(d)&&d>=start&&d<=end)value+=boInitialCreditedValue(source);
+  boDeliveryEvents(source).forEach(e=>{
+    const ed=new Date(e.date+"T12:00:00");
+    if(ed>=start&&ed<=end)value+=Number(e.value)||0;
+  });
+  return value;
+}
+function boOpenValue(source){
+  const pv=(source?.items||[]).reduce((s,i)=>s+boLineProductValue(i,boRemainingQty(i)),0);
+  return boAllocatedValue(source,pv);
+}
+function boHasBackorder(source){return (source?.items||[]).some(i=>boOriginalQty(i)>0)}
+function boOpenLineCount(source){return (source?.items||[]).filter(i=>boRemainingQty(i)>0).length}
+function boSyntheticSource(r){
+  const o=closedWonAsOrder(r);
+  o.items=r.items||[];
+  return o;
+}
+function boAllSources(){
+  const real=orders.map(o=>({kind:"order",source:o}));
+  const synthetic=rfqs.filter(r=>r.status==="Closed Won"&&!orderLinkedToRfq(r.id)).map(r=>({kind:"rfq",source:boSyntheticSource(r),rfq:r}));
+  return [...real,...synthetic];
+}
+function boBackorderRows(){
+  const rows=[];
+  boAllSources().forEach(entry=>{
+    const src=entry.kind==="rfq"?entry.rfq:entry.source;
+    (src.items||[]).forEach((item,lineIndex)=>{
+      const original=boOriginalQty(item),delivered=boDeliveredQty(item),remaining=boRemainingQty(item);
+      if(original<=0)return;
+      rows.push({
+        kind:entry.kind,
+        sourceId:src.id,
+        customerId:src.customerId,
+        customer:entry.kind==="rfq"?customerName(src):orderCustomerName(src),
+        poNumber:entry.kind==="rfq"?(src.quoteNo||""):(src.poNumber||""),
+        salesOrder:entry.kind==="rfq"?"":(src.salesOrder||""),
+        part:item.part||"",
+        product:item.product||"",
+        orderedQty:Number(item.qty)||0,
+        backorderQty:original,
+        deliveredQty:delivered,
+        remainingQty:remaining,
+        promiseDate:item.backorderPromiseDate||"",
+        unitPrice:Number(item.price)||0,
+        openValue:boAllocatedValue(entry.source,boLineProductValue(item,remaining)),
+        lineIndex,
+        deliveries:item.backorderDeliveries||[]
+      });
+    });
+  });
+  return rows;
+}
+function boMonthRange(date=new Date()){
+  const start=new Date(date.getFullYear(),date.getMonth(),1,0,0,0,0);
+  const end=new Date(date.getFullYear(),date.getMonth()+1,0,23,59,59,999);
+  return {start,end};
+}
+function boCurrentMonthDeliveredValue(){
+  const {start,end}=boMonthRange();
+  return boAllSources().reduce((sum,e)=>{
+    const src=e.kind==="rfq"?e.rfq:e.source;
+    return sum+boDeliveryEvents(e.kind==="rfq"?boSyntheticSource(src):src).filter(ev=>{
+      const d=new Date(ev.date+"T12:00:00");return d>=start&&d<=end;
+    }).reduce((s,ev)=>s+(Number(ev.value)||0),0);
+  },0);
+}
+function boSourceByActive(){
+  if(!activeBackorderSource)return null;
+  if(activeBackorderSource.kind==="order")return orders.find(o=>o.id===activeBackorderSource.id)||null;
+  return rfqs.find(r=>r.id===activeBackorderSource.id)||null;
+}
+function openBackorderEditor(kind,id){
+  const src=kind==="order"?orders.find(o=>o.id===id):rfqs.find(r=>r.id===id);
+  if(!src)return;
+  activeBackorderSource={kind,id};
+  const cust=kind==="order"?orderCustomerName(src):customerName(src);
+  $("backorderEditorTitle").textContent=`Manage Back Order — ${cust}`;
+  $("backorderEditorMeta").textContent=kind==="order"
+    ?`PO ${src.poNumber||"—"} · Sales Order ${src.salesOrder||"—"} · ${formatDate(src.orderDate)}`
+    :`Closed Won RFQ ${src.quoteNo||"—"} · ${formatDate(src.closedWonAt||src.updatedAt||src.createdAt)}`;
+  renderBackorderEditorItems(src);
+  showView("backorderEditorView",false);
+}
+function renderBackorderEditorItems(src){
+  const holder=$("backorderEditorItems");
+  holder.innerHTML="";
+  (src.items||[]).forEach((item,index)=>{
+    const original=boOriginalQty(item),delivered=boDeliveredQty(item),remaining=boRemainingQty(item);
+    const row=document.createElement("div");row.className="bo-line-editor";row.dataset.boIndex=index;
+    row.innerHTML=`
+      <div class="bo-line-title">
+        <div><strong>${esc(item.part||item.product||`Line ${index+1}`)}</strong><div class="mini">${esc(item.product||"")} · Ordered ${Number(item.qty)||0} · ${money.format(Number(item.price)||0)} ea.</div></div>
+        <span class="status ${remaining>0?"yellow":original>0?"green":"blue"}">${remaining>0?"BACK ORDER":original>0?"COMPLETE":"AVAILABLE"}</span>
+      </div>
+      <div class="bo-switch-row">
+        <div><strong>Item is / was on back order</strong><div class="mini">Turn this on anytime, even after the order was already closed.</div></div>
+        <input class="bo-switch" type="checkbox" data-bo-toggle ${original>0?"checked":""}>
+      </div>
+      <div class="bo-details ${original>0?"":"hidden"}">
+        <div class="row">
+          <div><label>Back Ordered Qty</label><input data-bo-qty type="number" min="${delivered}" max="${Number(item.qty)||0}" step="1" value="${original||Math.min(1,Number(item.qty)||0)}"></div>
+          <div><label>Promise Date</label><input data-bo-promise type="date" value="${esc(item.backorderPromiseDate||"")}"></div>
+        </div>
+        <div class="bo-credit-note">
+          Available now: <strong data-bo-available>${Math.max(0,(Number(item.qty)||0)-(original||0))}</strong> ·
+          Delivered from back order: <strong>${delivered}</strong> ·
+          Still open: <strong data-bo-remaining>${remaining}</strong>
+        </div>
+        ${original>0?`<div class="bo-history"><strong class="mini">Delivery History</strong>${(item.backorderDeliveries||[]).map((e,ei)=>`<div class="bo-history-row"><span>${formatDate(e.date)} · Qty ${Number(e.qty)||0}</span><button class="secondary" type="button" data-bo-remove-delivery="${ei}" style="padding:5px 8px">Remove</button></div>`).join("")||'<div class="mini" style="margin-top:5px">No backordered quantity delivered yet.</div>'}</div>
+        ${remaining>0?`<div class="row" style="margin-top:8px"><div><label>Qty Delivered Now</label><input data-bo-deliver-qty type="number" min="0" max="${remaining}" step="1" value="0"></div><div><label>Delivery / Invoice Date</label><input data-bo-deliver-date type="date" value="${localIsoDate()}"></div></div><button class="secondary" type="button" data-bo-add-delivery style="width:100%;margin-top:8px">✓ Record Delivered Qty</button>`:""}`:""}
+      </div>`;
+    holder.appendChild(row);
+
+    const toggle=row.querySelector("[data-bo-toggle]"),details=row.querySelector(".bo-details");
+    toggle.onchange=()=>{
+      details.classList.toggle("hidden",!toggle.checked);
+      if(toggle.checked && !row.querySelector("[data-bo-qty]").value)row.querySelector("[data-bo-qty]").value=Math.min(1,Number(item.qty)||0);
+    };
+    const qtyInput=row.querySelector("[data-bo-qty]");
+    if(qtyInput)qtyInput.oninput=()=>{
+      const q=Math.max(delivered,Math.min(Number(item.qty)||0,Number(qtyInput.value)||0));
+      row.querySelector("[data-bo-available]").textContent=Math.max(0,(Number(item.qty)||0)-q);
+      row.querySelector("[data-bo-remaining]").textContent=Math.max(0,q-delivered);
+    };
+    row.querySelectorAll("[data-bo-remove-delivery]").forEach(btn=>btn.onclick=()=>{
+      const ei=Number(btn.dataset.boRemoveDelivery);
+      item.backorderDeliveries=(item.backorderDeliveries||[]).filter((_,x)=>x!==ei);
+      renderBackorderEditorItems(src);
+    });
+    const add=row.querySelector("[data-bo-add-delivery]");
+    if(add)add.onclick=()=>{
+      const q=Number(row.querySelector("[data-bo-deliver-qty]").value)||0;
+      const date=row.querySelector("[data-bo-deliver-date]").value;
+      const rem=boRemainingQty(item);
+      if(q<=0||q>rem){alert(`Enter a delivered quantity from 1 to ${rem}.`);return}
+      if(!date){alert("Choose the delivery / invoice date.");return}
+      item.backorderDeliveries=item.backorderDeliveries||[];
+      item.backorderDeliveries.push({qty:q,date,createdAt:new Date().toISOString()});
+      renderBackorderEditorItems(src);
+    };
+  });
+}
+function saveBackorderEditor(){
+  const src=boSourceByActive();if(!src)return;
+  document.querySelectorAll("#backorderEditorItems .bo-line-editor").forEach(row=>{
+    const i=Number(row.dataset.boIndex),item=src.items[i],toggle=row.querySelector("[data-bo-toggle]");
+    if(!item||!toggle)return;
+    const delivered=boDeliveredQty(item);
+    if(toggle.checked){
+      let q=Number(row.querySelector("[data-bo-qty]")?.value)||0;
+      q=Math.max(delivered,Math.min(Number(item.qty)||0,q));
+      item.backorderOriginalQty=q;
+      item.backorderPromiseDate=row.querySelector("[data-bo-promise]")?.value||"";
+      item.backorderDeliveries=item.backorderDeliveries||[];
+    }else{
+      if(delivered>0){
+        item.backorderOriginalQty=Math.max(delivered,boOriginalQty(item));
+      }else{
+        delete item.backorderOriginalQty;
+        delete item.backorderPromiseDate;
+        delete item.backorderDeliveries;
+      }
+    }
+  });
+  src.updatedAt=new Date().toISOString();
+  save();
+  renderAll();
+  showView("backordersView",true);
+  activeBackorderSource=null;
+}
+function renderBackorders(){
+  if(!$("backorderList"))return;
+  let rows=boBackorderRows();
+  const q=($("backorderSearch")?.value||"").trim().toLowerCase();
+  const filter=$("backorderFilter")?.value||"open";
+  const today=localIsoDate();
+  if(q)rows=rows.filter(r=>[r.customer,r.poNumber,r.salesOrder,r.part,r.product].join(" ").toLowerCase().includes(q));
+  if(filter==="open")rows=rows.filter(r=>r.remainingQty>0);
+  if(filter==="due")rows=rows.filter(r=>r.remainingQty>0&&r.promiseDate&&r.promiseDate<=today);
+  rows.sort((a,b)=>(a.promiseDate||"9999").localeCompare(b.promiseDate||"9999")||a.customer.localeCompare(b.customer));
+
+  const all=boBackorderRows(),open=all.filter(r=>r.remainingQty>0);
+  $("backorderOpenBadge").textContent=`${open.length} OPEN`;
+  $("backorderOpenValue").textContent=money.format(open.reduce((s,r)=>s+(Number(r.openValue)||0),0));
+  $("backorderOpenUnits").textContent=Math.round(open.reduce((s,r)=>s+(Number(r.remainingQty)||0),0)).toLocaleString();
+  $("backorderDueCount").textContent=open.filter(r=>r.promiseDate&&r.promiseDate<=today).length;
+  $("backorderDeliveredMonth").textContent=money.format(boCurrentMonthDeliveredValue());
+
+  $("backorderList").innerHTML=rows.length?"":"<div class='empty'>No matching back orders.</div>";
+  rows.forEach(r=>{
+    const div=document.createElement("div");div.className="list-card backorder-card"+(r.remainingQty<=0?" completed":"");
+    div.innerHTML=`<div class="backorder-head"><div><div class="list-title">${esc(r.customer)}</div><div class="mini">PO ${esc(r.poNumber||"—")} · SO ${esc(r.salesOrder||"—")}</div></div><span class="status ${r.remainingQty>0?(r.promiseDate&&r.promiseDate<=today?"red":"yellow"):"green"}">${r.remainingQty>0?"OPEN":"COMPLETE"}</span></div>
+      <div class="backorder-product">${esc(r.part||r.product||"Product")}</div><div class="mini">${esc(r.product||"")}</div>
+      <div class="backorder-grid">
+        <div class="backorder-mini"><span>Ordered</span><strong>${r.orderedQty}</strong></div>
+        <div class="backorder-mini"><span>Back Ordered</span><strong>${r.backorderQty}</strong></div>
+        <div class="backorder-mini"><span>Still Open</span><strong>${r.remainingQty}</strong></div>
+        <div class="backorder-mini"><span>Promise Date</span><strong>${r.promiseDate?formatDate(r.promiseDate):"—"}</strong></div>
+      </div>
+      <div class="toolbar" style="margin-top:9px"><button class="secondary" data-bo-manage="${r.kind}|${r.sourceId}">${r.remainingQty>0?"Update / Deliver":"View Back Order"}</button></div>`;
+    $("backorderList").appendChild(div);
+  });
+  document.querySelectorAll("[data-bo-manage]").forEach(b=>b.onclick=()=>{const [kind,id]=b.dataset.boManage.split("|");openBackorderEditor(kind,id)});
+}
+
 function currentMonthClosedWonSales(){
-  const now=new Date(),m=now.getMonth(),y=now.getFullYear();
-  return rfqs.filter(r=>{
-    const d=rfqClosedWonDate(r);
-    return d && d.getMonth()===m && d.getFullYear()===y && !orderLinkedToRfq(r.id);
-  }).reduce((s,r)=>s+total(r),0);
+  const {start,end}=boMonthRange();
+  return rfqs.filter(r=>r.status==="Closed Won"&&!orderLinkedToRfq(r.id))
+    .reduce((s,r)=>s+boRecognizedValueInRange(boSyntheticSource(r),start,end),0);
 }
 function currentMonthSalesTotal(){
   return currentMonthImportedSales()+currentMonthClosedWonSales();
@@ -2100,12 +2422,15 @@ function ytdOrdersForCustomer(customerId){
   });
 }
 function ytdSalesForCustomer(customerId){
-  return ytdOrdersForCustomer(customerId).reduce((s,o)=>s+(Number(o.total)||0),0);
+  const y=new Date().getFullYear(),start=new Date(y,0,1,0,0,0,0),end=new Date(y,11,31,23,59,59,999);
+  const real=orders.filter(o=>o.customerId===customerId).reduce((s,o)=>s+boRecognizedValueInRange(o,start,end),0);
+  const synthetic=rfqs.filter(r=>r.customerId===customerId&&r.status==="Closed Won"&&!orderLinkedToRfq(r.id))
+    .reduce((s,r)=>s+boRecognizedValueInRange(boSyntheticSource(r),start,end),0);
+  return real+synthetic;
 }
 function currentMonthImportedSales(){
-  const now=new Date();
-  return orders.filter(o=>{const d=orderDateObj(o);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()})
-    .reduce((s,o)=>s+(Number(o.total)||0),0);
+  const {start,end}=boMonthRange();
+  return orders.reduce((s,o)=>s+boRecognizedValueInRange(o,start,end),0);
 }
 function renderOrders(){
   const q=$("orderSearch")?.value.toLowerCase()||"",mode=$("orderGroup")?.value||"month";
@@ -2124,16 +2449,19 @@ function renderOrders(){
       if(o.synthetic)div.dataset.rFqOpen=o.sourceRfqId;
       div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(orderCustomerName(o))}</div><div class="mini">${o.synthetic?`RFQ ${esc(o.poNumber||"—")}`:`SO ${esc(o.salesOrder||"—")} · PO ${esc(o.poNumber||"—")}`}${o.contactName?" · "+esc(o.contactName):""}</div></div><span class="status ${o.synthetic?"blue":"green"}">${o.synthetic?"CLOSED WON":"ORDER"}</span></div>
         <div class="money">${money.format(Number(o.total)||0)}</div>
+        ${boHasBackorder(o)?`<div class="mini" style="margin-top:4px"><span class="status yellow" style="min-height:26px;padding:5px 9px">${boOpenLineCount(o)} BACK ORDER LINE${boOpenLineCount(o)===1?"":"S"}</span> · Open value ${money.format(boOpenValue(o))}</div>`:""}
         <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"Order")}</div>
-        ${o.synthetic?`<div class="report-hint">Automatically shown from Closed Won RFQ. It will be replaced by the linked acknowledgment/order later.</div>`:
-        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-order-edit="${o.id}">✏️ Edit Import</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
+        ${o.synthetic?`<div class="report-hint">Automatically shown from Closed Won RFQ. Backordered quantities are withheld from credited sales until delivery.</div><div class="toolbar" style="margin-top:8px"><button class="secondary" data-manage-backorder-rfq="${o.sourceRfqId}">Manage Back Order</button></div>`:
+        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-manage-backorder-order="${o.id}">↻ Manage Back Order</button><button data-order-edit="${o.id}">✏️ Edit Order</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(wrap);
   });
-  document.querySelectorAll("[data-order-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu"))return;editImportedOrder(card.dataset.orderOpen)});
-  document.querySelectorAll("[data-r-fq-open]").forEach(card=>card.onclick=()=>editRfq(card.dataset.rFqOpen));
+  document.querySelectorAll("[data-order-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu")||e.target.closest("[data-manage-backorder-order]"))return;editImportedOrder(card.dataset.orderOpen)});
+  document.querySelectorAll("[data-r-fq-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-manage-backorder-rfq]"))return;editRfq(card.dataset.rFqOpen)});
   document.querySelectorAll("[data-order-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.orderMenu;document.querySelectorAll(".order-menu").forEach(m=>{if(m.dataset.orderMenuPanel!==id)m.classList.add("hidden")});document.querySelector(`[data-order-menu-panel="${id}"]`)?.classList.toggle("hidden")});
+  document.querySelectorAll("[data-manage-backorder-order]").forEach(b=>b.onclick=e=>{e.stopPropagation();openBackorderEditor("order",b.dataset.manageBackorderOrder)});
+  document.querySelectorAll("[data-manage-backorder-rfq]").forEach(b=>b.onclick=e=>{e.stopPropagation();openBackorderEditor("rfq",b.dataset.manageBackorderRfq)});
   document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editImportedOrder(b.dataset.orderEdit)});
   document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.stopPropagation();confirmDeleteImportedOrder(b.dataset.orderDelete)});
 }
@@ -2872,6 +3200,7 @@ function openMeetingText(){
   window.location.href=`sms:${phone}?&body=${encodeURIComponent(body)}`;
 }
 function renderAll(){
+  renderBackorders();
 renderIntelligence();renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
@@ -3754,7 +4083,20 @@ $("confirmAck").onclick=()=>{
     return;
   }
 
-  const items=getAckItems();
+  let items=getAckItems();
+  if(editingOrderId){
+    const prior=orders.find(o=>o.id===editingOrderId);
+    items=items.map((item,index)=>{
+      const exact=(prior?.items||[])[index];
+      const match=exact&&normalizeProductKey(exact)===normalizeProductKey(item)
+        ?exact:(prior?.items||[]).find(x=>normalizeProductKey(x)===normalizeProductKey(item));
+      return match?{...item,
+        backorderOriginalQty:match.backorderOriginalQty,
+        backorderPromiseDate:match.backorderPromiseDate,
+        backorderDeliveries:(match.backorderDeliveries||[]).map(e=>({...e}))
+      }:item;
+    });
+  }
   const subtotal=items.reduce((s,i)=>s+i.qty*i.price,0);
   const shipping=Number($("ackShipping").value)||0;
   const tax=Number($("ackTax").value)||0;
@@ -3782,6 +4124,23 @@ $("confirmAck").onclick=()=>{
     updatedAt:new Date().toISOString(),
     linkedRfqId:rfqId
   };
+
+  // Carry line-level back-order state forward when a Closed Won RFQ is replaced
+  // by the actual acknowledgment/order.
+  if(rfqId){
+    const linked=rfqs.find(r=>r.id===rfqId);
+    if(linked){
+      order.items.forEach(item=>{
+        const key=normalizeProductKey(item);
+        const src=(linked.items||[]).find(x=>normalizeProductKey(x)===key);
+        if(src&&boOriginalQty(src)>0){
+          item.backorderOriginalQty=boOriginalQty(src);
+          item.backorderPromiseDate=src.backorderPromiseDate||"";
+          item.backorderDeliveries=(src.backorderDeliveries||[]).map(x=>({...x}));
+        }
+      });
+    }
+  }
 
   // Freeze customer savings at the time this order is saved. Historical orders
   // keep this snapshot even if the pricing agreement changes later.
@@ -4475,6 +4834,13 @@ if($("sendMeetingEmail"))$("sendMeetingEmail").onclick=openMeetingEmail;
 if($("sendMeetingText"))$("sendMeetingText").onclick=openMeetingText;
 if($("copyMeetingEmail"))$("copyMeetingEmail").onclick=()=>navigator.clipboard.writeText($("meetingEmailTemplate").value);
 if($("copyMeetingText"))$("copyMeetingText").onclick=()=>navigator.clipboard.writeText($("meetingTextTemplate").value);
+
+if($("backorderSearch"))$("backorderSearch").oninput=renderBackorders;
+if($("backorderFilter"))$("backorderFilter").onchange=renderBackorders;
+if($("backFromBackorderEditor"))$("backFromBackorderEditor").onclick=()=>showView("backordersView",true);
+if($("cancelBackorderChanges"))$("cancelBackorderChanges").onclick=()=>showView("backordersView",true);
+if($("saveBackorderChanges"))$("saveBackorderChanges").onclick=saveBackorderEditor;
+
 renderAll();
 initializeCloudSync();
 </script>
