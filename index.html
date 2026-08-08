@@ -465,6 +465,13 @@
       filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));
     }
 
+
+    .sync-good{color:#168344;font-weight:800}
+    .sync-warn{color:#a86600;font-weight:800}
+    .sync-bad{color:#b52b32;font-weight:800}
+    body[data-skin="classic-office"] .verify-banner.good{background:#e6f2e8;color:#173b20;border-color:#7ca587}
+    body[data-skin="clean-corporate"] .verify-banner.good{background:#eefaf2;color:#174c2b;border-color:#a9d6b7}
+
     @media(max-width:560px){
       .topbar{
         min-height:96px;
@@ -517,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.4 Supabase Connection Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5 Cloud Sync</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -926,7 +933,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.4.4 — Supabase Connection Fix</h2>
+      <h2>Version 4.5 — Cloud Sync</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -947,6 +954,36 @@
         <button id="testCloudConnection" class="secondary">Test Connection</button>
       </div>
       <div id="cloudStatus" class="mini" style="margin-top:10px">Local-only mode</div>
+
+      <div style="height:1px;background:var(--line);margin:18px 0"></div>
+      <div class="kicker">Cloud Account</div>
+      <h3 style="margin:5px 0 8px">Sign In to Sync</h3>
+      <p class="muted">Use the same login on your phone and desktop so both devices can share the same CRM.</p>
+
+      <div id="cloudSignedOut">
+        <label>Email</label><input id="cloudEmail" type="email" autocomplete="username" placeholder="Your email">
+        <label>Password</label><input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Password">
+        <div class="toolbar" style="margin-top:10px">
+          <button id="cloudSignIn" class="primary" type="button">Sign In</button>
+          <button id="cloudCreateAccount" class="secondary" type="button">Create Account</button>
+        </div>
+      </div>
+
+      <div id="cloudSignedIn" class="hidden">
+        <div class="verify-banner good">
+          <div class="verify-title">✓ Signed In</div>
+          <div id="cloudUserEmail" class="mini" style="margin-top:4px"></div>
+          <div id="cloudLastSync" class="mini" style="margin-top:3px">Not synced yet</div>
+        </div>
+        <div class="toolbar">
+          <button id="cloudSyncNow" class="primary" type="button">Sync Now</button>
+          <button id="cloudPullNow" class="secondary" type="button">Download Cloud</button>
+          <button id="cloudPushNow" class="secondary" type="button">Upload This Device</button>
+          <button id="cloudSignOut" class="secondary" type="button">Sign Out</button>
+        </div>
+        <div class="mini" style="margin-top:8px">After the first successful sync, normal CRM changes auto-sync shortly after you save them.</div>
+      </div>
+      <div id="cloudSyncStatus" class="mini" style="margin-top:10px"></div>
     </div>
     <div class="card">
       <div class="kicker">V3 Architecture</div>
@@ -1223,6 +1260,7 @@ let orders=JSON.parse(localStorage.getItem(KEYS.orders)||"[]");
 let communications=JSON.parse(localStorage.getItem(KEYS.communications)||"[]");
 let activities=JSON.parse(localStorage.getItem(KEYS.activities)||"[]");
 let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:""};
+let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false;
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
 if(!settings.skin)settings.skin="midnight-executive";
 let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
@@ -1242,7 +1280,17 @@ function applySkin(name,announce=false){
   if(announce){localStorage.setItem(KEYS.settings,JSON.stringify(settings));}
 }
 
-function save(){localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));localStorage.setItem(KEYS.customers,JSON.stringify(customers));localStorage.setItem(KEYS.orders,JSON.stringify(orders));localStorage.setItem(KEYS.communications,JSON.stringify(communications));localStorage.setItem(KEYS.activities,JSON.stringify(activities));localStorage.setItem(KEYS.settings,JSON.stringify(settings));localStorage.setItem(KEYS.cloud,JSON.stringify(cloud))}
+function save(markDirty=true){
+  localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));
+  localStorage.setItem(KEYS.customers,JSON.stringify(customers));
+  localStorage.setItem(KEYS.orders,JSON.stringify(orders));
+  localStorage.setItem(KEYS.communications,JSON.stringify(communications));
+  localStorage.setItem(KEYS.activities,JSON.stringify(activities));
+  localStorage.setItem(KEYS.settings,JSON.stringify(settings));
+  if(markDirty&&!applyingCloudState)cloud.localDirtyAt=new Date().toISOString();
+  localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
+  if(markDirty&&cloudSyncReady&&cloud.session?.access_token&&!applyingCloudState)scheduleCloudPush();
+}
 function itemSubtotal(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
 function extraCharges(r){return (Number(r.shipping)||0)+(Number(r.tax)||0)}
 function total(r){return itemSubtotal(r)+extraCharges(r)}
@@ -3148,12 +3196,333 @@ if($("logCommunication"))$("logCommunication").onclick=()=>logComm("Manual Log")
 
 if($("supabaseUrl"))$("supabaseUrl").value=cloud.url||"";
 if($("supabaseAnonKey"))$("supabaseAnonKey").value=cloud.anonKey||"";
+
+function cloudBase(){return String(cloud.url||"").trim().replace(/\/$/,"")}
+function cloudKey(){return String(cloud.anonKey||"").trim()}
+function setCloudSyncStatus(message,kind=""){
+  if(!$("cloudSyncStatus"))return;
+  $("cloudSyncStatus").className="mini "+(kind?`sync-${kind}`:"");
+  $("cloudSyncStatus").textContent=message;
+}
+function saveCloudMeta(){localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));updateCloudAccountUI()}
+function updateCloudAccountUI(){
+  const signed=!!cloud.session?.access_token;
+  $("cloudSignedOut")?.classList.toggle("hidden",signed);
+  $("cloudSignedIn")?.classList.toggle("hidden",!signed);
+  if(signed){
+    $("cloudUserEmail").textContent=cloud.session.user?.email||cloud.userEmail||"Signed in";
+    $("cloudLastSync").textContent=cloud.lastSyncedAt
+      ?`Last sync: ${new Date(cloud.lastSyncedAt).toLocaleString()} · revision ${cloud.lastRevision||0}`
+      :"Not synced yet";
+  }
+}
+function cloudSnapshot(){
+  return {
+    schemaVersion:1,
+    rfqs,customers,orders,communications,activities,settings,
+    preferences:{
+      dailyGoalMin:localStorage.getItem("abSalesOS_dailyGoalMin")||"4",
+      dailyGoalMax:localStorage.getItem("abSalesOS_dailyGoalMax")||"8"
+    },
+    savedAt:new Date().toISOString()
+  };
+}
+function applyCloudSnapshot(state){
+  if(!state||typeof state!=="object")throw new Error("Cloud state is empty or invalid.");
+  applyingCloudState=true;
+  try{
+    rfqs=Array.isArray(state.rfqs)?state.rfqs:[];
+    customers=Array.isArray(state.customers)?state.customers:[];
+    orders=Array.isArray(state.orders)?state.orders:[];
+    communications=Array.isArray(state.communications)?state.communications:[];
+    activities=Array.isArray(state.activities)?state.activities:[];
+    settings={...(state.settings||{goal:100000,sales:0})};
+    if(!settings.skin)settings.skin="midnight-executive";
+    if(state.preferences?.dailyGoalMin)localStorage.setItem("abSalesOS_dailyGoalMin",String(state.preferences.dailyGoalMin));
+    if(state.preferences?.dailyGoalMax)localStorage.setItem("abSalesOS_dailyGoalMax",String(state.preferences.dailyGoalMax));
+    save(false);
+    applySkin(settings.skin||"midnight-executive");
+    renderAll();
+  }finally{
+    applyingCloudState=false;
+  }
+}
+function localHasCrmData(){
+  return customers.length>0||rfqs.length>0||orders.length>0||activities.length>0||communications.length>0;
+}
+async function cloudAuthRequest(path,body){
+  const r=await fetch(`${cloudBase()}${path}`,{
+    method:"POST",
+    headers:{apikey:cloudKey(),"Content-Type":"application/json"},
+    body:JSON.stringify(body||{})
+  });
+  const text=await r.text();
+  let data={};
+  if(text){try{data=JSON.parse(text)}catch(_){data={message:text}}}
+  if(!r.ok)throw new Error(data.msg||data.message||data.error_description||data.error||`HTTP ${r.status}`);
+  return data;
+}
+function storeCloudSession(data){
+  if(!data?.access_token)return false;
+  cloud.session={
+    access_token:data.access_token,
+    refresh_token:data.refresh_token,
+    expires_at:Date.now()+((Number(data.expires_in)||3600)*1000),
+    user:data.user||cloud.session?.user||null
+  };
+  cloud.userEmail=data.user?.email||cloud.userEmail||"";
+  saveCloudMeta();
+  return true;
+}
+async function refreshCloudSession(){
+  if(!cloud.session?.refresh_token)throw new Error("Please sign in again.");
+  const data=await cloudAuthRequest("/auth/v1/token?grant_type=refresh_token",{refresh_token:cloud.session.refresh_token});
+  storeCloudSession(data);
+  return cloud.session.access_token;
+}
+async function ensureCloudToken(){
+  if(!cloud.session?.access_token)throw new Error("Sign in to your cloud account first.");
+  if((cloud.session.expires_at||0)<Date.now()+60000)return refreshCloudSession();
+  return cloud.session.access_token;
+}
+async function cloudRest(path,{method="GET",body=null,prefer=""}={}){
+  const token=await ensureCloudToken();
+  const headers={apikey:cloudKey(),Authorization:`Bearer ${token}`};
+  if(body!==null)headers["Content-Type"]="application/json";
+  if(prefer)headers.Prefer=prefer;
+  const r=await fetch(`${cloudBase()}${path}`,{method,headers,body:body===null?undefined:JSON.stringify(body)});
+  const text=await r.text();
+  let data=null;
+  if(text){try{data=JSON.parse(text)}catch(_){data=text}}
+  if(!r.ok)throw new Error(`${r.status}: ${data?.message||data?.hint||data?.details||data?.error||String(data||"Request failed")}`);
+  return data;
+}
+async function getCloudStateRow(){
+  const uid=cloud.session?.user?.id;
+  if(!uid)throw new Error("Cloud user ID is missing. Sign in again.");
+  const rows=await cloudRest(`/rest/v1/crm_state?select=owner_id,revision,state,updated_at&owner_id=eq.${encodeURIComponent(uid)}&limit=1`);
+  return Array.isArray(rows)&&rows.length?rows[0]:null;
+}
+async function createCloudState(){
+  const uid=cloud.session.user.id;
+  const rows=await cloudRest("/rest/v1/crm_state",{
+    method:"POST",
+    body:{owner_id:uid,revision:1,state:cloudSnapshot()},
+    prefer:"return=representation"
+  });
+  const row=Array.isArray(rows)?rows[0]:rows;
+  cloud.lastRevision=Number(row?.revision)||1;
+  cloud.lastSyncedAt=row?.updated_at||new Date().toISOString();
+  cloud.localDirtyAt="";
+  cloud.firstSyncComplete=true;
+  saveCloudMeta();
+}
+async function pushCloudState({force=false,silent=false}={}){
+  if(!silent)setCloudSyncStatus("Checking cloud before upload…");
+  const remote=await getCloudStateRow();
+  if(!remote){
+    await createCloudState();
+    setCloudSyncStatus("✓ This device created the first cloud copy.","good");
+    return;
+  }
+  const remoteRevision=Number(remote.revision)||0;
+  const knownRevision=Number(cloud.lastRevision)||0;
+  if(!force&&knownRevision&&remoteRevision>knownRevision){
+    setCloudSyncStatus("Cloud has newer changes. Download Cloud first so nothing is overwritten.","warn");
+    return;
+  }
+  const expected=force?remoteRevision:(knownRevision||remoteRevision);
+  const newRevision=expected+1;
+  const uid=cloud.session.user.id;
+  const rows=await cloudRest(`/rest/v1/crm_state?owner_id=eq.${encodeURIComponent(uid)}&revision=eq.${expected}`,{
+    method:"PATCH",
+    body:{revision:newRevision,state:cloudSnapshot(),updated_at:new Date().toISOString()},
+    prefer:"return=representation"
+  });
+  if(!Array.isArray(rows)||!rows.length){
+    setCloudSyncStatus("Sync conflict detected. Another device changed the cloud first. Download Cloud before uploading.","warn");
+    return;
+  }
+  const row=rows[0];
+  cloud.lastRevision=Number(row.revision)||newRevision;
+  cloud.lastSyncedAt=row.updated_at||new Date().toISOString();
+  cloud.localDirtyAt="";
+  cloud.firstSyncComplete=true;
+  saveCloudMeta();
+  if(!silent)setCloudSyncStatus("✓ Cloud is up to date.","good");
+}
+async function pullCloudState({force=false}={}){
+  setCloudSyncStatus("Downloading cloud data…");
+  const remote=await getCloudStateRow();
+  if(!remote){
+    setCloudSyncStatus("No cloud CRM exists yet. Upload this device to create it.","warn");
+    return false;
+  }
+  const unsynced=!!cloud.localDirtyAt&&(!cloud.lastSyncedAt||new Date(cloud.localDirtyAt)>new Date(cloud.lastSyncedAt));
+  if(unsynced&&!force){
+    setCloudSyncStatus("This device has unsynced changes. Download Cloud only if you intend to replace them.","warn");
+    return false;
+  }
+  applyCloudSnapshot(remote.state||{});
+  cloud.lastRevision=Number(remote.revision)||0;
+  cloud.lastSyncedAt=remote.updated_at||new Date().toISOString();
+  cloud.localDirtyAt="";
+  cloud.firstSyncComplete=true;
+  saveCloudMeta();
+  setCloudSyncStatus("✓ Cloud data downloaded to this device.","good");
+  return true;
+}
+async function syncCloudNow(){
+  if(!cloud.session?.access_token){setCloudSyncStatus("Sign in first.","warn");return}
+  setCloudSyncStatus("Checking for changes…");
+  try{
+    const remote=await getCloudStateRow();
+    if(!remote){
+      await createCloudState();
+      setCloudSyncStatus("✓ First cloud copy created from this device.","good");
+      return;
+    }
+    const rr=Number(remote.revision)||0;
+    const kr=Number(cloud.lastRevision)||0;
+    const dirty=!!cloud.localDirtyAt&&(!cloud.lastSyncedAt||new Date(cloud.localDirtyAt)>new Date(cloud.lastSyncedAt));
+
+    if(!cloud.firstSyncComplete&&!kr){
+      if(localHasCrmData()){
+        setCloudSyncStatus("Cloud already has CRM data and this device also has local data. Choose Download Cloud or Upload This Device so nothing is guessed.","warn");
+      }else{
+        applyCloudSnapshot(remote.state||{});
+        cloud.lastRevision=rr;
+        cloud.lastSyncedAt=remote.updated_at||new Date().toISOString();
+        cloud.localDirtyAt="";
+        cloud.firstSyncComplete=true;
+        saveCloudMeta();
+        setCloudSyncStatus("✓ Existing cloud CRM downloaded.","good");
+      }
+      return;
+    }
+
+    if(rr>kr){
+      if(dirty){
+        setCloudSyncStatus("Both this device and the cloud have changes. Choose Download Cloud or Upload This Device intentionally.","warn");
+      }else{
+        applyCloudSnapshot(remote.state||{});
+        cloud.lastRevision=rr;
+        cloud.lastSyncedAt=remote.updated_at||new Date().toISOString();
+        cloud.localDirtyAt="";
+        saveCloudMeta();
+        setCloudSyncStatus("✓ Newer cloud changes downloaded.","good");
+      }
+      return;
+    }
+
+    if(dirty){
+      await pushCloudState({silent:true});
+      setCloudSyncStatus("✓ Local changes uploaded. Cloud is current.","good");
+      return;
+    }
+
+    cloud.lastRevision=rr;
+    cloud.lastSyncedAt=remote.updated_at||cloud.lastSyncedAt||new Date().toISOString();
+    cloud.firstSyncComplete=true;
+    saveCloudMeta();
+    setCloudSyncStatus("✓ Everything is already in sync.","good");
+  }catch(e){
+    setCloudSyncStatus(`Sync failed — ${e.message}`,"bad");
+  }
+}
+function scheduleCloudPush(){
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(async()=>{
+    if(!cloud.firstSyncComplete||!navigator.onLine)return;
+    try{await pushCloudState({silent:true})}
+    catch(e){setCloudSyncStatus(`Auto-sync paused — ${e.message}`,"bad")}
+  },1400);
+}
+async function initializeCloudSync(){
+  updateCloudAccountUI();
+  cloudSyncReady=true;
+  if(!cloud.session?.access_token)return;
+  try{
+    await ensureCloudToken();
+    updateCloudAccountUI();
+    await syncCloudNow();
+  }catch(e){
+    setCloudSyncStatus(`Cloud session needs attention — ${e.message}`,"warn");
+  }
+}
+
 if($("saveCloudSettings"))$("saveCloudSettings").onclick=()=>{
-  cloud.url=$("supabaseUrl").value.trim().replace(/\/$/,"");
-  cloud.anonKey=$("supabaseAnonKey").value.trim();
-  save();
-  $("cloudStatus").textContent=cloud.url&&cloud.anonKey?"Cloud settings saved — connection not yet enabled.":"Local-only mode";
+  const newUrl=$("supabaseUrl").value.trim().replace(/\/$/,"");
+  const newKey=$("supabaseAnonKey").value.trim();
+  const changed=newUrl!==cloud.url||newKey!==cloud.anonKey;
+  cloud.url=newUrl;cloud.anonKey=newKey;
+  if(changed){
+    delete cloud.session;
+    cloud.firstSyncComplete=false;
+    cloud.lastRevision=0;
+    cloud.lastSyncedAt="";
+  }
+  localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
+  updateCloudAccountUI();
+  $("cloudStatus").textContent=cloud.url&&cloud.anonKey?"Cloud settings saved.":"Local-only mode";
 };
+
+if($("cloudSignIn"))$("cloudSignIn").onclick=async()=>{
+  const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;
+  if(!email||!password){setCloudSyncStatus("Enter your email and password.","warn");return}
+  setCloudSyncStatus("Signing in…");
+  try{
+    const data=await cloudAuthRequest("/auth/v1/token?grant_type=password",{email,password});
+    storeCloudSession(data);
+    setCloudSyncStatus("✓ Signed in. Checking cloud CRM…","good");
+    await syncCloudNow();
+  }catch(e){setCloudSyncStatus(`Sign in failed — ${e.message}`,"bad")}
+};
+if($("cloudCreateAccount"))$("cloudCreateAccount").onclick=async()=>{
+  const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;
+  if(!email||password.length<6){setCloudSyncStatus("Enter an email and a password of at least 6 characters.","warn");return}
+  setCloudSyncStatus("Creating cloud account…");
+  try{
+    const data=await cloudAuthRequest("/auth/v1/signup",{email,password});
+    if(data.access_token){
+      storeCloudSession(data);
+      setCloudSyncStatus("✓ Cloud account created and signed in.","good");
+      await syncCloudNow();
+    }else{
+      setCloudSyncStatus("Account created. If email confirmation is enabled, confirm it and then sign in.","good");
+    }
+  }catch(e){setCloudSyncStatus(`Account creation failed — ${e.message}`,"bad")}
+};
+if($("cloudSignOut"))$("cloudSignOut").onclick=async()=>{
+  try{
+    if(cloud.session?.access_token)await fetch(`${cloudBase()}/auth/v1/logout`,{
+      method:"POST",headers:{apikey:cloudKey(),Authorization:`Bearer ${cloud.session.access_token}`}
+    });
+  }catch(_){}
+  delete cloud.session;
+  cloud.firstSyncComplete=false;
+  cloud.lastRevision=0;
+  saveCloudMeta();
+  setCloudSyncStatus("Signed out.");
+};
+if($("cloudSyncNow"))$("cloudSyncNow").onclick=syncCloudNow;
+if($("cloudPullNow"))$("cloudPullNow").onclick=async()=>{
+  const dirty=!!cloud.localDirtyAt&&(!cloud.lastSyncedAt||new Date(cloud.localDirtyAt)>new Date(cloud.lastSyncedAt));
+  if(dirty&&!confirm("This device has unsynced changes. Downloading Cloud will replace them. Continue?"))return;
+  try{await pullCloudState({force:true})}
+  catch(e){setCloudSyncStatus(`Download failed — ${e.message}`,"bad")}
+};
+if($("cloudPushNow"))$("cloudPushNow").onclick=async()=>{
+  try{
+    const remote=await getCloudStateRow();
+    if(remote&&Number(remote.revision)!==Number(cloud.lastRevision||0)){
+      const ok=confirm("The cloud contains changes this device has not downloaded. Uploading this device will overwrite the cloud copy. Continue only if this device is the copy you want to keep.");
+      if(!ok)return;
+    }
+    await pushCloudState({force:true});
+  }catch(e){setCloudSyncStatus(`Upload failed — ${e.message}`,"bad")}
+};
+
 if($("testCloudConnection"))$("testCloudConnection").onclick=async()=>{
   if(!cloud.url||!cloud.anonKey){$("cloudStatus").textContent="Enter and save the Supabase URL and public API key first.";return}
   $("cloudStatus").textContent="Testing project + public key…";
@@ -3259,6 +3628,7 @@ applySkin(settings.skin||"midnight-executive");
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 renderAll();
+initializeCloudSync();
 </script>
 </body>
 </html>
