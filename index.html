@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.11 Sync Diagnostics</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.12 Sync Fix</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -3676,7 +3676,7 @@ if($("cloudSyncNow"))$("cloudSyncNow").onclick=async()=>{
     const localCounts=`${customers.length} customers, ${rfqs.length} RFQs, ${orders.length} orders`;
     const revision=Number(remote.revision)||0;
     if(cloudCounts!==localCounts)throw new Error(`Verification differs. Cloud: ${cloudCounts}. Device: ${localCounts}.`);
-    cloud.lastRevision=revision; cloud.lastSyncedAt=remote.updated_at||cloud.lastSyncedAt||new Date().toISOString(); saveCloudMeta(); renderCloudAccount();
+    cloud.lastRevision=revision; cloud.lastSyncedAt=remote.updated_at||cloud.lastSyncedAt||new Date().toISOString(); saveCloudMeta(); updateCloudAccountUI();
     const msg=`✓ Sync verified — revision ${revision}. Device: ${localCounts}. Cloud: ${cloudCounts}.`;
     setCloudSyncStatus(msg,"good"); alert(msg);
   }catch(e){
