@@ -655,7 +655,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.17 Boss Excel Export</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.18 Boss Excel Export</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2207,9 +2207,19 @@ function reportBar(label,value,max){
   return `<div class="rbar"><span>${reportEscape(label)}</span><div class="rtrack"><i style="width:${pct}%"></i></div><b>${reportMoney(value)}</b></div>`;
 }
 function reportShell(title,subtitle,body){
-  const w=window.open("","_blank");
-  if(!w){alert("Allow pop-ups for this site so the PDF report can open.");return}
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${reportEscape(title)}</title><style>
+  // v4.5.18: print reports inside an off-screen iframe instead of opening a new
+  // browser/PWA window. On iPhone this keeps Sales OS as the active app so
+  // dismissing the native print/share preview returns directly to the CRM.
+  const oldFrame=document.getElementById("salesOsPrintFrame");
+  if(oldFrame)oldFrame.remove();
+  const frame=document.createElement("iframe");
+  frame.id="salesOsPrintFrame";
+  frame.setAttribute("aria-hidden","true");
+  frame.style.cssText="position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";
+  document.body.appendChild(frame);
+  const w=frame.contentWindow, d=frame.contentDocument||w.document;
+  d.open();
+  d.write(`<!doctype html><html><head><meta charset="utf-8"><title>${reportEscape(title)}</title><style>
   *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;background:#fff}.page{max-width:980px;margin:auto;padding:34px}
   h1{font-size:28px;margin:0}h2{font-size:18px;margin:22px 0 10px}.sub{color:#667085;margin-top:5px}.brand{font-size:12px;font-weight:800;letter-spacing:.12em;color:#356fb4;text-transform:uppercase}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.metric{border:1px solid #d9e1ec;border-radius:12px;padding:12px}.metric small{color:#667085}.metric strong{display:block;font-size:21px;margin-top:5px}
@@ -2218,8 +2228,12 @@ function reportShell(title,subtitle,body){
   .donut{width:180px;height:180px;border-radius:50%;margin:15px auto;position:relative}.donut:after{content:"";position:absolute;inset:40px;background:#fff;border-radius:50%}.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;font-size:11px}
   .legend div{display:flex;justify-content:space-between;border-bottom:1px solid #e7ebf0;padding:5px}.footer{margin-top:26px;padding-top:10px;border-top:1px solid #d9e1ec;font-size:9px;color:#98a2b3}
   @media print{.page{padding:16px}.no-print{display:none}@page{size:landscape;margin:.35in}}
-  </style></head><body><div class="page"><div class="brand">American Block Sales OS</div><h1>${reportEscape(title)}</h1><div class="sub">${reportEscape(subtitle)}</div>${body}<div class="footer">Generated ${new Date().toLocaleString()}</div></div><script>setTimeout(()=>window.print(),450)<\/script></body></html>`);
-  w.document.close();
+  </style></head><body><div class="page"><div class="brand">American Block Sales OS</div><h1>${reportEscape(title)}</h1><div class="sub">${reportEscape(subtitle)}</div>${body}<div class="footer">Generated ${new Date().toLocaleString()}</div></div></body></html>`);
+  d.close();
+  setTimeout(()=>{
+    try{w.focus();w.print()}catch(err){console.error("Print failed",err);alert("Unable to open the PDF print screen. Please try again.")}
+    setTimeout(()=>frame.remove(),1500);
+  },450);
 }
 function productReportData(){
   const oldPeriod=$("productPeriod")?.value;
@@ -3314,8 +3328,10 @@ function teamReport(){
   const open=rfqs.filter(isOpen),grand=open.reduce((s,r)=>s+total(r),0),due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today0()).length;
   const groups=groupRecords(open,$("rfqGroup").value);
   const content=groups.map(([g,records])=>`<section class="group"><h2>${esc(g)} <span>${records.length} RFQ${records.length===1?"":"s"} · ${money.format(records.reduce((s,r)=>s+total(r),0))}</span></h2>${records.map(r=>`<article><header><div><strong>${esc(customerName(r))}</strong><small>${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · Contact: "+esc(contactName(r)):""} · ${esc(r.status)}</small></div><b>${money.format(total(r))}</b></header><table><thead><tr><th>Part Number</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr></thead><tbody>${(r.items||[]).map(i=>`<tr><td>${esc(i.part)}</td><td>${esc(i.product)}</td><td>${i.qty}</td><td>${money.format(i.price)}</td><td>${money.format(i.qty*i.price)}</td></tr>`).join("")}</tbody></table><div class="notes"><div><b>Feedback</b><p>${esc(r.feedback||"None")}</p></div><div><b>Next Action</b><p>${esc(r.nextAction||"None")}</p></div><div><b>Follow-up</b><p>${formatDate(r.followup)}</p></div></div></article>`).join("")}</section>`).join("");
-  const win=window.open("","_blank");if(!win){alert("Allow pop-ups and try again.");return}
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Open RFQ Report</title><style>*{box-sizing:border-box}body{font-family:Arial;color:#1e293b;margin:0;background:#eef2f7}.page{max-width:1000px;margin:auto;background:#fff;padding:30px}h1{color:#1f4e78;margin:0}.sub{color:#64748b;margin:5px 0 20px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}.metric{border:1px solid #cbd5e1;padding:12px;border-radius:8px}.metric small{display:block;color:#64748b}.metric strong{font-size:22px}.group>h2{display:flex;justify-content:space-between;background:#e2e8f0;border-left:5px solid #1f4e78;padding:10px 12px;color:#1f4e78}.group h2 span{font-size:13px;color:#334155}article{border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;margin-bottom:15px;break-inside:avoid}header{display:flex;justify-content:space-between;padding:12px;background:#f8fafc}header small{display:block;color:#64748b;margin-top:3px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1f4e78;color:white;text-align:left;padding:8px}td{padding:8px;border-bottom:1px solid #e2e8f0}.notes{display:grid;grid-template-columns:2fr 2fr 1fr;gap:12px;padding:12px;font-size:12px}.notes p{white-space:pre-wrap;margin:4px 0}@media print{body{background:white}.page{padding:0}@page{size:letter;margin:.45in}}</style></head><body><main class="page"><h1>American Block — Open RFQ Report</h1><div class="sub">Generated ${new Date().toLocaleString()}</div><div class="summary"><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div><div class="metric"><small>Total Open Value</small><strong>${money.format(grand)}</strong></div><div class="metric"><small>Follow-ups Due</small><strong>${due}</strong></div></div>${content||"<p>No open RFQs.</p>"}</main><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`);win.document.close()
+  const oldFrame=document.getElementById("salesOsTeamPrintFrame");if(oldFrame)oldFrame.remove();
+  const frame=document.createElement("iframe");frame.id="salesOsTeamPrintFrame";frame.setAttribute("aria-hidden","true");frame.style.cssText="position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none";document.body.appendChild(frame);
+  const win=frame.contentWindow,doc=frame.contentDocument||win.document;doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>Open RFQ Report</title><style>*{box-sizing:border-box}body{font-family:Arial;color:#1e293b;margin:0;background:#eef2f7}.page{max-width:1000px;margin:auto;background:#fff;padding:30px}h1{color:#1f4e78;margin:0}.sub{color:#64748b;margin:5px 0 20px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}.metric{border:1px solid #cbd5e1;padding:12px;border-radius:8px}.metric small{display:block;color:#64748b}.metric strong{font-size:22px}.group>h2{display:flex;justify-content:space-between;background:#e2e8f0;border-left:5px solid #1f4e78;padding:10px 12px;color:#1f4e78}.group h2 span{font-size:13px;color:#334155}article{border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;margin-bottom:15px;break-inside:avoid}header{display:flex;justify-content:space-between;padding:12px;background:#f8fafc}header small{display:block;color:#64748b;margin-top:3px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1f4e78;color:white;text-align:left;padding:8px}td{padding:8px;border-bottom:1px solid #e2e8f0}.notes{display:grid;grid-template-columns:2fr 2fr 1fr;gap:12px;padding:12px;font-size:12px}.notes p{white-space:pre-wrap;margin:4px 0}@media print{body{background:white}.page{padding:0}@page{size:letter;margin:.45in}}</style></head><body><main class="page"><h1>American Block — Open RFQ Report</h1><div class="sub">Generated ${new Date().toLocaleString()}</div><div class="summary"><div class="metric"><small>Open RFQs</small><strong>${open.length}</strong></div><div class="metric"><small>Total Open Value</small><strong>${money.format(grand)}</strong></div><div class="metric"><small>Follow-ups Due</small><strong>${due}</strong></div></div>${content||"<p>No open RFQs.</p>"}</main></body></html>`);doc.close();setTimeout(()=>{try{win.focus();win.print()}catch(err){console.error("Print failed",err);alert("Unable to open the PDF print screen. Please try again.")}setTimeout(()=>frame.remove(),1500)},350)
 }
 $("teamPdf").onclick=teamReport;
 
