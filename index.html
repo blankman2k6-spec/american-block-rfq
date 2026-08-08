@@ -517,7 +517,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.3 Cloud Sync Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.4 Supabase Connection Fix</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -926,7 +926,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.4.3 — Cloud Sync Fix</h2>
+      <h2>Version 4.4.4 — Supabase Connection Fix</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -936,7 +936,7 @@
     <div class="card">
       <div class="kicker">Data Layer</div>
       <h2 style="margin-top:4px">Cloud Sync</h2>
-      <p class="muted">The app now has a sync-ready data layer. It continues to work locally until a Supabase project is connected.</p>
+      <p class="muted">The app works locally now. Use this section to verify the Supabase project and public key; authenticated database synchronization is handled separately.</p>
       <label>Supabase Project URL</label>
       <input id="supabaseUrl" placeholder="https://YOUR-PROJECT.supabase.co">
       <label>Supabase Public API Key</label>
@@ -3156,24 +3156,28 @@ if($("saveCloudSettings"))$("saveCloudSettings").onclick=()=>{
 };
 if($("testCloudConnection"))$("testCloudConnection").onclick=async()=>{
   if(!cloud.url||!cloud.anonKey){$("cloudStatus").textContent="Enter and save the Supabase URL and public API key first.";return}
-  $("cloudStatus").textContent="Testing…";
+  $("cloudStatus").textContent="Testing project + public key…";
   try{
     const key=cloud.anonKey.trim();
-    const headers={apikey:key};
-    // New sb_publishable_* keys are opaque API keys, not JWT bearer tokens.
-    // Legacy anon keys begin with eyJ and can still be sent as Bearer JWTs.
-    if(key.startsWith("eyJ"))headers.Authorization=`Bearer ${key}`;
-    const r=await fetch(`${cloud.url}/rest/v1/`,{headers});
-    let detail="";
+    const base=cloud.url.replace(/\/$/,"");
+    // Supabase's PostgREST root (/rest/v1/) is an admin/OpenAPI endpoint and
+    // deliberately rejects publishable keys. The Auth health endpoint is the
+    // correct low-privilege connectivity test for a browser/mobile client.
+    const r=await fetch(`${base}/auth/v1/health`,{headers:{apikey:key}});
+    let payload=null,detail="";
     try{
       const t=await r.text();
-      if(!r.ok&&t)detail=t.slice(0,120).replace(/\s+/g," ");
+      if(t){try{payload=JSON.parse(t)}catch(_){detail=t.slice(0,140).replace(/\s+/g," ")}}
     }catch(_){}
-    $("cloudStatus").textContent=r.ok
-      ?"✓ Supabase connection successful."
-      :`Supabase responded with ${r.status}${detail?` — ${detail}`:""}.`;
+    if(r.ok){
+      const version=payload?.version?` · Auth ${payload.version}`:"";
+      $("cloudStatus").innerHTML=`<span style="color:#168344;font-weight:800">✓ Project URL and publishable key are valid${version}.</span><br><span>Connection test passed. CRM cloud synchronization is a separate authenticated database step.</span>`;
+    }else{
+      const msg=payload?.message||payload?.error||detail||"Request rejected";
+      $("cloudStatus").textContent=`Connection failed (${r.status}) — ${msg}`;
+    }
   }catch(e){
-    $("cloudStatus").textContent="Could not reach Supabase from this device.";
+    $("cloudStatus").textContent="Could not reach Supabase from this device. Check the Project URL and internet connection.";
   }
 };
 
