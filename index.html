@@ -190,6 +190,28 @@
     .inline-customer-panel h3{margin:0 0 10px;font-size:16px}
     .inline-customer-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
 
+
+    .verify-banner{border:1px solid #365a86;background:#0d1c31;border-radius:16px;padding:13px;margin:12px 0}
+    .verify-banner.good{border-color:#2f6a4c;background:#0d281e}
+    .verify-banner.warn{border-color:#79581f;background:#30250f}
+    .verify-banner.bad{border-color:#7a3035;background:#321518}
+    .verify-title{font-weight:900;font-size:14px}
+    .verify-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
+    .verify-stat{background:#0a1424;border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center}
+    .verify-stat small{display:block;color:var(--muted);font-size:9px}
+    .verify-stat strong{display:block;margin-top:3px;font-size:16px}
+    .ack-item.unverified{border-color:#7a5a21;box-shadow:0 0 0 1px rgba(245,158,11,.12) inset}
+    .ack-item.verified{border-color:#276247;box-shadow:0 0 0 1px rgba(52,211,153,.10) inset}
+    .verify-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+    .verify-check{display:inline-flex;align-items:center;gap:8px;font-weight:850;font-size:12px}
+    .verify-check input{width:20px;height:20px;margin:0}
+    .source-pdf-frame{width:100%;height:430px;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px}
+    .call-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;border:1px solid #2f6b50;background:#103122;color:#bbf7d0;border-radius:12px;padding:9px 12px;font-weight:850;font-size:12px}
+    .contact-call-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+    .contact-call-card:first-child{border-top:0}
+    .contact-call-actions{display:flex;gap:7px;align-items:center}
+    @media(max-width:560px){.verify-grid{grid-template-columns:repeat(3,1fr)}.source-pdf-frame{height:350px}}
+
     @media(max-width:560px){
       .global-quick-actions{right:10px;bottom:88px}
       .global-quick-actions button{min-width:92px;padding:10px 12px;font-size:12px}
@@ -206,7 +228,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.1 Account Management</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.2 Verified Import + Calling</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -297,6 +319,10 @@
 
     <div id="accountOverviewPanel" class="account-panel active">
       <div class="card">
+        <div class="section-head" style="margin:0 0 8px"><div><h2 style="margin:0">Contacts</h2><div class="mini">Tap Call to dial directly from your phone.</div></div></div>
+        <div id="accountContacts"></div>
+      </div>
+      <div class="card">
         <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">Product Mix</h2><div class="mini">YTD product revenue by family</div></div></div>
         <div id="accountProductMix" class="mix-list"></div>
       </div>
@@ -346,7 +372,7 @@
 
   <section id="ordersView" class="view">
     <div class="section-head">
-      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.1</div></div>
+      <div><div class="kicker">Closed Business</div><h2 style="margin-top:4px">Orders / Acknowledgments</h2><div class="mini">Importer v4.2</div></div>
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
@@ -454,7 +480,11 @@
         <div id="activityNewCustomerMessage" class="mini" style="margin-top:8px"></div>
       </div>
 
-      <label>Contact</label><select id="activityContact"></select>
+      <label>Contact</label>
+      <div class="row" style="grid-template-columns:1fr auto;align-items:end">
+        <div><select id="activityContact"></select></div>
+        <div><a id="activityCallContact" class="call-link hidden" href="#">☎ Call</a></div>
+      </div>
 
       <label>Opportunity</label>
       <select id="activityOpportunity">
@@ -594,7 +624,7 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 4.1 — Account Management</h2>
+      <h2>Version 4.2 — Verified Import + Calling</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -666,7 +696,22 @@
     <div class="card">
       <div class="kicker">Acknowledgment Import</div>
       <h2 id="ackFileName" style="margin-top:5px">PDF</h2>
-      <p class="muted">Review the extracted information before saving it to the CRM.</p>
+      <p class="muted">Verification-first import: extracted data does not become an order until it passes the checks below.</p>
+
+      <div id="ackVerificationBanner" class="verify-banner">
+        <div class="verify-title">Import Verification</div>
+        <div id="ackVerificationText" class="mini" style="margin-top:4px">Review every extracted line against the source PDF.</div>
+        <div class="verify-grid">
+          <div class="verify-stat"><small>Detected Rows</small><strong id="ackDetectedRows">0</strong></div>
+          <div class="verify-stat"><small>Verified Rows</small><strong id="ackVerifiedRows">0</strong></div>
+          <div class="verify-stat"><small>Total Check</small><strong id="ackTotalCheck">—</strong></div>
+        </div>
+        <div class="toolbar" style="margin-top:10px">
+          <button id="openSourcePdf" class="secondary" type="button">View Source PDF</button>
+          <button id="toggleSourcePdf" class="secondary" type="button">Show PDF Here</button>
+        </div>
+        <iframe id="sourcePdfFrame" class="source-pdf-frame hidden" title="Source PDF"></iframe>
+      </div>
       <div class="row">
         <div><label>Matched Customer / Account</label><select id="ackCustomer"></select></div>
         <div><label>Contact</label><select id="ackContact"></select></div>
@@ -705,7 +750,7 @@
       <div class="section-head">
         <div>
           <h2 style="margin:0">Order Line Items</h2>
-          <div class="mini">Everything below is editable before or after import.</div>
+          <div class="mini">Compare each row with the source PDF. Editing a row resets its verification.</div>
         </div>
         <div class="toolbar">
           <span id="ackLineCount" class="count-badge compact-badge">0 items</span>
@@ -780,6 +825,10 @@
       <div class="item-actions">
         <span>Line Total: <strong data-a="line">$0.00</strong></span>
         <button data-a-remove class="danger">Remove Item</button>
+      </div>
+      <div class="verify-row">
+        <label class="verify-check"><input type="checkbox" data-a-verify> I checked this row against the PDF</label>
+        <span data-a-status class="status yellow compact-badge">REVIEW</span>
       </div>
     </div>
   </template>
@@ -1126,6 +1175,10 @@ function renderCustomerAccount(){
   $("accountDetailName").textContent=c.company;
   const primary=(c.contacts||[]).find(x=>x.primary)||(c.contacts||[])[0];
   $("accountDetailMeta").textContent=[c.city,c.zip,primary?.name,primary?.email].filter(Boolean).join(" · ");
+  $("accountContacts").innerHTML=(c.contacts||[]).length?(c.contacts||[]).map(ct=>`<div class="contact-call-card">
+    <div><strong>${esc(ct.name||"Unnamed Contact")}</strong><div class="mini">${esc(ct.role||"")}${ct.phone?`${ct.role?" · ":""}${esc(ct.phone)}`:""}${ct.email?` · ${esc(ct.email)}`:""}</div></div>
+    <div class="contact-call-actions">${ct.phone?`<a class="call-link" href="tel:${esc(String(ct.phone).replace(/[^\d+]/g,""))}">☎ Call</a>`:""}${ct.email?`<a class="secondary" style="text-decoration:none;padding:9px 11px" href="mailto:${esc(ct.email)}">Email</a>`:""}</div>
+  </div>`).join(""):"<div class='empty'>No customer phone numbers saved yet.</div>";
   const ytd=ytdSalesForCustomer(c.id),open=rfqs.filter(r=>r.customerId===c.id&&isOpen(r));
   $("accountYtdSales").textContent=money.format(ytd);
   $("accountOpenPipeline").textContent=money.format(open.reduce((s,r)=>s+total(r),0));
@@ -1709,7 +1762,8 @@ function fillActivityCustomers(){
 }
 function fillActivityContacts(selected=""){
   const c=customerById($("activityCustomer").value);
-  $("activityContact").innerHTML=`<option value="">No contact selected</option>`+(c?.contacts||[]).map(ct=>`<option value="${ct.id}" ${ct.id===selected?"selected":""}>${esc(ct.name||"Unnamed Contact")}</option>`).join("");
+  $("activityContact").innerHTML=`<option value="">No contact selected</option>`+(c?.contacts||[]).map(ct=>`<option value="${ct.id}" ${ct.id===selected?"selected":""}>${esc(ct.name||"Unnamed Contact")}${ct.phone?` · ${esc(ct.phone)}`:""}</option>`).join("");
+  setTimeout(updateActivityCallButton,0);
 }
 function openNewActivity(customerId="",contactId=""){
   editingActivityId=null;
@@ -1906,6 +1960,8 @@ function renderAll(){renderDashboard();renderCustomers();renderRfqs();renderOrde
 
 let pendingAck=null;
 let editingOrderId=null;
+let ackVerificationRequired=false;
+let currentAckSourceUrl="";
 
 function pdfDateToISO(v){
   const m=String(v||"").match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
@@ -2014,6 +2070,10 @@ async function readAmericanBlockAck(file){
   const items=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({str:i.str.trim(),x:i.transform[4],y:i.transform[5]}));
   const rows=clusterPdfLines(items);
   const W=viewport.width,H=viewport.height;
+  // The left-most 001/002/003 markers on American Block acknowledgments provide
+  // an independent line-count check, separate from the extraction logic.
+  const expectedMarkers=items.filter(i=>i.x<W*.10&&/^\d{3}$/.test(i.str));
+  const expectedItemCount=new Set(expectedMarkers.map(i=>i.str)).size;
   if(items.length){
     const topRows=rows.filter(r=>r.y>H*0.80);
     const rightTop=topRows.map(r=>wordsInRange(r,W*.60,W)).filter(Boolean);
@@ -2038,20 +2098,39 @@ async function readAmericanBlockAck(file){
     }
   }
 
-  // SECONDARY PARSER: coordinate parsing for normal text PDFs.
+  // SECONDARY PARSER: coordinate parsing with independent columns.
+  // Each item marker is handled separately, preventing quantity/price values
+  // from one line from being attached to a neighboring line.
   if(!lineItems.length && items.length){
-    const markers=items.filter(i=>i.x<W*.10&&/^\d{3}$/.test(i.str));
-    markers.forEach(marker=>{
-      // PDF.js frequently gives quantity and unit price baselines 1-3 points
-      // different from item/part/description, so use a generous vertical band.
-      const band=items.filter(i=>Math.abs(i.y-marker.y)<=8).sort((a,b)=>a.x-b.x);
-      const qtyText=band.filter(i=>i.x>=W*.12&&i.x<W*.29).map(i=>i.str).join(" ");
-      const unit=band.filter(i=>i.x>=W*.29&&i.x<W*.37).map(i=>i.str).join(" ");
-      const part=band.filter(i=>i.x>=W*.34&&i.x<W*.56).map(i=>i.str).join(" ").trim();
-      const product=band.filter(i=>i.x>=W*.55&&i.x<W*.88).map(i=>i.str).join(" ").trim();
-      const priceText=band.filter(i=>i.x>=W*.87).map(i=>i.str).join(" ");
+    const markers=expectedMarkers.slice().sort((a,b)=>b.y-a.y);
+    markers.forEach((marker,idx)=>{
+      const upper=idx===0?marker.y+10:(marker.y+markers[idx-1].y)/2;
+      const lower=idx===markers.length-1?marker.y-12:(marker.y+markers[idx+1].y)/2;
+      const region=items.filter(i=>i.y<=upper&&i.y>=lower).sort((a,b)=>b.y-a.y||a.x-b.x);
+
+      const nearest=(minX,maxX,rx=null)=>{
+        const vals=region.filter(i=>i.x>=minX&&i.x<maxX&&(!rx||rx.test(i.str)))
+          .sort((a,b)=>Math.abs(a.y-marker.y)-Math.abs(b.y-marker.y)||a.x-b.x);
+        return vals[0]?.str||"";
+      };
+
+      const qtyText=nearest(W*.10,W*.28,/^[\d,.]+$/);
+      const unit=nearest(W*.27,W*.39,/^[A-Z]{1,5}$/i);
+      const part=nearest(W*.36,W*.60,/^[A-Z0-9_.\/-]+$/i);
+
+      // Description may be split into multiple PDF tokens. Keep only tokens in
+      // the description column around this item's vertical region and exclude
+      // PROMISED / subtotal noise.
+      const descTokens=region.filter(i=>i.x>=W*.54&&i.x<W*.88)
+        .filter(i=>!/PROMISED|Order SubTotal|TAXABLE|TAX EXEMPT/i.test(i.str))
+        .sort((a,b)=>b.y-a.y||a.x-b.x);
+      const product=descTokens.map(i=>i.str).join(" ").replace(/\s+/g," ").trim();
+
+      const priceText=nearest(W*.86,W*1.01,/^[\d,]+\.\d{2}$/);
       const qty=cleanMoney(qtyText),price=cleanMoney(priceText);
-      if(part&&qty>0&&price>=0)lineItems.push({itemNo:marker.str,part,product,qty,unit,price,lineTotal:qty*price});
+      if(part&&qty>0&&price>=0){
+        lineItems.push({itemNo:marker.str,part,product,qty,unit,price,lineTotal:qty*price});
+      }
     });
   }
 
@@ -2097,7 +2176,7 @@ async function readAmericanBlockAck(file){
   return {
     company:company.trim(),parsedContact:parsedContact.trim(),salesOrder:salesOrder.trim(),
     poNumber:poNumber.trim(),orderDate:pdfDateToISO(orderDate),promisedDate:pdfDateToISO(promised),
-    items:lineItems,total,fileName:file.name,usedOCR,debugText:text.slice(0,1000)
+    items:lineItems,total,fileName:file.name,usedOCR,expectedItemCount,debugText:text.slice(0,1000)
   };
 }
 function bestCustomerMatch(name){
@@ -2132,6 +2211,8 @@ function matchOrCreateAckCustomer(){
 function newManualOrder(){
   if(!customers.length){alert("Add a customer first.");return}
   editingOrderId=null;
+  ackVerificationRequired=false;
+  currentAckSourceUrl="";
   pendingAck={fileName:"Manual entry"};
   $("ackReviewTitle").textContent="Add Manual Order";
   $("confirmAck").textContent="Save Manual Order";
@@ -2186,6 +2267,8 @@ function confirmDeleteImportedOrder(id){
   };
 }
 function editImportedOrder(id){
+  ackVerificationRequired=false;
+  currentAckSourceUrl="";
   const o=orders.find(x=>x.id===id);
   if(!o)return;
   editingOrderId=id;
@@ -2225,19 +2308,95 @@ function fillAckRfqMatches(){
     if(exact)$("ackRfqMatch").value=exact.id;
   }
 }
-function addAckItemRow(i={part:"",product:"",qty:1,price:0}){
+
+function ackRows(){
+  return [...document.querySelectorAll("#ackItems .ack-item")];
+}
+function setAckRowVerified(node,verified){
+  const cb=node.querySelector("[data-a-verify]"),status=node.querySelector("[data-a-status]");
+  cb.checked=!!verified;
+  node.classList.toggle("verified",!!verified);
+  node.classList.toggle("unverified",!verified);
+  status.textContent=verified?"VERIFIED":"REVIEW";
+  status.classList.toggle("green",!!verified);
+  status.classList.toggle("yellow",!verified);
+  updateAckVerificationState();
+}
+function invalidateAckRow(node){
+  if(ackVerificationRequired)setAckRowVerified(node,false);
+  else updateAckCalculatedTotal();
+}
+function ackValidationSummary(){
+  const rows=ackRows();
+  const invalidRows=rows.filter(n=>{
+    const part=n.querySelector('[data-a="part"]').value.trim();
+    const product=n.querySelector('[data-a="product"]').value.trim();
+    const qty=Number(n.querySelector('[data-a="qty"]').value)||0;
+    const price=Number(n.querySelector('[data-a="price"]').value);
+    return !part||!product||qty<=0||!Number.isFinite(price)||price<0;
+  });
+  const verified=rows.filter(n=>n.querySelector("[data-a-verify]")?.checked).length;
+  const subtotal=getAckItems().reduce((s,i)=>s+i.qty*i.price,0);
+  const calculated=subtotal+(Number($("ackShipping").value)||0)+(Number($("ackTax").value)||0);
+  const declared=Number($("ackTotal").value)||0;
+  const totalMatches=Math.abs(calculated-declared)<0.02;
+  const expected=Number(pendingAck?.expectedItemCount)||0;
+  const countMatches=!expected||expected===rows.length;
+  return {rows,invalidRows,verified,calculated,declared,totalMatches,expected,countMatches};
+}
+function updateAckVerificationState(){
+  if(!$("ackVerificationBanner"))return;
+  const s=ackValidationSummary();
+  $("ackDetectedRows").textContent=s.expected?`${s.rows.length} / ${s.expected}`:s.rows.length;
+  $("ackVerifiedRows").textContent=`${s.verified} / ${s.rows.length}`;
+  $("ackTotalCheck").textContent=s.totalMatches?"MATCH":"CHECK";
+  const issues=[];
+  if(s.invalidRows.length)issues.push(`${s.invalidRows.length} row${s.invalidRows.length===1?" is":"s are"} incomplete`);
+  if(!s.countMatches)issues.push(`PDF shows ${s.expected} item marker${s.expected===1?"":"s"}, but ${s.rows.length} row${s.rows.length===1?" was":"s were"} extracted`);
+  if(!s.totalMatches)issues.push(`order total does not reconcile`);
+  if(ackVerificationRequired&&s.verified<s.rows.length)issues.push(`${s.rows.length-s.verified} row${s.rows.length-s.verified===1?" still needs":"s still need"} manual verification`);
+
+  const ready=!s.invalidRows.length&&s.countMatches&&s.totalMatches&&(!ackVerificationRequired||s.verified===s.rows.length);
+  $("ackVerificationBanner").className="verify-banner "+(ready?"good":issues.length?"warn":"");
+  $("ackVerificationText").textContent=ready
+    ?"Ready to import. Every line is complete, totals reconcile, and each extracted row has been verified."
+    :(issues.length?issues.join(" · "):"Review every extracted line against the source PDF.");
+  $("confirmAck").disabled=!ready;
+  $("confirmAck").style.opacity=ready?"1":".45";
+  return ready;
+}
+function openCurrentAckPdf(){
+  if(!currentAckSourceUrl){alert("The source PDF is only available during the current PDF import.");return}
+  window.open(currentAckSourceUrl,"_blank");
+}
+function updateActivityCallButton(){
+  if(!$("activityCallContact"))return;
+  const c=contactById($("activityCustomer").value,$("activityContact").value);
+  const phone=(c?.phone||"").trim();
+  if(phone){
+    $("activityCallContact").href=`tel:${phone.replace(/[^\d+]/g,"")}`;
+    $("activityCallContact").classList.remove("hidden");
+  }else{
+    $("activityCallContact").classList.add("hidden");
+    $("activityCallContact").removeAttribute("href");
+  }
+}
+
+function addAckItemRow(i={part:"",product:"",qty:1,price:0,verified:false}){
   const node=$("ackItemTemplate").content.firstElementChild.cloneNode(true);
   node.querySelector('[data-a="part"]').value=i.part||"";
   node.querySelector('[data-a="product"]').value=i.product||"";
   node.querySelector('[data-a="qty"]').value=i.qty??1;
   node.querySelector('[data-a="price"]').value=i.price??0;
-  node.querySelectorAll("input").forEach(x=>x.oninput=updateAckCalculatedTotal);
+  node.querySelectorAll("input[data-a]").forEach(x=>x.oninput=()=>{invalidateAckRow(node);updateAckCalculatedTotal()});
+  node.querySelector("[data-a-verify]").onchange=e=>setAckRowVerified(node,e.target.checked);
   node.querySelector("[data-a-remove]").onclick=()=>{
     node.remove();
     if(!$("ackItems").children.length)addAckItemRow();
-    updateAckCalculatedTotal();
+    updateAckCalculatedTotal();updateAckVerificationState();
   };
   $("ackItems").appendChild(node);
+  setAckRowVerified(node,!ackVerificationRequired||!!i.verified);
 }
 function renderAckItems(items){
   $("ackItems").innerHTML="";
@@ -2271,10 +2430,17 @@ function updateAckCalculatedTotal(){
       ? `<span style="color:#fbbf24">⚠ Entered order total differs from subtotal + shipping + tax by ${money.format(Math.abs(diff))}. Review the values or use the calculated total.</span>`
       : `<span style="color:#86efac">✓ Order total matches subtotal + shipping + tax.</span>`;
   }
+  updateAckVerificationState();
 }
 async function importAcknowledgment(file){
   editingOrderId=null;
-  $("ackReviewTitle").textContent="Review PDF Import";
+  ackVerificationRequired=true;
+  if(currentAckSourceUrl)URL.revokeObjectURL(currentAckSourceUrl);
+  currentAckSourceUrl=URL.createObjectURL(file);
+  $("sourcePdfFrame").src=currentAckSourceUrl;
+  $("sourcePdfFrame").classList.add("hidden");
+  $("toggleSourcePdf").textContent="Show PDF Here";
+  $("ackReviewTitle").textContent="Verify PDF Import";
   $("confirmAck").textContent="Confirm & Import Order";
   $("ackWarnings").textContent="Reading PDF… scanned/image PDFs may take longer because OCR is used.";
   try{
@@ -2316,7 +2482,8 @@ async function importAcknowledgment(file){
       selectedContact=ct.id;
     }
     fillAckContactOptions(selectedContact);
-    renderAckItems(parsed.items);
+    renderAckItems(parsed.items.map(i=>({...i,verified:false})));
+    updateAckVerificationState();
     fillAckRfqMatches();
     showView("ackReviewView",false);
   }catch(err){
@@ -2451,10 +2618,17 @@ $("ackCustomer").onchange=()=>{
   fillAckRfqMatches();
 };
 $("matchCustomerBtn").onclick=matchOrCreateAckCustomer;
-$("ackTotal").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal()};
-$("ackShipping").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal()};
-$("ackTax").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal()};
+$("ackTotal").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal();updateAckVerificationState()};
+$("ackShipping").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal();updateAckVerificationState()};
+$("ackTax").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal();updateAckVerificationState()};
 $("addAckItem").onclick=()=>{addAckItemRow();updateAckCalculatedTotal()};
+$("openSourcePdf").onclick=openCurrentAckPdf;
+$("toggleSourcePdf").onclick=()=>{
+  if(!currentAckSourceUrl){alert("No source PDF is attached to this review.");return}
+  const hidden=$("sourcePdfFrame").classList.toggle("hidden");
+  $("toggleSourcePdf").textContent=hidden?"Show PDF Here":"Hide PDF";
+};
+
 $("useCalculatedAckTotal").onclick=()=>{
   const subtotal=getAckItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0);
   const calc=subtotal+(Number($("ackShipping").value)||0)+(Number($("ackTax").value)||0);
@@ -2466,6 +2640,8 @@ $("backFromAck").onclick=$("cancelAck").onclick=()=>showView(lastMainView,true);
 $("orderSearch").oninput=renderOrders;$("orderGroup").onchange=renderOrders;
 
 $("confirmAck").onclick=()=>{
+  if(!updateAckVerificationState()){alert("This order is not ready to import. Verify each line and make sure the totals reconcile.");return;}
+
   if(!pendingAck)return;
 
   let customerId=$("ackCustomer").value;
@@ -2612,7 +2788,8 @@ document.addEventListener("click",e=>{
 });
 $("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
-if($("activityCustomer"))$("activityCustomer").onchange=()=>{fillActivityContacts();fillActivityOpportunities()};
+if($("activityCustomer"))$("activityCustomer").onchange=()=>{fillActivityContacts();fillActivityOpportunities();updateActivityCallButton()};
+if($("activityContact"))$("activityContact").onchange=updateActivityCallButton;
 if($("activityAddCustomerBtn"))$("activityAddCustomerBtn").onclick=()=>{
   const showing=!$("activityNewCustomerPanel").classList.contains("hidden");
   if(showing){toggleInlineActivityCustomer(false);return}
