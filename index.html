@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.7 Password Recovery Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.8 Recovery Key Handoff</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -1279,6 +1279,18 @@ let orders=JSON.parse(localStorage.getItem(KEYS.orders)||"[]");
 let communications=JSON.parse(localStorage.getItem(KEYS.communications)||"[]");
 let activities=JSON.parse(localStorage.getItem(KEYS.activities)||"[]");
 let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:""};
+// Recovery handoff: the installed Home Screen PWA and Safari can have separate
+// storage on iOS. A password-recovery request therefore carries the *public*
+// Supabase URL/key in the redirect query so Safari uses the exact configuration
+// that sent the email. The query is removed as soon as the recovery session is captured.
+const recoveryQuery=new URLSearchParams(window.location.search);
+if(recoveryQuery.get("ab_recovery")==="1"){
+  const qUrl=String(recoveryQuery.get("sb_url")||"").trim().replace(/\/$/,"");
+  const qKey=String(recoveryQuery.get("sb_key")||"").trim();
+  if(/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(qUrl)&&qKey.startsWith("sb_publishable_")){
+    cloud.url=qUrl; cloud.anonKey=qKey;
+  }
+}
 // Recovery links opened from Mail/Safari can run in a storage context that does
 // not share the Home Screen app's localStorage. Always restore the known public
 // Supabase endpoint/key when either value is missing, so recovery requests never
@@ -3483,7 +3495,7 @@ function captureCloudRecoverySession(){
     user:null
   };
   saveCloudMeta();
-  history.replaceState(null,"",window.location.pathname+window.location.search);
+  history.replaceState(null,"",window.location.pathname);
   return true;
 }
 async function hydrateCloudUser(){
@@ -3548,7 +3560,11 @@ if($("cloudForgotPassword"))$("cloudForgotPassword").onclick=async()=>{
   if(!email){setCloudSyncStatus("Enter your email first, then tap Forgot Password.","warn");return}
   setCloudSyncStatus("Sending password-recovery email…");
   try{
-    const redirectTo=`${window.location.origin}${window.location.pathname}`;
+    const redirectUrl=new URL(`${window.location.origin}${window.location.pathname}`);
+    redirectUrl.searchParams.set("ab_recovery","1");
+    redirectUrl.searchParams.set("sb_url",cloudBase());
+    redirectUrl.searchParams.set("sb_key",cloudKey());
+    const redirectTo=redirectUrl.toString();
     const r=await fetch(`${cloudBase()}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{
       method:"POST",
       mode:"cors",
@@ -3668,7 +3684,7 @@ if($("testCloudConnection"))$("testCloudConnection").onclick=async()=>{
     // Supabase's PostgREST root (/rest/v1/) is an admin/OpenAPI endpoint and
     // deliberately rejects publishable keys. The Auth health endpoint is the
     // correct low-privilege connectivity test for a browser/mobile client.
-    const r=await fetch(`${base}/auth/v1/health`,{headers:{apikey:key}});
+    const r=await fetch(`${base}/auth/v1/settings`,{headers:{apikey:key}});
     let payload=null,detail="";
     try{
       const t=await r.text();
