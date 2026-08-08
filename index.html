@@ -517,7 +517,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.2 Mobile Layout Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.3 Cloud Sync Fix</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -926,7 +926,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.4.2 — Mobile Layout Fix</h2>
+      <h2>Version 4.4.3 — Cloud Sync Fix</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -939,8 +939,9 @@
       <p class="muted">The app now has a sync-ready data layer. It continues to work locally until a Supabase project is connected.</p>
       <label>Supabase Project URL</label>
       <input id="supabaseUrl" placeholder="https://YOUR-PROJECT.supabase.co">
-      <label>Supabase Anon Key</label>
-      <textarea id="supabaseAnonKey" rows="3" placeholder="Paste the public anon key"></textarea>
+      <label>Supabase Public API Key</label>
+      <textarea id="supabaseAnonKey" rows="3" placeholder="Paste sb_publishable_... (recommended) or legacy anon JWT"></textarea>
+      <div class="mini" style="margin-top:5px">Use the Publishable key from Supabase. Do not use a Secret or service_role key here.</div>
       <div class="toolbar" style="margin-top:12px">
         <button id="saveCloudSettings" class="primary">Save Cloud Settings</button>
         <button id="testCloudConnection" class="secondary">Test Connection</button>
@@ -3154,12 +3155,26 @@ if($("saveCloudSettings"))$("saveCloudSettings").onclick=()=>{
   $("cloudStatus").textContent=cloud.url&&cloud.anonKey?"Cloud settings saved — connection not yet enabled.":"Local-only mode";
 };
 if($("testCloudConnection"))$("testCloudConnection").onclick=async()=>{
-  if(!cloud.url||!cloud.anonKey){$("cloudStatus").textContent="Enter and save the Supabase URL and anon key first.";return}
+  if(!cloud.url||!cloud.anonKey){$("cloudStatus").textContent="Enter and save the Supabase URL and public API key first.";return}
   $("cloudStatus").textContent="Testing…";
   try{
-    const r=await fetch(`${cloud.url}/rest/v1/`,{headers:{apikey:cloud.anonKey,Authorization:`Bearer ${cloud.anonKey}`}});
-    $("cloudStatus").textContent=r.ok?"Supabase reachable. Database schema/setup is the next step.":`Supabase responded with ${r.status}.`;
-  }catch(e){$("cloudStatus").textContent="Could not reach Supabase from this device."}
+    const key=cloud.anonKey.trim();
+    const headers={apikey:key};
+    // New sb_publishable_* keys are opaque API keys, not JWT bearer tokens.
+    // Legacy anon keys begin with eyJ and can still be sent as Bearer JWTs.
+    if(key.startsWith("eyJ"))headers.Authorization=`Bearer ${key}`;
+    const r=await fetch(`${cloud.url}/rest/v1/`,{headers});
+    let detail="";
+    try{
+      const t=await r.text();
+      if(!r.ok&&t)detail=t.slice(0,120).replace(/\s+/g," ");
+    }catch(_){}
+    $("cloudStatus").textContent=r.ok
+      ?"✓ Supabase connection successful."
+      :`Supabase responded with ${r.status}${detail?` — ${detail}`:""}.`;
+  }catch(e){
+    $("cloudStatus").textContent="Could not reach Supabase from this device.";
+  }
 };
 
 
