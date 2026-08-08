@@ -662,10 +662,56 @@
 .savings-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid #70a37c;background:#e8f5eb;color:#1d5b2d;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-top:5px}
 body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-black"] .savings-badge{background:#0f2f22;color:#bbf7d0;border-color:#1f5a42}
 
-/* v4.6.3 Navigation Icons */
+/* v4.6.4 Navigation Icons */
 .tabs .nav-icon{font-size:22px;line-height:1;display:block;margin-bottom:4px}
 .tabs .nav-hammer{color:#d71920;font-size:25px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 .tabs .nav-emerald{color:#00a86b;font-size:27px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+
+/* v4.6.4 Dashboard Monthly Goal Pie */
+.dashboard-goal-pie-card{margin-top:15px;overflow:hidden}
+.goal-pie-layout{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:center}
+.goal-pie{
+  --goal-pct:0;
+  width:180px;height:180px;border-radius:50%;position:relative;margin:auto;
+  background:conic-gradient(
+    #16a34a 0deg calc(var(--goal-pct) * 1.2deg),
+    #3b82f6 calc(var(--goal-pct) * 1.2deg) calc(var(--goal-pct) * 2.4deg),
+    #8b5cf6 calc(var(--goal-pct) * 2.4deg) calc(var(--goal-pct) * 3.6deg),
+    #d7dbe2 calc(var(--goal-pct) * 3.6deg) 360deg
+  );
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.10)
+}
+.goal-pie::after{
+  content:"";position:absolute;inset:23px;border-radius:50%;background:var(--panel);
+  border:1px solid var(--line);box-shadow:inset 0 2px 8px rgba(0,0,0,.06)
+}
+.goal-pie-center{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.goal-pie-center strong{font-size:34px;line-height:1;font-weight:900;color:var(--text)}
+.goal-pie-center span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:5px;font-weight:800}
+.goal-pie-stats{display:grid;grid-template-columns:1fr;gap:8px}
+.goal-pie-stat{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:10px 12px}
+.goal-pie-stat span{display:block;font-size:11px;color:var(--muted);font-weight:700}
+.goal-pie-stat strong{display:block;font-size:20px;margin-top:3px;color:var(--text)}
+.goal-pie-stat small{display:block;color:var(--muted);font-size:10px;margin-top:2px}
+.goal-pie-stat.sold{border-left:5px solid #3b82f6}
+.goal-pie-stat.remaining{border-left:5px solid #9ca3af}
+.goal-pie-stat.runrate{border-left:5px solid #8b5cf6}
+.goal-pie-legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:10px;color:var(--muted)}
+.goal-pie-legend span{display:inline-flex;align-items:center;gap:4px}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend-green{background:#16a34a}.legend-blue{background:#3b82f6}.legend-purple{background:#8b5cf6}.legend-gray{background:#d7dbe2}
+body[data-skin="midnight-executive"] .goal-pie::after,
+body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
+@media(max-width:560px){
+  .goal-pie-layout{grid-template-columns:150px 1fr;gap:12px}
+  .goal-pie{width:145px;height:145px}
+  .goal-pie::after{inset:19px}
+  .goal-pie-center strong{font-size:27px}
+  .goal-pie-stat{padding:8px 10px}
+  .goal-pie-stat strong{font-size:17px}
+  .goal-pie-legend{gap:8px}
+}
+
 </style>
 </head>
 <body>
@@ -673,7 +719,7 @@ body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-bla
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.3 Navigation Icons</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.4 Goal Pie Dashboard</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -685,6 +731,35 @@ body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-bla
     <div class="kicker">Executive Dashboard</div>
     <div class="headline">Good day, Alex</div>
     <p class="muted" style="margin-top:4px">Your territory at a glance.</p>
+
+    <div class="card dashboard-goal-pie-card">
+      <div class="section-head" style="margin:0 0 8px">
+        <div>
+          <div class="kicker">Monthly Goal Tracker</div>
+          <h2 id="goalPieTitle" style="margin:4px 0 0">$100K Goal</h2>
+        </div>
+        <span id="goalPieStatus" class="status">BUILDING</span>
+      </div>
+      <div class="goal-pie-layout">
+        <div id="goalPie" class="goal-pie" role="img" aria-label="Monthly sales goal progress">
+          <div class="goal-pie-center">
+            <strong id="goalPiePct">0%</strong>
+            <span>complete</span>
+          </div>
+        </div>
+        <div class="goal-pie-stats">
+          <div class="goal-pie-stat sold"><span>Sales This Month</span><strong id="goalPieSales">$0</strong></div>
+          <div class="goal-pie-stat remaining"><span>Remaining</span><strong id="goalPieRemaining">$0</strong></div>
+          <div class="goal-pie-stat runrate"><span>Daily Run Rate</span><strong id="goalPieRunRate">$0</strong><small><span id="goalPieDays">0</span> business days left</small></div>
+        </div>
+      </div>
+      <div class="goal-pie-legend">
+        <span><i class="legend-dot legend-green"></i>Goal progress</span>
+        <span><i class="legend-dot legend-blue"></i>Current month</span>
+        <span><i class="legend-dot legend-purple"></i>Momentum</span>
+        <span><i class="legend-dot legend-gray"></i>Remaining</span>
+      </div>
+    </div>
 
     <div class="grid metrics" style="margin-top:15px">
       <div class="metric"><small>Open RFQs</small><strong id="dOpenCount">0</strong><div class="sub">Active opportunities</div></div>
@@ -1762,6 +1837,20 @@ function renderDashboard(){
   const pct=goal?Math.min(100,(sales/goal)*100):0;
   $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(autoSales);
   $("dailyNeeded").textContent=money.format(days?remain/days:remain);$("businessDaysLeft").textContent=days;
+
+  // Top dashboard goal pie
+  if($("goalPie")){
+    $("goalPie").style.setProperty("--goal-pct",pct.toFixed(2));
+    $("goalPiePct").textContent=Math.round(pct)+"%";
+    $("goalPieTitle").textContent=`${money.format(goal).replace(".00","")} Goal`;
+    $("goalPieSales").textContent=money.format(sales);
+    $("goalPieRemaining").textContent=money.format(remain);
+    $("goalPieRunRate").textContent=money.format(days?remain/days:remain);
+    $("goalPieDays").textContent=days;
+    $("goalPieStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
+    $("goalPieStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
+    $("goalPie").setAttribute("aria-label",`${Math.round(pct)} percent of monthly sales goal complete`);
+  }
   if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Imported orders ${money.format(currentMonthImportedSales())} · Closed Won RFQs ${money.format(currentMonthClosedWonSales())}${Number(settings.sales)?` · Manual adjustment ${money.format(Number(settings.sales)||0)}`:""}`;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
