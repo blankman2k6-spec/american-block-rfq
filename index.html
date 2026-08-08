@@ -564,6 +564,90 @@
       .global-quick-actions{right:10px!important;bottom:calc(82px + var(--safe-bottom))!important;gap:6px!important}
       .global-quick-actions button{padding:9px 11px!important;font-size:11px!important;min-height:38px!important}
     }
+  
+    /* =========================================================
+       v4.5.16 RESPONSIVE UI + VIEW MODES
+       ========================================================= */
+    .topbar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+    .refresh-btn{width:42px;height:42px;padding:0!important;display:grid;place-items:center;font-size:23px;font-weight:800}
+    .refresh-btn.refreshing{animation:abSpin .65s linear infinite}
+    @keyframes abSpin{to{transform:rotate(360deg)}}
+
+    /* Compact overflow action everywhere instead of the old black square. */
+    .menu-btn{
+      width:34px!important;height:34px!important;min-height:34px!important;
+      border-radius:10px!important;padding:0!important;
+      display:grid!important;place-items:center!important;
+      background:rgba(127,127,127,.08)!important;
+      color:var(--muted)!important;border:1px solid var(--line)!important;
+      font-size:20px!important;line-height:1!important;
+      box-shadow:none!important;
+    }
+    .menu-btn:hover,.menu-btn:focus{background:rgba(127,127,127,.15)!important;color:var(--text)!important}
+    .order-menu-wrap{right:14px!important;top:58px!important;bottom:auto!important}
+    .order-menu{bottom:auto!important;top:40px!important}
+    body[data-skin="classic-office"] .menu-btn,
+    body[data-skin="clean-corporate"] .menu-btn{
+      background:#f1f1f1!important;color:#555!important;border-color:#aaa!important;
+    }
+
+    /* Never allow the monthly reporting controls to mathematically collide. */
+    .month-nav{grid-template-columns:minmax(0,1fr) auto!important}
+    .month-nav>div{min-width:0}
+    .month-nav input{min-width:0}
+    .month-nav>button{white-space:nowrap}
+
+    .view-mode-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .view-mode-btn{
+      text-align:left;background:var(--panel2);color:var(--text);
+      border:2px solid var(--line);border-radius:16px;padding:14px;
+      min-height:88px;
+    }
+    .view-mode-btn strong{display:block;font-size:14px}
+    .view-mode-btn small{display:block;color:var(--muted);font-size:11px;line-height:1.35;margin-top:5px}
+    .view-mode-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.14)}
+
+    /* PHONE-FIRST MODE */
+    body[data-layout="mobile"] .app{max-width:760px!important;padding-left:12px!important;padding-right:12px!important}
+    body[data-layout="mobile"] .row{grid-template-columns:1fr!important}
+    body[data-layout="mobile"] .month-nav{grid-template-columns:1fr!important;gap:10px!important;align-items:stretch!important}
+    body[data-layout="mobile"] .month-nav>button{width:100%!important;min-height:48px!important}
+    body[data-layout="mobile"] .section-head{flex-wrap:wrap!important;align-items:flex-start!important}
+    body[data-layout="mobile"] .toolbar{flex-wrap:wrap!important}
+    body[data-layout="mobile"] .toolbar>button{flex:1 1 145px}
+    body[data-layout="mobile"] .metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+    body[data-layout="mobile"] .metric{padding:13px!important}
+    body[data-layout="mobile"] .metric strong{font-size:22px!important}
+    body[data-layout="mobile"] .card{padding:14px!important;border-radius:16px!important}
+    body[data-layout="mobile"] .list-card{padding:14px!important}
+    body[data-layout="mobile"] .product-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+    body[data-layout="mobile"] .donut-wrap{grid-template-columns:1fr!important}
+    body[data-layout="mobile"] .skin-grid{grid-template-columns:1fr!important}
+    body[data-layout="mobile"] .view-mode-selector{grid-template-columns:1fr!important}
+    body[data-layout="mobile"] .global-quick-actions{right:10px!important}
+    body[data-layout="mobile"] .tabs-inner{max-width:760px!important}
+
+    /* DESKTOP MODE */
+    body[data-layout="desktop"] .app{max-width:1180px!important}
+    body[data-layout="desktop"] .tabs-inner{max-width:1180px!important}
+    body[data-layout="desktop"] .metrics{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+    body[data-layout="desktop"] .row{grid-template-columns:1fr 1fr!important}
+    body[data-layout="desktop"] .month-nav{grid-template-columns:minmax(280px,1fr) auto!important}
+    body[data-layout="desktop"] .product-stats{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+    body[data-layout="desktop"] .skin-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+    body[data-layout="desktop"] .view-mode-selector{grid-template-columns:1fr 1fr!important}
+    body[data-layout="desktop"] .insight-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+    /* On narrow physical screens Mobile View remains genuinely phone friendly. */
+    @media(max-width:560px){
+      body[data-layout="mobile"] .topbar{gap:8px!important}
+      body[data-layout="mobile"] .topbar-actions{gap:5px}
+      body[data-layout="mobile"] .refresh-btn{width:38px;height:38px;min-height:38px!important;font-size:20px}
+      body[data-layout="mobile"] #quickAdd{padding:8px 9px!important;font-size:12px!important}
+      body[data-layout="mobile"] .month-nav{grid-template-columns:1fr!important}
+      body[data-layout="mobile"] .view-mode-selector{grid-template-columns:1fr!important}
+    }
+
   </style>
 </head>
 <body>
@@ -571,9 +655,12 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.15 Activity Recovery</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.16 Responsive UI</p>
     </div>
-    <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
+    <div class="topbar-actions">
+      <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
+      <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
+    </div>
   </header>
 
   <section id="dashboardView" class="view active">
@@ -980,7 +1067,24 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.5.3 — Cloud Recovery</h2>
+      <div class="kicker">Display</div>
+      <h2 style="margin:4px 0">Screen View</h2>
+      <p class="muted">This setting stays on this device. Your phone can use Mobile View while your computer uses Desktop View.</p>
+      <div class="view-mode-selector">
+        <button id="mobileViewMode" class="view-mode-btn" data-layout-choice="mobile" type="button">
+          <strong>📱 Mobile View</strong>
+          <small>Larger tap targets, stacked controls, cleaner phone cards.</small>
+        </button>
+        <button id="desktopViewMode" class="view-mode-btn" data-layout-choice="desktop" type="button">
+          <strong>🖥 Desktop View</strong>
+          <small>Wider workspace, denser grids, more information across the screen.</small>
+        </button>
+      </div>
+      <div id="layoutStatus" class="mini" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Version 4.5.16 — Responsive UI</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1354,6 +1458,41 @@ let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+
+const LAYOUT_KEY="abSalesOS_layoutMode_v1";
+let layoutMode=localStorage.getItem(LAYOUT_KEY)||((window.matchMedia&&window.matchMedia("(max-width: 700px)").matches)?"mobile":"desktop");
+
+function applyLayoutMode(mode,announce=false){
+  layoutMode=(mode==="desktop")?"desktop":"mobile";
+  document.body.dataset.layout=layoutMode;
+  localStorage.setItem(LAYOUT_KEY,layoutMode);
+  document.querySelectorAll("[data-layout-choice]").forEach(b=>b.classList.toggle("active",b.dataset.layoutChoice===layoutMode));
+  if($("layoutStatus"))$("layoutStatus").textContent=`Current view on this device: ${layoutMode==="mobile"?"Mobile View":"Desktop View"}`;
+  if(announce && window.innerWidth<600 && layoutMode==="desktop"){
+    if($("layoutStatus"))$("layoutStatus").textContent="Desktop View selected on this phone. Switch back to Mobile View anytime for larger controls.";
+  }
+}
+
+async function refreshCrmView(){
+  const btn=$("refreshApp");
+  if(btn){btn.classList.add("refreshing");btn.disabled=true}
+  try{
+    if(cloud?.session?.access_token && navigator.onLine && typeof syncCloudNow==="function"){
+      await syncCloudNow();
+    }
+    renderAll();
+  }catch(e){
+    console.warn("Refresh failed",e);
+  }finally{
+    if(btn){
+      btn.classList.remove("refreshing");
+      btn.disabled=false;
+      const old=btn.textContent;btn.textContent="✓";
+      setTimeout(()=>{btn.textContent=old||"↻"},650);
+    }
+  }
+}
 
 function applySkin(name,announce=false){
   const allowed=["midnight-executive","classic-office","oilfield-black","clean-corporate"];
@@ -3904,7 +4043,10 @@ document.querySelectorAll(".account-tab").forEach(b=>b.onclick=()=>{
 });
 
 document.querySelectorAll("[data-skin-choice]").forEach(b=>b.onclick=()=>applySkin(b.dataset.skinChoice,true));
+document.querySelectorAll("[data-layout-choice]").forEach(b=>b.onclick=()=>applyLayoutMode(b.dataset.layoutChoice,true));
+if($("refreshApp"))$("refreshApp").onclick=refreshCrmView;
 applySkin(settings.skin||"midnight-executive");
+applyLayoutMode(layoutMode);
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 renderAll();

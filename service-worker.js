@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-5-15-activity-recovery";
+const CACHE="ab-sales-os-v4-5-16-responsive-ui";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{
