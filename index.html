@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.1 Cloud Sync</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.2 Cloud Recovery</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -933,7 +933,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.5.1 — Cloud Sync</h2>
+      <h2>Version 4.5.2 — Cloud Recovery</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -3447,10 +3447,38 @@ function scheduleCloudPush(){
     catch(e){setCloudSyncStatus(`Auto-sync paused — ${e.message}`,"bad")}
   },1400);
 }
+function captureCloudRecoverySession(){
+  const hash=new URLSearchParams((window.location.hash||"").replace(/^#/,""));
+  if(hash.get("type")!=="recovery"||!hash.get("access_token"))return false;
+  cloud.session={
+    access_token:hash.get("access_token"),
+    refresh_token:hash.get("refresh_token")||"",
+    expires_at:Date.now()+((Number(hash.get("expires_in"))||3600)*1000),
+    user:null
+  };
+  saveCloudMeta();
+  history.replaceState(null,"",window.location.pathname+window.location.search);
+  return true;
+}
+async function hydrateCloudUser(){
+  if(!cloud.session?.access_token||cloud.session.user)return;
+  const r=await fetch(`${cloudBase()}/auth/v1/user`,{headers:{apikey:cloudKey(),Authorization:`Bearer ${cloud.session.access_token}`}});
+  if(r.ok){cloud.session.user=await r.json();cloud.userEmail=cloud.session.user?.email||cloud.userEmail||"";saveCloudMeta();}
+}
 async function initializeCloudSync(){
+  const recovering=captureCloudRecoverySession();
   updateCloudAccountUI();
   cloudSyncReady=true;
   if(!cloud.session?.access_token)return;
+  if(recovering){
+    try{
+      await hydrateCloudUser();
+      updateCloudAccountUI();
+      showView("settingsView",true);
+      setCloudSyncStatus("✓ Password recovery verified. Enter and confirm your new password below, then tap Change Password.","good");
+    }catch(e){setCloudSyncStatus(`Recovery link opened, but the session could not be verified — ${e.message}`,"bad");}
+    return;
+  }
   try{
     await ensureCloudToken();
     updateCloudAccountUI();
