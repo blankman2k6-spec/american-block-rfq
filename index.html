@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.2 Cloud Recovery</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.3 Cloud Recovery</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -933,7 +933,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.5.2 — Cloud Recovery</h2>
+      <h2>Version 4.5.3 — Cloud Recovery</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1263,12 +1263,25 @@
 const $=id=>document.getElementById(id);
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2});
 const KEYS={rfqs:"abSalesOS_rfqs_v2",customers:"abSalesOS_customers_v2",orders:"abSalesOS_orders_v2",communications:"abSalesOS_comms_v3",activities:"abSalesOS_activities_v4",settings:"abSalesOS_settings_v2",cloud:"abSalesOS_cloud_v3"};
+// Public client configuration for this CRM. Supabase publishable keys are designed
+// to be embedded in browser apps; Row Level Security protects the CRM data.
+const BUILTIN_CLOUD={
+  url:"https://wrkoimfczpavsxqpxftn.supabase.co",
+  anonKey:"sb_publishable_0S-KmHmkHU8LyPBoaJIBCW_odheFCJt"
+};
 let rfqs=JSON.parse(localStorage.getItem(KEYS.rfqs)||"null");
 let customers=JSON.parse(localStorage.getItem(KEYS.customers)||"null");
 let orders=JSON.parse(localStorage.getItem(KEYS.orders)||"[]");
 let communications=JSON.parse(localStorage.getItem(KEYS.communications)||"[]");
 let activities=JSON.parse(localStorage.getItem(KEYS.activities)||"[]");
 let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:""};
+// Recovery links opened from Mail/Safari can run in a storage context that does
+// not share the Home Screen app's localStorage. Always restore the known public
+// Supabase endpoint/key when either value is missing, so recovery requests never
+// fall through to the Vercel origin (which would produce a 404).
+if(!String(cloud.url||"").trim()) cloud.url=BUILTIN_CLOUD.url;
+if(!String(cloud.anonKey||"").trim()) cloud.anonKey=BUILTIN_CLOUD.anonKey;
+localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
 let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false;
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
 if(!settings.skin)settings.skin="midnight-executive";
@@ -3206,8 +3219,16 @@ if($("logCommunication"))$("logCommunication").onclick=()=>logComm("Manual Log")
 if($("supabaseUrl"))$("supabaseUrl").value=cloud.url||"";
 if($("supabaseAnonKey"))$("supabaseAnonKey").value=cloud.anonKey||"";
 
-function cloudBase(){return String(cloud.url||"").trim().replace(/\/$/,"")}
-function cloudKey(){return String(cloud.anonKey||"").trim()}
+function cloudBase(){
+  const base=String(cloud.url||BUILTIN_CLOUD.url||"").trim().replace(/\/$/,"");
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(base)) throw new Error("Supabase Project URL is missing or invalid.");
+  return base;
+}
+function cloudKey(){
+  const key=String(cloud.anonKey||BUILTIN_CLOUD.anonKey||"").trim();
+  if(!key) throw new Error("Supabase public API key is missing.");
+  return key;
+}
 function setCloudSyncStatus(message,kind=""){
   if(!$("cloudSyncStatus"))return;
   $("cloudSyncStatus").className="mini "+(kind?`sync-${kind}`:"");
@@ -3475,7 +3496,7 @@ async function initializeCloudSync(){
       await hydrateCloudUser();
       updateCloudAccountUI();
       showView("settingsView",true);
-      setCloudSyncStatus("✓ Password recovery verified. Enter and confirm your new password below, then tap Change Password.","good");
+      setCloudSyncStatus("✓ Password recovery verified with Supabase. Enter and confirm your new password below, then tap Change Password.","good");
     }catch(e){setCloudSyncStatus(`Recovery link opened, but the session could not be verified — ${e.message}`,"bad");}
     return;
   }
@@ -3547,7 +3568,10 @@ if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
     const text=await r.text();
     let data={};
     if(text){try{data=JSON.parse(text)}catch(_){data={message:text}}}
-    if(!r.ok)throw new Error(data.msg||data.message||data.error_description||data.error||`HTTP ${r.status}`);
+    if(!r.ok){
+      const message=data.msg||data.message||data.error_description||data.error||`HTTP ${r.status}`;
+      throw new Error(message);
+    }
     if(data?.id){cloud.session.user={...(cloud.session.user||{}),...data};saveCloudMeta()}
     $("cloudNewPassword").value="";$("cloudConfirmPassword").value="";
     setCloudSyncStatus("✓ Password changed for this cloud account. Your CRM ownership is unchanged.","good");
