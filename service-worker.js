@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-5-4-cloud-recovery";
+const CACHE="ab-sales-os-v4-5-6-password-recovery";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{

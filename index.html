@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.5 Cloud Recovery</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.6 Password Recovery</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -967,6 +967,10 @@
           <button id="cloudSignIn" class="primary" type="button">Sign In</button>
           <button id="cloudCreateAccount" class="secondary" type="button">Create Account</button>
         </div>
+        <div style="margin-top:10px;text-align:center">
+          <button id="cloudForgotPassword" class="secondary" type="button" style="width:100%">Forgot Password?</button>
+        </div>
+        <div class="mini" style="margin-top:8px">Enter your email above, then tap Forgot Password. The recovery email will return you to this Vercel app.</div>
       </div>
 
       <div id="cloudSignedIn" class="hidden">
@@ -3538,6 +3542,29 @@ if($("cloudSignIn"))$("cloudSignIn").onclick=async()=>{
     setCloudSyncStatus("✓ Signed in. Checking cloud CRM…","good");
     await syncCloudNow();
   }catch(e){setCloudSyncStatus(`Sign in failed — ${e.message}`,"bad")}
+};
+if($("cloudForgotPassword"))$("cloudForgotPassword").onclick=async()=>{
+  const email=$("cloudEmail").value.trim();
+  if(!email){setCloudSyncStatus("Enter your email first, then tap Forgot Password.","warn");return}
+  setCloudSyncStatus("Sending password-recovery email…");
+  try{
+    const redirectTo=`${window.location.origin}${window.location.pathname}`;
+    const r=await fetch(`${cloudBase()}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{
+      method:"POST",
+      mode:"cors",
+      cache:"no-store",
+      credentials:"omit",
+      headers:{apikey:cloudKey(),"Content-Type":"application/json"},
+      body:JSON.stringify({email})
+    });
+    const text=await r.text();
+    let data={};
+    if(text){try{data=JSON.parse(text)}catch(_){data={message:text}}}
+    if(!r.ok)throw new Error(data.msg||data.message||data.error_description||data.error||`HTTP ${r.status}`);
+    setCloudSyncStatus("✓ Recovery email sent. Open the newest email and tap its reset link.","good");
+  }catch(e){
+    setCloudSyncStatus(`Password recovery failed — ${e.message}`,"bad");
+  }
 };
 if($("cloudCreateAccount"))$("cloudCreateAccount").onclick=async()=>{
   const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;
