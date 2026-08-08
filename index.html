@@ -215,6 +215,68 @@
     .auto-log-box.hidden{display:none}
     .auto-log-preview{background:#091321;border:1px solid var(--line);border-radius:12px;padding:11px;margin-top:9px;font-size:12px;line-height:1.45}
     .auto-log-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+
+    /* v4.4 UI polish */
+    body{transition:background .18s ease,color .18s ease}
+    .topbar{position:sticky;top:0;z-index:80;padding:9px 4px 10px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .headline{letter-spacing:-.035em}
+    .card,.metric,.list-card,.activity-card,.account-list-row{transition:border-color .15s ease,background .15s ease,transform .12s ease}
+    .list-card:active,.account-list-row:active{transform:scale(.992)}
+    input,select,textarea{min-height:44px}
+    button,.call-link{min-height:42px}
+    .tabs{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .skin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .skin-option{padding:12px;border:2px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);text-align:left}
+    .skin-option.active{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 20%,transparent)}
+    .skin-swatch{height:54px;border-radius:10px;margin-bottom:9px;border:1px solid rgba(127,127,127,.25);display:flex;gap:5px;padding:8px;align-items:flex-end}
+    .skin-swatch i{display:block;width:25%;border-radius:4px}
+    .skin-option strong{display:block}.skin-option small{display:block;color:var(--muted);margin-top:3px;line-height:1.25}
+    .skin-midnight{background:#07101f}.skin-midnight i:nth-child(1){height:100%;background:#101a2b}.skin-midnight i:nth-child(2){height:75%;background:#3b82f6}.skin-midnight i:nth-child(3){height:55%;background:#22c55e}.skin-midnight i:nth-child(4){height:85%;background:#172338}
+    .skin-office{background:#d4d0c8}.skin-office i:nth-child(1){height:100%;background:#f7f7f7}.skin-office i:nth-child(2){height:75%;background:#316ac5}.skin-office i:nth-child(3){height:55%;background:#808080}.skin-office i:nth-child(4){height:85%;background:#ece9d8}
+    .skin-oilfield{background:#101112}.skin-oilfield i:nth-child(1){height:100%;background:#1c1d1f}.skin-oilfield i:nth-child(2){height:75%;background:#d39a2c}.skin-oilfield i:nth-child(3){height:55%;background:#65717d}.skin-oilfield i:nth-child(4){height:85%;background:#292b2e}
+    .skin-corporate{background:#eef2f6}.skin-corporate i:nth-child(1){height:100%;background:#fff}.skin-corporate i:nth-child(2){height:75%;background:#2563eb}.skin-corporate i:nth-child(3){height:55%;background:#16a34a}.skin-corporate i:nth-child(4){height:85%;background:#dbe4ef}
+
+    body[data-skin="classic-office"]{
+      --bg:#c8c8c8;--panel:#ececec;--panel2:#dcdcdc;--line:#a5a5a5;--text:#171717;--muted:#555;
+      --accent:#316ac5;--accent2:#2558a8;--green:#2d7d32;--red:#b52b32;--yellow:#a56a00;--shadow:0 2px 5px rgba(0,0,0,.13);
+      background:linear-gradient(180deg,#bcbcbc,#d7d7d7 180px,#c8c8c8);
+    }
+    body[data-skin="classic-office"] .topbar{background:linear-gradient(#efefef,#cfcfcf);border:1px solid #9b9b9b;border-radius:7px;padding:8px 10px;box-shadow:inset 0 1px #fff,0 2px 4px rgba(0,0,0,.12);backdrop-filter:none}
+    body[data-skin="classic-office"] .metric,body[data-skin="classic-office"] .card,body[data-skin="classic-office"] .list-card,body[data-skin="classic-office"] .activity-card,body[data-skin="classic-office"] .account-list-row{background:#f3f3f3;border-color:#a8a8a8;border-radius:7px;box-shadow:inset 0 1px #fff,0 1px 3px rgba(0,0,0,.10)}
+    body[data-skin="classic-office"] input,body[data-skin="classic-office"] select,body[data-skin="classic-office"] textarea{background:#fff;color:#111;border:1px solid #8d8d8d;border-radius:3px;box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+    body[data-skin="classic-office"] button,body[data-skin="classic-office"] .call-link{border-radius:4px;box-shadow:inset 0 1px rgba(255,255,255,.7)}
+    body[data-skin="classic-office"] .primary{background:linear-gradient(#4c82d3,#316ac5);border-color:#24549c;color:#fff}
+    body[data-skin="classic-office"] .secondary,body[data-skin="classic-office"] .icon-btn{background:linear-gradient(#f8f8f8,#d7d7d7);border-color:#929292;color:#171717}
+    body[data-skin="classic-office"] .tabs{background:linear-gradient(#e5e5e5,#c8c8c8);border-top:1px solid #8f8f8f;backdrop-filter:none}
+    body[data-skin="classic-office"] .tab{color:#404040}body[data-skin="classic-office"] .tab.active{color:#174f9e;background:#f4f4f4}
+    body[data-skin="classic-office"] .kicker{color:#174f9e}
+    body[data-skin="classic-office"] .status{box-shadow:none}
+    body[data-skin="classic-office"] .global-quick-actions button{box-shadow:0 2px 5px rgba(0,0,0,.22)}
+    body[data-skin="classic-office"] .account-menu,body[data-skin="classic-office"] .order-menu{background:#f1f1f1;color:#111;border-color:#888}
+    body[data-skin="classic-office"] .account-menu button,body[data-skin="classic-office"] .order-menu button{color:#111}
+    body[data-skin="classic-office"] .mix-track{background:#ddd}
+
+    body[data-skin="oilfield-black"]{
+      --bg:#0d0e0f;--panel:#191a1c;--panel2:#25272a;--line:#3b3d40;--text:#f3f4f6;--muted:#a8adb4;
+      --accent:#d39a2c;--accent2:#b47d19;--green:#4eaa68;--red:#e05252;--yellow:#d39a2c;--shadow:0 12px 28px rgba(0,0,0,.34);
+      background:linear-gradient(180deg,#0b0c0d,#151617 48%,#0b0c0d);
+    }
+    body[data-skin="oilfield-black"] .primary{background:linear-gradient(180deg,#dda83d,#bd8420);border-color:#e1b14d;color:#17120a}
+    body[data-skin="oilfield-black"] .kicker{color:#e0aa3d}
+
+    body[data-skin="clean-corporate"]{
+      --bg:#eef2f6;--panel:#fff;--panel2:#f5f7fa;--line:#d4dde8;--text:#172033;--muted:#667085;
+      --accent:#2563eb;--accent2:#1d4ed8;--green:#168344;--red:#c7373f;--yellow:#a86600;--shadow:0 6px 20px rgba(24,39,75,.08);
+      background:#eef2f6;
+    }
+    body[data-skin="clean-corporate"] .metric,body[data-skin="clean-corporate"] .card,body[data-skin="clean-corporate"] .list-card,body[data-skin="clean-corporate"] .activity-card,body[data-skin="clean-corporate"] .account-list-row{background:#fff}
+    body[data-skin="clean-corporate"] input,body[data-skin="clean-corporate"] select,body[data-skin="clean-corporate"] textarea{background:#fff;color:#172033;border-color:#cbd5e1}
+    body[data-skin="clean-corporate"] .tabs{background:rgba(255,255,255,.94);border-color:#d5dde8}
+    body[data-skin="clean-corporate"] .tab{color:#64748b}body[data-skin="clean-corporate"] .tab.active{color:#1d4ed8}
+    body[data-skin="clean-corporate"] .account-menu,body[data-skin="clean-corporate"] .order-menu{background:#fff;color:#172033;border-color:#d4dde8}
+    body[data-skin="clean-corporate"] .account-menu button,body[data-skin="clean-corporate"] .order-menu button{color:#172033}
+    body[data-skin="clean-corporate"] .mix-track{background:#e7edf5}
+
     @media(max-width:560px){.auto-log-grid{grid-template-columns:1fr}}
 
     @media(max-width:560px){.verify-grid{grid-template-columns:repeat(3,1fr)}.source-pdf-frame{height:350px}}
@@ -235,7 +297,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.3 Automatic RFQ Activity</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4 UI & Skins</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -631,7 +693,20 @@
   <section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
-      <h2>Version 4.3 — Automatic RFQ Activity</h2>
+      <div class="kicker">Appearance</div>
+      <h2 style="margin:4px 0">Choose Your Skin</h2>
+      <p class="muted">Change the look of the entire CRM without changing any of your customer or sales data.</p>
+      <div class="skin-grid">
+        <button class="skin-option" data-skin-choice="midnight-executive"><span class="skin-swatch skin-midnight"><i></i><i></i><i></i><i></i></span><strong>Midnight Executive</strong><small>Modern navy sales dashboard.</small></button>
+        <button class="skin-option" data-skin-choice="classic-office"><span class="skin-swatch skin-office"><i></i><i></i><i></i><i></i></span><strong>Classic Office Gray</strong><small>Old Microsoft Word-inspired gray business UI.</small></button>
+        <button class="skin-option" data-skin-choice="oilfield-black"><span class="skin-swatch skin-oilfield"><i></i><i></i><i></i><i></i></span><strong>Oilfield Black</strong><small>Charcoal steel with amber industrial accents.</small></button>
+        <button class="skin-option" data-skin-choice="clean-corporate"><span class="skin-swatch skin-corporate"><i></i><i></i><i></i><i></i></span><strong>Clean Corporate</strong><small>Bright, polished executive reporting look.</small></button>
+      </div>
+      <div id="skinStatus" class="mini" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Version 4.4 — UI & Skins</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -928,10 +1003,24 @@ let communications=JSON.parse(localStorage.getItem(KEYS.communications)||"[]");
 let activities=JSON.parse(localStorage.getItem(KEYS.activities)||"[]");
 let cloud=JSON.parse(localStorage.getItem(KEYS.cloud)||"null")||{url:"",anonKey:""};
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
+if(!settings.skin)settings.skin="midnight-executive";
 let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+
+function applySkin(name,announce=false){
+  const allowed=["midnight-executive","classic-office","oilfield-black","clean-corporate"];
+  const skin=allowed.includes(name)?name:"midnight-executive";
+  settings.skin=skin;
+  if(skin==="midnight-executive")document.body.removeAttribute("data-skin");
+  else document.body.dataset.skin=skin;
+  document.querySelectorAll("[data-skin-choice]").forEach(b=>b.classList.toggle("active",b.dataset.skinChoice===skin));
+  const names={"midnight-executive":"Midnight Executive","classic-office":"Classic Office Gray","oilfield-black":"Oilfield Black","clean-corporate":"Clean Corporate"};
+  if($("skinStatus"))$("skinStatus").textContent=`Current skin: ${names[skin]}`;
+  if(announce){localStorage.setItem(KEYS.settings,JSON.stringify(settings));}
+}
+
 function save(){localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));localStorage.setItem(KEYS.customers,JSON.stringify(customers));localStorage.setItem(KEYS.orders,JSON.stringify(orders));localStorage.setItem(KEYS.communications,JSON.stringify(communications));localStorage.setItem(KEYS.activities,JSON.stringify(activities));localStorage.setItem(KEYS.settings,JSON.stringify(settings));localStorage.setItem(KEYS.cloud,JSON.stringify(cloud))}
 function itemSubtotal(r){return (r.items||[]).reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)}
 function extraCharges(r){return (Number(r.shipping)||0)+(Number(r.tax)||0)}
@@ -2925,6 +3014,9 @@ document.querySelectorAll(".account-tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".account-panel").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");$(b.dataset.accountPanel).classList.add("active");
 });
+
+document.querySelectorAll("[data-skin-choice]").forEach(b=>b.onclick=()=>applySkin(b.dataset.skinChoice,true));
+applySkin(settings.skin||"midnight-executive");
 
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 renderAll();
