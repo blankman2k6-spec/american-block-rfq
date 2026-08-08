@@ -661,6 +661,11 @@
 #rfqLostDetails input[type="date"]{min-height:46px;height:46px;padding:8px 12px;font-size:16px}
 .savings-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid #70a37c;background:#e8f5eb;color:#1d5b2d;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-top:5px}
 body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-black"] .savings-badge{background:#0f2f22;color:#bbf7d0;border-color:#1f5a42}
+
+/* v4.6.3 Navigation Icons */
+.tabs .nav-icon{font-size:22px;line-height:1;display:block;margin-bottom:4px}
+.tabs .nav-hammer{color:#d71920;font-size:25px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.tabs .nav-emerald{color:#00a86b;font-size:27px;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 </style>
 </head>
 <body>
@@ -668,7 +673,7 @@ body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-bla
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.18 Boss Excel Export</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.6.3 Navigation Icons</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1482,14 +1487,14 @@ body[data-skin="midnight-executive"] .savings-badge,body[data-skin="oilfield-bla
   <div class="tabs-inner">
     <button class="tab active" data-view="dashboardView"><strong>⌂</strong>Dashboard</button>
     <button class="tab" data-view="customersView"><strong>👥</strong>Customers</button>
-    <button class="tab" data-view="rfqsView"><strong>▤</strong>RFQs</button>
-    <button class="tab" data-view="ordersView"><strong>▣</strong>Orders</button>
-    <button class="tab" data-view="activityLogView"><strong>▤</strong>Log</button>
-    <button class="tab" data-view="productsView"><strong>▥</strong>Products</button>
-    <button class="tab" data-view="communicationsView"><strong>✉</strong>Comms</button>
-    <button class="tab" data-view="followupsView"><strong>✓</strong>Follow-ups</button>
-    <button class="tab" data-view="intelligenceView"><strong>◆</strong>Intel</button>
-    <button class="tab" data-view="settingsView"><strong>⚙</strong>Settings</button>
+    <button class="tab" data-view="rfqsView"><strong class="nav-icon">📄</strong>RFQs</button>
+    <button class="tab" data-view="ordersView"><strong class="nav-icon">🛒</strong>Orders</button>
+    <button class="tab" data-view="activityLogView"><strong class="nav-icon">📝</strong>Log</button>
+    <button class="tab" data-view="productsView"><strong class="nav-icon nav-hammer" aria-label="Hammer union">⬢</strong>Products</button>
+    <button class="tab" data-view="communicationsView"><strong class="nav-icon">✉️</strong>Comms</button>
+    <button class="tab" data-view="followupsView"><strong class="nav-icon">🎯</strong>Follow-ups</button>
+    <button class="tab" data-view="intelligenceView"><strong class="nav-icon nav-emerald">♦</strong>Intel</button>
+    <button class="tab" data-view="settingsView"><strong class="nav-icon">⚙️</strong>Settings</button>
   </div>
 </nav>
 
