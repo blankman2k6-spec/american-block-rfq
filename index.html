@@ -524,7 +524,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.12 Sync Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.13 Backup Protection</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -3052,12 +3052,12 @@ $("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>s
 ["rfqStatusFilter","rfqGroup","rfqSort","followupFilter","productPeriod","productRankBy"].forEach(id=>$(id)&&($(id).onchange=renderAll));
 
 function exportBackup(){
-  const data={version:3,exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,settings,cloud};
+  const data={version:4,exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,settings,cloud};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
   a.href=URL.createObjectURL(blob);a.download=`american-block-sales-os-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)
 }
 function importBackup(){ $("importFile").click() }
-$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];communications=data.communications||[];activities=data.activities||[];settings=data.settings||settings;cloud=data.cloud||cloud}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
+$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];communications=data.communications||[];if(Object.prototype.hasOwnProperty.call(data,"activities")){activities=Array.isArray(data.activities)?data.activities:activities}settings=data.settings||settings;cloud=data.cloud||cloud}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
 ["exportBackup","settingsExport"].forEach(id=>$(id).onclick=exportBackup);
 ["importBackup","settingsImport"].forEach(id=>$(id).onclick=importBackup);
 
