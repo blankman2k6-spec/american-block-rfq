@@ -714,6 +714,36 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 
 
 
+
+/* v5.0.0 Sales AI */
+.ai-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px}
+.ai-chat{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding:4px 1px 8px}
+.ai-msg{border:1px solid var(--line);border-radius:15px;padding:12px 13px;white-space:pre-wrap;line-height:1.45}
+.ai-msg.user{margin-left:13%;background:var(--panel2)}
+.ai-msg.assistant{margin-right:7%;background:var(--panel)}
+.ai-msg .ai-role{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900;margin-bottom:5px}
+.ai-composer{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end}
+.ai-composer textarea{min-height:74px;resize:vertical}
+.ai-suggestions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.ai-suggestions button{font-size:11px}
+.ai-action-card{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px;margin-top:9px}
+.ai-action-card .ai-action-title{font-weight:900}
+.ai-action-json{font-size:11px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin-top:5px}
+.ai-action-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.ai-approved{opacity:.72;border-style:dashed}
+.ai-status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;background:#f59e0b}
+.ai-status-dot.ok{background:#16a34a}
+.ai-account-btn{white-space:nowrap}
+.ai-brief-list{display:grid;gap:8px}
+.ai-brief-item{padding:10px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
+.ai-data-note{font-size:11px;color:var(--muted);line-height:1.45}
+@media(max-width:700px){
+  .ai-composer{grid-template-columns:1fr}
+  .ai-composer button{width:100%}
+  .ai-msg.user{margin-left:5%}
+  .ai-msg.assistant{margin-right:2%}
+}
+
 /* v4.7.0 Annual Goal + Collapsible Orders + Backorder Product Exposure */
 .annual-goal-card{margin-top:15px}
 .annual-goal-track{height:20px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;overflow:hidden;position:relative}
@@ -816,7 +846,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.7.0 Annual Goals + Order Folders</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.0.0 Sales AI</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -936,6 +966,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <section id="customerAccountView" class="view">
     <div class="section-head">
       <button id="backFromAccount" class="secondary">← Accounts</button>
+      <button id="aiAnalyzeAccount" class="secondary ai-account-btn">✦ Analyze Account</button>
       <button id="editAccountFromDetail" class="secondary">Edit Account</button>
     </div>
     <div class="card">
@@ -1385,7 +1416,60 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     <div class="card"><h2>Recent Intelligence</h2><div id="intelRecordList"></div></div>
   </section>
 
-  <section id="settingsView" class="view">
+  
+  <section id="aiView" class="view">
+    <div class="section-head">
+      <div>
+        <div class="kicker">Sales AI</div>
+        <h2 style="margin:4px 0 0">AI Sales Assistant</h2>
+        <div class="mini">Analyze your CRM, draft communications, and propose CRM changes for your approval.</div>
+      </div>
+      <span id="aiConnectionBadge" class="status yellow"><span class="ai-status-dot"></span>SETUP</span>
+    </div>
+
+    <div class="ai-hero">
+      <div class="section-head" style="margin:0 0 8px">
+        <div><strong>Ask about your territory</strong><div class="mini">The AI receives a limited CRM snapshot relevant to your question.</div></div>
+        <button id="aiNewChat" class="secondary" type="button">New Chat</button>
+      </div>
+      <div class="ai-suggestions">
+        <button class="secondary" data-ai-prompt="What accounts should I focus on this week and why?">This Week's Priorities</button>
+        <button class="secondary" data-ai-prompt="Which customers are declining, dormant, or underpenetrated?">Account Risks</button>
+        <button class="secondary" data-ai-prompt="What are my five biggest open opportunities and the next action for each?">Top Opportunities</button>
+        <button class="secondary" data-ai-prompt="Give me a management-ready territory summary with measurable wins, risks, and next actions.">Management Brief</button>
+        <button class="secondary" data-ai-prompt="What backorders are putting the most revenue at risk?">Backorder Risk</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="aiChat" class="ai-chat">
+        <div class="ai-msg assistant"><span class="ai-role">Sales AI</span>Ask me about customers, orders, RFQs, opportunities, product mix, backorders, or follow-ups. I can also propose changes, but nothing is written to your CRM until you approve it.</div>
+      </div>
+      <div class="ai-composer">
+        <textarea id="aiQuestion" placeholder="Example: Analyze Gore and tell me the best next three sales moves."></textarea>
+        <button id="aiSend" class="primary" type="button">Ask AI</button>
+      </div>
+      <div id="aiRequestStatus" class="mini" style="margin-top:7px"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin:0 0 8px">
+        <div><h2 style="margin:0">Approval Queue</h2><div class="mini">AI-proposed CRM changes wait here until you approve or reject them.</div></div>
+        <span id="aiQueueBadge" class="status blue">0 PENDING</span>
+      </div>
+      <div id="aiApprovalQueue"><div class="empty">No pending AI actions.</div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin:0 0 8px">
+        <div><h2 style="margin:0">AI Morning Brief</h2><div class="mini">A quick locally calculated briefing; use “Deep Analyze” for AI reasoning.</div></div>
+        <button id="aiDeepBrief" class="secondary" type="button">Deep Analyze</button>
+      </div>
+      <div id="aiMorningBrief" class="ai-brief-list"></div>
+    </div>
+  </section>
+
+<section id="settingsView" class="view">
     <div class="kicker">System</div><h2 style="margin-top:4px">Settings & Data</h2>
     <div class="card">
       <div class="kicker">Appearance</div>
@@ -1417,6 +1501,38 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
       <div id="layoutStatus" class="mini" style="margin-top:10px"></div>
     </div>
 
+
+    <div class="card">
+      <div class="kicker">Sales AI</div>
+      <div class="section-head" style="margin:4px 0 8px">
+        <div><h2 style="margin:0">AI Integration</h2><div class="mini">Your OpenAI secret stays on the server. Never paste an API key into this app.</div></div>
+        <span id="aiSettingsStatus" class="status yellow">NOT TESTED</span>
+      </div>
+      <label class="verify-check"><input id="aiEnabled" type="checkbox"> Enable Sales AI</label>
+      <label style="margin-top:10px">Secure AI Endpoint</label>
+      <input id="aiEndpoint" placeholder="https://YOUR-PROJECT.supabase.co/functions/v1/sales-ai">
+      <div class="row">
+        <div><label>AI Context Depth</label>
+          <select id="aiContextDepth">
+            <option value="focused">Focused — smallest relevant snapshot</option>
+            <option value="standard">Standard — recommended</option>
+            <option value="full">Full CRM — largest context</option>
+          </select>
+        </div>
+        <div><label>AI Write Policy</label>
+          <select id="aiWritePolicy">
+            <option value="approval">Require approval for every write</option>
+            <option value="readonly">Read / draft only</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="saveAiSettings" class="primary" type="button">Save AI Settings</button>
+        <button id="testAiConnection" class="secondary" type="button">Test Connection</button>
+      </div>
+      <div class="ai-data-note" style="margin-top:9px">The browser sends CRM context to your secure server endpoint. The included Supabase Edge Function then calls OpenAI. Proposed CRM changes return to the Approval Queue and are not applied automatically.</div>
+    </div>
+
     <div class="card">
       <div class="kicker">Sales Year</div>
       <div class="section-head" style="margin:4px 0 8px">
@@ -1439,7 +1555,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
 
     <div class="card">
-      <h2>Version 4.7.0 — Annual Goals + Order Folders</h2>
+      <h2>Version 5.0.0 — Sales AI</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1800,6 +1916,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     <button class="tab" data-view="communicationsView"><strong class="nav-icon">✉️</strong>Comms</button>
     <button class="tab" data-view="followupsView"><strong class="nav-icon">🎯</strong>Follow-ups</button>
     <button class="tab" data-view="intelligenceView"><strong class="nav-icon nav-emerald">♦</strong>Intel</button>
+    <button class="tab" data-view="aiView"><strong class="nav-icon">✦</strong>AI</button>
     <button class="tab" data-view="settingsView"><strong class="nav-icon">⚙️</strong>Settings</button>
   </div>
 </nav>
@@ -1860,6 +1977,18 @@ function ensureYearSettings(){
   }
 }
 ensureYearSettings();
+
+function ensureAiSettings(){
+  settings.ai=settings.ai&&typeof settings.ai==="object"?settings.ai:{};
+  if(typeof settings.ai.enabled!=="boolean")settings.ai.enabled=false;
+  if(!settings.ai.endpoint)settings.ai.endpoint=(cloud?.url||BUILTIN_CLOUD.url||"").replace(/\/$/,"")+"/functions/v1/sales-ai";
+  if(!["focused","standard","full"].includes(settings.ai.contextDepth))settings.ai.contextDepth="standard";
+  if(!["approval","readonly"].includes(settings.ai.writePolicy))settings.ai.writePolicy="approval";
+}
+ensureAiSettings();
+let aiPendingActions=JSON.parse(localStorage.getItem("abSalesOS_aiPending_v1")||"[]");
+let aiChatHistory=[];
+
 let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
@@ -3613,9 +3742,157 @@ function openMeetingText(){
   window.location.href=`sms:${phone}?&body=${encodeURIComponent(body)}`;
 }
 function refreshLinkedOpportunityValues(){rfqs.forEach(syncOpportunityActivityFromRfq)}
+
+function aiSaveQueue(){localStorage.setItem("abSalesOS_aiPending_v1",JSON.stringify(aiPendingActions))}
+function aiCustomerSummary(c){
+  const cid=c.id,acctOrders=orders.filter(o=>o.customerId===cid),acctRfqs=rfqs.filter(r=>r.customerId===cid),acctActivities=activities.filter(a=>a.customerId===cid);
+  return {
+    id:cid,company:c.company,city:c.city||"",accountType:c.accountType||"",marketRegion:c.marketRegion||"",
+    notes:c.notes||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",
+    contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,primary:!!x.primary})),
+    orderCount:acctOrders.length,totalSales:acctOrders.reduce((s,o)=>s+boRecognizedValue(o),0),
+    lastOrderDate:acctOrders.map(o=>o.orderDate).filter(Boolean).sort().pop()||"",
+    openRfqs:acctRfqs.filter(isOpen).map(r=>({id:r.id,quoteNo:r.quoteNo,status:r.status,total:total(r),followup:r.followup,nextAction:r.nextAction,items:r.items||[]})),
+    recentActivities:acctActivities.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,12).map(a=>({id:a.id,date:a.date,type:a.type,comments:a.comments,opportunityTitle:a.opportunityTitle,opportunityValue:a.opportunityValue,opportunityStage:a.opportunityStage}))
+  };
+}
+function aiProductSnapshot(){
+  const map=new Map();
+  unifiedOrders().forEach(o=>(o.items||[]).forEach(i=>{
+    const k=normalizeProductKey(i.part,i.product);if(!map.has(k))map.set(k,{part:i.part||"",product:i.product||"",qty:0,revenue:0,customers:new Set()});
+    const x=map.get(k);x.qty+=Number(i.qty)||0;x.revenue+=(Number(i.qty)||0)*(Number(i.price)||0);x.customers.add(orderCustomerName(o));
+  }));
+  return [...map.values()].sort((a,b)=>b.revenue-a.revenue).slice(0,60).map(x=>({part:x.part,product:x.product,qty:x.qty,revenue:x.revenue,customers:[...x.customers].slice(0,12)}));
+}
+function aiBuildContext(customerId=""){
+  ensureAiSettings();
+  const depth=settings.ai.contextDepth||"standard";
+  const activeYear=Number(settings.activeYear)||new Date().getFullYear();
+  const base={
+    generatedAt:new Date().toISOString(),activeYear,annualGoal:Number(settings.yearGoals?.[activeYear])||0,
+    annualCreditedSales:annualClosedSales(activeYear),
+    monthlyGoal:Number(settings.goal)||0,
+    backorders:boBackorderRows().filter(x=>x.remainingQty>0).slice(0,80),
+    openRfqs:rfqs.filter(isOpen).map(r=>({id:r.id,customerId:r.customerId,company:customerName(r),quoteNo:r.quoteNo,status:r.status,total:total(r),followup:r.followup,nextAction:r.nextAction,feedback:r.feedback,items:r.items||[]})),
+    recentActivities:activities.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,depth==="full"?120:50).map(a=>({id:a.id,date:a.date,type:a.type,customerId:a.customerId,company:customerById(a.customerId)?.company||"",contactId:a.contactId,comments:a.comments,opportunityRfqId:a.opportunityRfqId,opportunityTitle:a.opportunityTitle,opportunityValue:a.opportunityValue,opportunityStage:a.opportunityStage,opportunityDetails:a.opportunityDetails}))
+  };
+  if(customerId){base.focusCustomer=aiCustomerSummary(customerById(customerId)||{});}
+  if(depth!=="focused"){
+    base.customers=customers.map(c=>aiCustomerSummary(c));
+    base.topProducts=aiProductSnapshot();
+  }else{
+    base.customers=customers.map(c=>({id:c.id,company:c.company,city:c.city||"",marketRegion:c.marketRegion||""}));
+  }
+  if(depth==="full")base.orders=orders.map(o=>({id:o.id,customerId:o.customerId,company:o.company,salesOrder:o.salesOrder,poNumber:o.poNumber,orderDate:o.orderDate,total:o.total,tax:o.tax||0,shipping:o.shipping||0,items:o.items||[],backorder:o.backorder||null}));
+  return base;
+}
+function aiAuthHeaders(){
+  const h={"Content-Type":"application/json"};
+  if(cloud?.session?.access_token)h["Authorization"]="Bearer "+cloud.session.access_token;
+  return h;
+}
+async function aiAsk(question,{customerId="",mode="chat"}={}){
+  ensureAiSettings();
+  if(!settings.ai.enabled)throw new Error("Sales AI is disabled. Enable it in Settings → AI Integration.");
+  const endpoint=String(settings.ai.endpoint||"").trim();
+  if(!/^https:\/\//i.test(endpoint))throw new Error("Enter a secure HTTPS AI endpoint in Settings.");
+  const payload={question,mode,customerId,writePolicy:settings.ai.writePolicy,context:aiBuildContext(customerId),conversation:aiChatHistory.slice(-8)};
+  const res=await fetch(endpoint,{method:"POST",headers:aiAuthHeaders(),body:JSON.stringify(payload)});
+  const raw=await res.text();let body={};try{body=JSON.parse(raw)}catch{body={error:raw||`HTTP ${res.status}`}}
+  if(!res.ok)throw new Error(body.error||body.message||`AI endpoint returned ${res.status}`);
+  const answer=String(body.answer||body.output||"").trim();
+  const actions=Array.isArray(body.proposedActions)?body.proposedActions:[];
+  if(answer)aiChatHistory.push({role:"assistant",content:answer});
+  if(settings.ai.writePolicy==="approval"&&actions.length){
+    actions.forEach(a=>aiPendingActions.push({id:"ai_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),createdAt:new Date().toISOString(),status:"pending",...a}));
+    aiSaveQueue();
+  }
+  renderAi();
+  return {answer,actions};
+}
+function aiAppendMessage(role,content){
+  const holder=$("aiChat");if(!holder)return;
+  const d=document.createElement("div");d.className="ai-msg "+(role==="user"?"user":"assistant");
+  d.innerHTML=`<span class="ai-role">${role==="user"?"You":"Sales AI"}</span>${esc(content).replace(/\n/g,"<br>")}`;
+  holder.appendChild(d);holder.scrollTop=holder.scrollHeight;
+}
+function aiActionLabel(a){
+  const names={create_activity:"Create Activity",update_customer_notes:"Update Customer Notes",create_rfq:"Create RFQ",update_rfq:"Update RFQ",set_followup:"Set RFQ Follow-up"};
+  return names[a.type]||a.type||"CRM Change";
+}
+function aiResolveCustomerId(a){
+  if(a.customerId&&customerById(a.customerId))return a.customerId;
+  const name=String(a.company||"").trim().toLowerCase();
+  return customers.find(c=>String(c.company||"").trim().toLowerCase()===name)?.id||"";
+}
+function aiApplyAction(id){
+  const a=aiPendingActions.find(x=>x.id===id);if(!a||a.status!=="pending")return;
+  try{
+    const p=a.payload||{},cid=aiResolveCustomerId({...a,...p}),now=new Date().toISOString();
+    if(a.type==="create_activity"){
+      if(!cid)throw new Error("Customer could not be resolved.");
+      activities.push({id:uid(),date:p.date||new Date().toISOString().slice(0,10),type:p.activityType||p.type||"Call",customerId:cid,contactId:p.contactId||null,comments:String(p.comments||p.note||"AI-created activity"),opportunityRfqId:p.opportunityRfqId||null,opportunityTitle:p.opportunityTitle||"",opportunityValue:Number(p.opportunityValue)||0,opportunityStage:p.opportunityStage||"",opportunityDetails:p.opportunityDetails||"",createdAt:now,updatedAt:now,source:"Sales AI — user approved"});
+    }else if(a.type==="update_customer_notes"){
+      const c=customerById(cid);if(!c)throw new Error("Customer could not be resolved.");
+      const note=String(p.note||p.notes||"").trim();if(!note)throw new Error("No note supplied.");
+      c.notes=[c.notes,note].filter(Boolean).join("\n\n");c.updatedAt=now;
+    }else if(a.type==="create_rfq"){
+      if(!cid)throw new Error("Customer could not be resolved.");
+      const items=(p.items||[]).map(i=>({part:i.part||"",product:i.product||"",qty:Number(i.qty)||0,price:Number(i.price)||0}));
+      rfqs.unshift({id:uid(),customerId:cid,company:customerById(cid)?.company||p.company||"",contactId:p.contactId||null,quoteNo:p.quoteNo||p.title||"AI Draft",status:p.status||"Waiting on Customer",followup:p.followup||"",nextAction:p.nextAction||"",feedback:p.feedback||"",shipping:Number(p.shipping)||0,tax:Number(p.tax)||0,items,createdAt:now,updatedAt:now,source:"Sales AI — user approved"});
+    }else if(a.type==="update_rfq"||a.type==="set_followup"){
+      const rid=p.rfqId||a.rfqId,r=rfqs.find(x=>x.id===rid);if(!r)throw new Error("RFQ could not be resolved.");
+      if(a.type==="set_followup"){r.followup=p.followup||r.followup;r.nextAction=p.nextAction||r.nextAction;}
+      else{
+        ["status","followup","nextAction","feedback","quoteNo"].forEach(k=>{if(p[k]!==undefined)r[k]=p[k]});
+        if(Array.isArray(p.items))r.items=p.items.map(i=>({part:i.part||"",product:i.product||"",qty:Number(i.qty)||0,price:Number(i.price)||0}));
+      }
+      r.updatedAt=now;
+    }else throw new Error("Unsupported AI action.");
+    a.status="approved";a.appliedAt=now;save();aiSaveQueue();renderAll();
+  }catch(e){alert("Could not apply AI action: "+e.message)}
+}
+function aiRejectAction(id){const a=aiPendingActions.find(x=>x.id===id);if(a){a.status="rejected";a.reviewedAt=new Date().toISOString();aiSaveQueue();renderAi()}}
+function renderAiQueue(){
+  if(!$("aiApprovalQueue"))return;
+  const pending=aiPendingActions.filter(a=>a.status==="pending");
+  $("aiQueueBadge").textContent=`${pending.length} PENDING`;
+  $("aiApprovalQueue").innerHTML=pending.length?pending.map(a=>`<div class="ai-action-card">
+    <div class="ai-action-title">${esc(aiActionLabel(a))}</div>
+    <div class="mini">${esc(a.reason||a.summary||"AI proposed CRM change")}</div>
+    <div class="ai-action-json">${esc(JSON.stringify(a.payload||{},null,2))}</div>
+    <div class="ai-action-buttons"><button class="primary" data-ai-approve="${a.id}">Approve & Apply</button><button class="secondary" data-ai-reject="${a.id}">Reject</button></div>
+  </div>`).join(""):"<div class='empty'>No pending AI actions.</div>";
+  document.querySelectorAll("[data-ai-approve]").forEach(b=>b.onclick=()=>aiApplyAction(b.dataset.aiApprove));
+  document.querySelectorAll("[data-ai-reject]").forEach(b=>b.onclick=()=>aiRejectAction(b.dataset.aiReject));
+}
+function renderAiMorningBrief(){
+  if(!$("aiMorningBrief"))return;
+  const today=today0(),soon=new Date(today);soon.setDate(soon.getDate()+7);
+  const due=rfqs.filter(isOpen).filter(r=>{if(!r.followup)return false;const d=new Date(r.followup+"T00:00:00");return d<=soon}).sort((a,b)=>String(a.followup).localeCompare(String(b.followup))).slice(0,5);
+  const bos=boBackorderRows().filter(x=>x.remainingQty>0).sort((a,b)=>b.openValue-a.openValue).slice(0,3);
+  const stale=customers.map(c=>aiCustomerSummary(c)).filter(x=>x.totalSales>0).sort((a,b)=>String(a.lastOrderDate||"").localeCompare(String(b.lastOrderDate||""))).slice(0,3);
+  const cards=[];
+  if(due.length)cards.push(`<div class="ai-brief-item"><strong>${due.length} RFQ follow-up${due.length===1?"":"s"} due within 7 days</strong><div class="mini">${due.map(r=>`${esc(customerName(r))} — ${esc(r.quoteNo||"RFQ")} (${esc(formatDate(r.followup))})`).join("<br>")}</div></div>`);
+  if(bos.length)cards.push(`<div class="ai-brief-item"><strong>Largest backorder exposure</strong><div class="mini">${bos.map(b=>`${esc(b.customer)} — ${esc(b.product||b.part)}: ${money.format(b.openValue)}`).join("<br>")}</div></div>`);
+  if(stale.length)cards.push(`<div class="ai-brief-item"><strong>Older purchasing accounts to review</strong><div class="mini">${stale.map(x=>`${esc(x.company)} — last order ${esc(x.lastOrderDate||"unknown")}`).join("<br>")}</div></div>`);
+  $("aiMorningBrief").innerHTML=cards.join("")||"<div class='empty'>No urgent items found in the local CRM snapshot.</div>";
+}
+function renderAi(){
+  ensureAiSettings();
+  const ok=settings.ai.enabled&&/^https:\/\//i.test(settings.ai.endpoint||"");
+  if($("aiConnectionBadge")){$("aiConnectionBadge").innerHTML=`<span class="ai-status-dot ${ok?"ok":""}"></span>${ok?"READY":"SETUP"}`;$("aiConnectionBadge").className="status "+(ok?"green":"yellow")}
+  if($("aiSettingsStatus")){$("aiSettingsStatus").textContent=settings.ai.enabled?"ENABLED":"DISABLED";$("aiSettingsStatus").className="status "+(settings.ai.enabled?"green":"yellow")}
+  if($("aiEnabled"))$("aiEnabled").checked=!!settings.ai.enabled;
+  if($("aiEndpoint"))$("aiEndpoint").value=settings.ai.endpoint||"";
+  if($("aiContextDepth"))$("aiContextDepth").value=settings.ai.contextDepth||"standard";
+  if($("aiWritePolicy"))$("aiWritePolicy").value=settings.ai.writePolicy||"approval";
+  renderAiQueue();renderAiMorningBrief();
+}
+
 function renderAll(){ensureYearSettings();refreshLinkedOpportunityValues();
   renderBackorders();
-renderIntelligence();renderDashboard();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
+renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
 let editingOrderId=null;
@@ -5282,6 +5559,30 @@ document.addEventListener("click",e=>{
   e.preventDefault();e.stopPropagation();
   convertOpportunityToRfq(b.dataset.opportunityConvert);
 });
+
+
+if($("aiSend"))$("aiSend").onclick=async()=>{
+  const q=$("aiQuestion").value.trim();if(!q)return;
+  aiChatHistory.push({role:"user",content:q});aiAppendMessage("user",q);$("aiQuestion").value="";$("aiSend").disabled=true;$("aiRequestStatus").textContent="Analyzing CRM…";
+  try{const r=await aiAsk(q);if(r.answer)aiAppendMessage("assistant",r.answer);$("aiRequestStatus").textContent=r.actions?.length?`${r.actions.length} proposed change${r.actions.length===1?"":"s"} added to Approval Queue.`:"Done."}
+  catch(e){aiAppendMessage("assistant","AI request failed: "+e.message);$("aiRequestStatus").textContent=e.message}
+  finally{$("aiSend").disabled=false}
+};
+if($("aiQuestion"))$("aiQuestion").addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")$("aiSend")?.click()});
+document.querySelectorAll("[data-ai-prompt]").forEach(b=>b.onclick=()=>{$("aiQuestion").value=b.dataset.aiPrompt||"";$("aiSend")?.click()});
+if($("aiNewChat"))$("aiNewChat").onclick=()=>{aiChatHistory=[];$("aiChat").innerHTML='<div class="ai-msg assistant"><span class="ai-role">Sales AI</span>New conversation started. What would you like to analyze?</div>';$("aiRequestStatus").textContent=""};
+if($("aiDeepBrief"))$("aiDeepBrief").onclick=()=>{showView("aiView",true);$("aiQuestion").value="Create my morning sales brief. Prioritize overdue follow-ups, high-value open RFQs, backorder risk, neglected revenue accounts, and the three most important actions for today.";$("aiSend")?.click()};
+if($("aiAnalyzeAccount"))$("aiAnalyzeAccount").onclick=async()=>{
+  if(!activeCustomerId)return;const c=customerById(activeCustomerId);showView("aiView",true);
+  const q=`Analyze ${c?.company||"this account"}. Summarize purchase history, product mix, open RFQs, recent activity, risks, product expansion opportunities, and give me the best three next actions. Propose CRM actions only when they are useful.`;
+  $("aiQuestion").value=q;$("aiSend")?.click();
+};
+if($("saveAiSettings"))$("saveAiSettings").onclick=()=>{settings.ai={enabled:!!$("aiEnabled").checked,endpoint:$("aiEndpoint").value.trim(),contextDepth:$("aiContextDepth").value,writePolicy:$("aiWritePolicy").value};save();renderAi();alert("AI settings saved.")};
+if($("testAiConnection"))$("testAiConnection").onclick=async()=>{
+  settings.ai={enabled:!!$("aiEnabled").checked,endpoint:$("aiEndpoint").value.trim(),contextDepth:$("aiContextDepth").value,writePolicy:$("aiWritePolicy").value};save();$("aiSettingsStatus").textContent="TESTING…";
+  try{const res=await fetch(settings.ai.endpoint,{method:"POST",headers:aiAuthHeaders(),body:JSON.stringify({mode:"health",question:"health",context:{}})});if(!res.ok)throw new Error(`HTTP ${res.status}`);$("aiSettingsStatus").textContent="CONNECTED";$("aiSettingsStatus").className="status green"}
+  catch(e){$("aiSettingsStatus").textContent="FAILED";$("aiSettingsStatus").className="status red";alert("AI connection failed: "+e.message)}
+};
 
 if($("globalLogActivity"))$("globalLogActivity").onclick=()=>openNewActivity(currentViewId==="customerAccountView"?(activeCustomerId||""):"");
 if($("globalExportPdf"))$("globalExportPdf").onclick=exportCurrentViewPDF;

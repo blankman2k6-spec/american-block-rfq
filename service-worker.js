@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-7-0-annual-goals-order-folders";
+const CACHE="ab-sales-os-v5-0-0-sales-ai";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{
