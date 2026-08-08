@@ -394,6 +394,109 @@
       .app{padding-top:calc(18px + env(safe-area-inset-top))}
     }
 
+
+    /* v4.4.2 iPhone layout cleanup */
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .app{
+      padding-top: calc(18px + var(--safe-top)) !important;
+      padding-bottom: calc(122px + var(--safe-bottom)) !important;
+    }
+
+    .topbar{
+      top: var(--safe-top) !important;
+      min-height: 92px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .topbar > div:first-child{
+      min-width:0;
+      flex:1 1 auto;
+      padding-top:2px;
+    }
+
+    .topbar h1,
+    .topbar .headline{
+      line-height:1.05;
+      margin-bottom:6px;
+    }
+
+    .topbar .primary{
+      flex:0 0 auto;
+      white-space:nowrap;
+      margin-top:2px;
+    }
+
+    .tabs{
+      padding-bottom: calc(8px + var(--safe-bottom));
+      min-height: calc(76px + var(--safe-bottom));
+    }
+
+    .global-quick-actions{
+      right:12px !important;
+      bottom: calc(88px + var(--safe-bottom)) !important;
+      gap:7px !important;
+    }
+
+    .global-quick-actions button{
+      min-width:0 !important;
+      width:auto;
+      padding:10px 13px !important;
+      font-size:12px !important;
+      border-radius:10px !important;
+    }
+
+    #globalExportPdf{
+      padding-left:16px !important;
+      padding-right:16px !important;
+    }
+
+    body[data-skin="classic-office"] .topbar{
+      margin-top:0;
+    }
+
+    body[data-skin="classic-office"] .global-quick-actions{
+      filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));
+    }
+
+    @media(max-width:560px){
+      .topbar{
+        min-height:96px;
+        padding:10px 12px 12px !important;
+      }
+
+      .topbar h1,
+      .topbar .headline{
+        font-size:27px !important;
+      }
+
+      .topbar .muted{
+        font-size:13px;
+        line-height:1.25;
+      }
+
+      .topbar .primary{
+        min-height:48px;
+        padding:10px 12px;
+        font-size:14px;
+      }
+
+      .global-quick-actions{
+        right:10px !important;
+        bottom: calc(84px + var(--safe-bottom)) !important;
+      }
+
+      .tabs .tab{
+        min-width:74px;
+      }
+    }
+
     @media(max-width:560px){.auto-log-grid{grid-template-columns:1fr}}
 
     @media(max-width:560px){.verify-grid{grid-template-columns:repeat(3,1fr)}.source-pdf-frame{height:350px}}
@@ -414,7 +517,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.1 UI Contrast Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.4.2 Mobile Layout Fix</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -823,7 +926,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.4.1 — UI Contrast Fix</h2>
+      <h2>Version 4.4.2 — Mobile Layout Fix</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
