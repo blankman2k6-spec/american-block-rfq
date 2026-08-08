@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v4-5-16-responsive-ui";
+const CACHE="ab-sales-os-v4-5-17-boss-excel-export";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
 
 self.addEventListener("install",event=>{

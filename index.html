@@ -655,7 +655,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.16 Responsive UI</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.17 Boss Excel Export</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1084,7 +1084,7 @@
     </div>
 
     <div class="card">
-      <h2>Version 4.5.16 — Responsive UI</h2>
+      <h2>Version 4.5.17 — Boss Excel Export</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -2491,15 +2491,40 @@ function excelMonthTab(dateStr){
   const d=new Date(dateStr+"T12:00:00");
   return d.toLocaleDateString("en-US",{month:"short",year:"2-digit"}).replace(" "," ");
 }
+function activityWeekStart(dateStr){
+  const d=new Date(dateStr+"T12:00:00");
+  const day=d.getDay(); // Sunday=0
+  const diff=(day===0?-6:1-day); // Monday-based work week
+  d.setDate(d.getDate()+diff);
+  return d.toISOString().slice(0,10);
+}
+function bossLogRowData(a){
+  const c=activityCustomer(a)||{},ct=activityContact(a)||{};
+  const contactInfo=[ct.email,ct.phone].filter(Boolean).join(" | ");
+  const dateDisplay=new Date(a.date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"2-digit"});
+  return {
+    date:dateDisplay,
+    customer:c.company||"",
+    city:c.city||"",
+    address:c.address||"",
+    zip:c.zip||"",
+    accountType:c.accountType||"",
+    contact:ct.name||"",
+    contactInfo,
+    type:a.type||"",
+    comments:a.comments||""
+  };
+}
 async function exportCustomerLogWorkbook(){
   if(typeof ExcelJS==="undefined"){alert("Excel export library is still loading. Make sure you have an internet connection, wait a moment, and try again.");return}
-  if(!activities.length){alert("There are no customer-log activities to export yet.");return}
+  const reportable=activities.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
+  if(!reportable.length){alert("There are no customer-log activities to export yet.");return}
   try{
     const wb=new ExcelJS.Workbook();
     wb.creator="American Block Sales OS";
     wb.created=new Date();
     const byMonth=new Map();
-    activities.slice().sort((a,b)=>activityDateObj(a)-activityDateObj(b)).forEach(a=>{
+    reportable.slice().sort((a,b)=>activityDateObj(a)-activityDateObj(b)).forEach(a=>{
       const k=activityMonthKey(a);if(!byMonth.has(k))byMonth.set(k,[]);byMonth.get(k).push(a);
     });
 
@@ -2516,49 +2541,66 @@ async function exportCustomerLogWorkbook(){
         {header:"Address",key:"address",width:42},
         {header:"Zip",key:"zip",width:12},
         {header:"End User (EU) or Distributor (D)",key:"accountType",width:30},
-        {header:"CONTACT",key:"contact",width:24},
+        {header:"CONTACT ",key:"contact",width:24},
         {header:"Contact Info",key:"contactInfo",width:36},
-        {header:"Visit / Call / Email",key:"type",width:21},
+        {header:"Visit / Call / Email ",key:"type",width:21},
         {header:"COMMENTS",key:"comments",width:95}
       ];
+
       const hdr=ws.getRow(1);
       hdr.height=21;
       hdr.eachCell(cell=>{
         cell.font={name:"Arial",size:10,bold:true,color:{argb:"FF000000"}};
         cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF00FF00"}};
-        cell.alignment={horizontal:"center",vertical:"middle"};
+        cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};
         cell.border={top:{style:"thin",color:{argb:"FF000000"}},left:{style:"thin",color:{argb:"FF000000"}},bottom:{style:"thin",color:{argb:"FF000000"}},right:{style:"thin",color:{argb:"FF000000"}}};
       });
-      let lastDate="";
-      records.forEach(a=>{
-        if(lastDate && lastDate!==a.date){
-          const blank=ws.addRow([]);
-          blank.height=7;
+
+      // The boss workbook keeps one blank row immediately below the header.
+      const topBlank=ws.addRow([]);topBlank.height=7;
+
+      let lastDate="",lastWeek="";
+      records.forEach((a,index)=>{
+        const week=activityWeekStart(a.date);
+        if(index>0&&a.date!==lastDate){
+          const blankCount=(week!==lastWeek)?2:1;
+          for(let i=0;i<blankCount;i++){const blank=ws.addRow([]);blank.height=7}
         }
-        lastDate=a.date;
-        const c=activityCustomer(a)||{},ct=activityContact(a)||{};
-        const info=ct.email||ct.phone||"";
-        const dateDisplay=new Date(a.date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"2-digit"});
-        const row=ws.addRow({
-          date:dateDisplay,customer:c.company||"",city:c.city||"",address:c.address||"",zip:c.zip||"",
-          accountType:c.accountType||"",contact:ct.name||"",contactInfo:info,type:a.type||"",comments:a.comments||""
-        });
+        lastDate=a.date;lastWeek=week;
+
+        const row=ws.addRow(bossLogRowData(a));
         row.height=22;
         row.eachCell((cell,col)=>{
           cell.font={name:"Arial",size:10,color:{argb:"FF000000"}};
-          cell.alignment={vertical:"middle",horizontal:col===10?"left":"center",wrapText:true};
+          cell.alignment={vertical:col===10?"top":"middle",horizontal:col===10?"left":"center",wrapText:true};
           cell.border={top:{style:"thin",color:{argb:"FFD1D5DB"}},left:{style:"thin",color:{argb:"FFD1D5DB"}},bottom:{style:"thin",color:{argb:"FFD1D5DB"}},right:{style:"thin",color:{argb:"FFD1D5DB"}}};
         });
-        row.getCell(10).alignment={vertical:"top",horizontal:"left",wrapText:true};
       });
       ws.autoFilter={from:"A1",to:"J1"};
     });
 
     const buffer=await wb.xlsx.writeBuffer();
     const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const fileName="Cazares Customer Log TT.xlsx";
+
+    // Prefer the native iOS share sheet so the installed CRM stays open underneath.
+    try{
+      if(typeof File!=="undefined"&&navigator.share&&navigator.canShare){
+        const file=new File([blob],fileName,{type:blob.type});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:"Customer Log"});
+          return;
+        }
+      }
+    }catch(shareErr){
+      if(shareErr?.name==="AbortError")return;
+      console.warn("Native share unavailable; using download fallback.",shareErr);
+    }
+
     const url=URL.createObjectURL(blob),a=document.createElement("a");
-    a.href=url;a.download="Cazares Customer Log TT.xlsx";document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    a.href=url;a.download=fileName;a.target="_blank";a.rel="noopener";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
   }catch(err){
     console.error(err);alert("I could not create the Excel workbook. Please try again.");
   }
