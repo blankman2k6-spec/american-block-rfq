@@ -571,7 +571,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.14 Mobile UI Cleanup</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v4.5.15 Activity Recovery</p>
     </div>
     <button id="quickAdd" class="icon-btn">＋ New RFQ</button>
   </header>
@@ -985,6 +985,8 @@
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
         <button id="settingsImport" class="secondary">Import Backup</button>
+        <button id="settingsActivityImport" class="secondary">Import Activities Only</button>
+        <input id="activityImportFile" type="file" class="hidden" accept=".json,application/json">
       </div>
     </div>
     <div class="card">
@@ -3107,6 +3109,25 @@ function importBackup(){ $("importFile").click() }
 $("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];communications=data.communications||[];if(Object.prototype.hasOwnProperty.call(data,"activities")){activities=Array.isArray(data.activities)?data.activities:activities}settings=data.settings||settings;cloud=data.cloud||cloud}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
 ["exportBackup","settingsExport"].forEach(id=>$(id).onclick=exportBackup);
 ["importBackup","settingsImport"].forEach(id=>$(id).onclick=importBackup);
+function importActivitiesOnly(){ $("activityImportFile").click() }
+$("settingsActivityImport").onclick=importActivitiesOnly;
+$("activityImportFile").onchange=async e=>{
+  try{
+    const file=e.target.files?.[0]; if(!file)return;
+    const data=JSON.parse(await file.text());
+    const incoming=Array.isArray(data)?data:(Array.isArray(data.activities)?data.activities:null);
+    if(!incoming)throw new Error("No activities array found");
+    const valid=incoming.filter(a=>a&&typeof a==="object"&&a.id&&a.date&&a.customerId&&a.comments);
+    if(!valid.length)throw new Error("No valid activities found");
+    const existing=new Map(activities.map(a=>[a.id,a]));
+    let added=0,updated=0;
+    valid.forEach(a=>{ if(existing.has(a.id))updated++; else added++; existing.set(a.id,a); });
+    activities=[...existing.values()];
+    save(); renderAll();
+    alert(`Activities imported safely. Added ${added}, updated ${updated}. Existing customers, RFQs, orders, and communications were not changed.`);
+  }catch(err){alert(`Activity import failed: ${err?.message||err}`)}
+  finally{e.target.value=""}
+};
 
 function teamReport(){
   const open=rfqs.filter(isOpen),grand=open.reduce((s,r)=>s+total(r),0),due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today0()).length;
