@@ -715,7 +715,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 
 
 
-/* v5.1.2 Compact Website Intelligence + Auto Opportunities */
+/* v5.1.3 Compact Website Intelligence + Auto Opportunities */
 .ai-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px}
 .ai-chat{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding:4px 1px 8px}
 .ai-msg{border:1px solid var(--line);border-radius:15px;padding:12px 13px;white-space:pre-wrap;line-height:1.45}
@@ -852,7 +852,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     }
 
 
-/* v5.1.2 quick status + account filters */
+/* v5.1.3 quick status + account filters */
 .rfq-status-tap{cursor:pointer;border:1px solid #9fc5f8!important}
 .rfq-status-tap:active{transform:scale(.97)}
 .quick-status-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;padding:18px;z-index:300;backdrop-filter:blur(4px)}
@@ -866,6 +866,30 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 #customerList{padding-bottom:110px}
 @media(min-width:760px){#customerList{padding-bottom:150px}.account-list-row:nth-last-child(-n+2) .account-menu{top:auto;bottom:38px}}
 
+
+/* v5.1.3 Currency inputs + Money Wheel */
+.money-input-shell{position:relative;display:flex;align-items:center;width:100%}
+.money-input-shell input{padding-left:30px!important;padding-right:48px!important;width:100%}
+.money-prefix{position:absolute;left:12px;z-index:2;font-weight:900;color:var(--muted);pointer-events:none}
+.money-wheel-btn{position:absolute!important;right:5px!important;min-width:38px!important;width:38px!important;height:36px!important;min-height:36px!important;padding:0!important;border-radius:10px!important;z-index:3;font-size:18px!important;line-height:1!important}
+.money-wheel-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);display:flex;align-items:flex-end;justify-content:center;padding:0;z-index:420;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.money-wheel-sheet{width:min(540px,100%);background:var(--panel);border:1px solid var(--line);border-radius:24px 24px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -22px 60px rgba(0,0,0,.28)}
+.money-wheel-preview{text-align:center;font-size:34px;font-weight:950;letter-spacing:-.03em;margin:8px 0 12px}
+.money-wheel-wrap{display:flex;align-items:center;justify-content:center;gap:4px;overflow-x:auto;padding:4px 2px 8px}
+.money-wheel-dollar{font-size:28px;font-weight:950;margin-right:2px}
+.money-wheel-digits{display:flex;align-items:center;gap:3px}
+.money-reel{height:150px;width:29px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:54px 0}
+.money-reel::-webkit-scrollbar{display:none}
+.money-digit{height:42px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:22px;font-weight:850;color:var(--muted)}
+.money-digit.selected{color:var(--text);font-size:27px}
+.money-wheel-decimal{font-size:28px;font-weight:900;align-self:center;padding:0 1px}
+.money-wheel-separator{font-size:22px;font-weight:900;align-self:center;color:var(--muted)}
+.money-wheel-actions{display:grid!important;grid-template-columns:1.3fr 1fr}
+@media(min-width:760px){
+  .money-wheel-backdrop{align-items:center;padding:18px}
+  .money-wheel-sheet{border-radius:24px}
+}
+
 </style>
 </head>
 <body>
@@ -873,7 +897,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.2 Quick Status + Account Filters</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.3 Money Wheel</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1981,6 +2005,26 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
       <div class="item-actions"><span>Line Total: <strong data-k="line">$0.00</strong></span><button data-action="remove" class="danger">Remove</button></div>
     </div>
   </template>
+</div>
+
+
+<div id="moneyWheelModal" class="money-wheel-backdrop hidden" role="dialog" aria-modal="true" aria-label="Dollar amount picker">
+  <div class="money-wheel-sheet">
+    <div class="section-head" style="margin:0 0 8px">
+      <div><div class="kicker">Dollar Amount</div><h2 id="moneyWheelTitle" style="margin:3px 0">Set Amount</h2></div>
+      <button id="moneyWheelClose" class="secondary" type="button">✕</button>
+    </div>
+    <div id="moneyWheelPreview" class="money-wheel-preview">$0.00</div>
+    <div class="money-wheel-wrap">
+      <span class="money-wheel-dollar">$</span>
+      <div id="moneyWheelDigits" class="money-wheel-digits"></div>
+    </div>
+    <div class="mini" style="text-align:center;margin-top:6px">Swipe each number wheel up or down, then tap Apply.</div>
+    <div class="toolbar money-wheel-actions" style="margin-top:12px">
+      <button id="moneyWheelApply" class="primary" type="button">Apply Amount</button>
+      <button id="moneyWheelCancel" class="secondary" type="button">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <nav class="tabs">
@@ -4157,6 +4201,86 @@ function renderAi(){
   renderAiQueue();renderAiMorningBrief();
 }
 
+
+let activeMoneyInput=null;
+const MONEY_LABEL_RX=/(price|amount|value|sales|goal|tax|shipping|cost|savings|discount)/i;
+function isCurrencyInput(input){
+  if(!input||input.tagName!=="INPUT"||input.type!=="number"||input.readOnly||input.disabled)return false;
+  if(input.dataset.moneyEnhanced==="yes")return false;
+  const explicitIds=new Set(["monthlyGoal","monthlySales","activityOpportunityValue","annualGoalInput","rfqShipping","rfqTax","ackTotal","ackShipping","ackTax","intelAmount","intelOriginal","intelDiscounted"]);
+  if(explicitIds.has(input.id))return true;
+  if(input.matches('[data-k="price"],[data-a="price"]'))return true;
+  const container=input.closest("div");
+  const label=container?.querySelector(":scope > label")?.textContent||container?.querySelector("label")?.textContent||"";
+  return MONEY_LABEL_RX.test(label)&&!/quantity|qty|year|percent|days|units/i.test(label);
+}
+function enhanceMoneyInputs(root=document){
+  root.querySelectorAll('input[type="number"]').forEach(input=>{
+    if(!isCurrencyInput(input))return;
+    input.dataset.moneyEnhanced="yes";
+    input.inputMode="decimal";
+    const shell=document.createElement("div");shell.className="money-input-shell";
+    input.parentNode.insertBefore(shell,input);shell.appendChild(input);
+    const prefix=document.createElement("span");prefix.className="money-prefix";prefix.textContent="$";shell.insertBefore(prefix,input);
+    const btn=document.createElement("button");btn.type="button";btn.className="secondary money-wheel-btn";btn.setAttribute("aria-label","Open dollar amount wheel");btn.textContent="◉";
+    btn.onclick=e=>{e.preventDefault();e.stopPropagation();openMoneyWheel(input)};
+    shell.appendChild(btn);
+  });
+}
+function moneyWheelDigitsFromValue(value){
+  const cents=Math.max(0,Math.round((Number(value)||0)*100));
+  const raw=String(cents).padStart(10,"0").slice(-10);
+  return raw.split("").map(Number);
+}
+function moneyWheelValue(){
+  const reels=[...document.querySelectorAll("#moneyWheelDigits .money-reel")];
+  const digits=reels.map(r=>Math.max(0,Math.min(9,Math.round(r.scrollTop/42))));
+  const str=digits.join("");
+  return Number(str.slice(0,8)||0)+Number(str.slice(8)||0)/100;
+}
+function updateMoneyWheelPreview(){
+  document.querySelectorAll("#moneyWheelDigits .money-reel").forEach(reel=>{
+    const idx=Math.max(0,Math.min(9,Math.round(reel.scrollTop/42)));
+    reel.querySelectorAll(".money-digit").forEach((d,i)=>d.classList.toggle("selected",i===idx));
+  });
+  if($("moneyWheelPreview"))$("moneyWheelPreview").textContent=money.format(moneyWheelValue());
+}
+function buildMoneyWheel(value){
+  const digits=moneyWheelDigitsFromValue(value),holder=$("moneyWheelDigits");holder.innerHTML="";
+  digits.forEach((digit,index)=>{
+    if(index===8){const dot=document.createElement("span");dot.className="money-wheel-decimal";dot.textContent=".";holder.appendChild(dot)}
+    if(index===2||index===5){const comma=document.createElement("span");comma.className="money-wheel-separator";comma.textContent=",";holder.appendChild(comma)}
+    const reel=document.createElement("div");reel.className="money-reel";reel.dataset.moneyReel=index;
+    for(let n=0;n<10;n++){const d=document.createElement("div");d.className="money-digit";d.textContent=n;d.onclick=()=>{reel.scrollTo({top:n*42,behavior:"smooth"})};reel.appendChild(d)}
+    reel.addEventListener("scroll",()=>{clearTimeout(reel._moneyTimer);reel._moneyTimer=setTimeout(updateMoneyWheelPreview,60)},{passive:true});
+    holder.appendChild(reel);
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const reels=[...holder.querySelectorAll(".money-reel")];
+    reels.forEach((r,i)=>{r.scrollTop=digits[i]*42});
+    updateMoneyWheelPreview();
+  }));
+}
+function openMoneyWheel(input){
+  activeMoneyInput=input;
+  const label=input.closest(".money-input-shell")?.parentElement?.querySelector("label")?.textContent||"Dollar Amount";
+  $("moneyWheelTitle").textContent=label.trim()||"Dollar Amount";
+  $("moneyWheelModal").classList.remove("hidden");
+  buildMoneyWheel(input.value);
+}
+function closeMoneyWheel(){$("moneyWheelModal")?.classList.add("hidden");activeMoneyInput=null}
+function applyMoneyWheel(){
+  if(!activeMoneyInput){closeMoneyWheel();return}
+  const value=moneyWheelValue();
+  activeMoneyInput.value=value.toFixed(2);
+  activeMoneyInput.dispatchEvent(new Event("input",{bubbles:true}));
+  activeMoneyInput.dispatchEvent(new Event("change",{bubbles:true}));
+  closeMoneyWheel();
+}
+const moneyInputObserver=new MutationObserver(muts=>{
+  muts.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)enhanceMoneyInputs(n.matches?.('input[type="number"]')?n.parentElement:n)}));
+});
+
 function renderAll(){ensureYearSettings();refreshLinkedOpportunityValues();
   renderBackorders();
 renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
@@ -5912,6 +6036,14 @@ if($("quickLostCancel"))$("quickLostCancel").onclick=()=>{ $("quickLostPanel").c
 if($("quickLostSave"))$("quickLostSave").onclick=saveQuickLostRfq;
 if($("quickRfqStatusModal"))$("quickRfqStatusModal").onclick=e=>{if(e.target===$("quickRfqStatusModal"))closeQuickRfqStatus()};
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
+
+
+enhanceMoneyInputs(document);
+moneyInputObserver.observe(document.body,{childList:true,subtree:true});
+if($("moneyWheelClose"))$("moneyWheelClose").onclick=closeMoneyWheel;
+if($("moneyWheelCancel"))$("moneyWheelCancel").onclick=closeMoneyWheel;
+if($("moneyWheelApply"))$("moneyWheelApply").onclick=applyMoneyWheel;
+if($("moneyWheelModal"))$("moneyWheelModal").onclick=e=>{if(e.target===$("moneyWheelModal"))closeMoneyWheel()};
 
 renderAll();
 initializeCloudSync();

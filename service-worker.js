@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-1-2-quick-status";
+const CACHE="ab-sales-os-v5-1-3-money-wheel";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
