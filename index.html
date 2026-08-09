@@ -715,7 +715,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 
 
 
-/* v5.1.3 Compact Website Intelligence + Auto Opportunities */
+/* v5.1.4 Compact Website Intelligence + Auto Opportunities */
 .ai-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px}
 .ai-chat{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding:4px 1px 8px}
 .ai-msg{border:1px solid var(--line);border-radius:15px;padding:12px 13px;white-space:pre-wrap;line-height:1.45}
@@ -852,7 +852,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     }
 
 
-/* v5.1.3 quick status + account filters */
+/* v5.1.4 quick status + account filters */
 .rfq-status-tap{cursor:pointer;border:1px solid #9fc5f8!important}
 .rfq-status-tap:active{transform:scale(.97)}
 .quick-status-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;padding:18px;z-index:300;backdrop-filter:blur(4px)}
@@ -867,28 +867,47 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 @media(min-width:760px){#customerList{padding-bottom:150px}.account-list-row:nth-last-child(-n+2) .account-menu{top:auto;bottom:38px}}
 
 
-/* v5.1.3 Currency inputs + Money Wheel */
+
+/* v5.1.4 Currency inputs + iOS-style Money Wheel */
 .money-input-shell{position:relative;display:flex;align-items:center;width:100%}
 .money-input-shell input{padding-left:30px!important;padding-right:48px!important;width:100%}
 .money-prefix{position:absolute;left:12px;z-index:2;font-weight:900;color:var(--muted);pointer-events:none}
 .money-wheel-btn{position:absolute!important;right:5px!important;min-width:38px!important;width:38px!important;height:36px!important;min-height:36px!important;padding:0!important;border-radius:10px!important;z-index:3;font-size:18px!important;line-height:1!important}
 .money-wheel-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);display:flex;align-items:flex-end;justify-content:center;padding:0;z-index:420;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
-.money-wheel-sheet{width:min(540px,100%);background:var(--panel);border:1px solid var(--line);border-radius:24px 24px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -22px 60px rgba(0,0,0,.28)}
+.money-wheel-sheet{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);border-radius:24px 24px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -22px 60px rgba(0,0,0,.28)}
 .money-wheel-preview{text-align:center;font-size:34px;font-weight:950;letter-spacing:-.03em;margin:8px 0 12px}
-.money-wheel-wrap{display:flex;align-items:center;justify-content:center;gap:4px;overflow-x:auto;padding:4px 2px 8px}
-.money-wheel-dollar{font-size:28px;font-weight:950;margin-right:2px}
-.money-wheel-digits{display:flex;align-items:center;gap:3px}
-.money-reel{height:150px;width:29px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:54px 0}
+.money-wheel-wrap{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 2px 12px;overflow:hidden}
+.money-wheel-wrap:before,.money-wheel-wrap:after{content:"";position:absolute;left:0;right:0;height:58px;z-index:5;pointer-events:none}
+.money-wheel-wrap:before{top:0;background:linear-gradient(to bottom,var(--panel) 12%,rgba(255,255,255,0))}
+.money-wheel-wrap:after{bottom:0;background:linear-gradient(to top,var(--panel) 12%,rgba(255,255,255,0))}
+.money-wheel-highlight{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);height:48px;background:rgba(120,120,128,.16);border-radius:11px;z-index:1;pointer-events:none}
+.money-wheel-dollar{font-size:30px;font-weight:950;z-index:3}
+.money-wheel-digits{display:flex;align-items:center;gap:6px;z-index:2}
+.money-column-wrap{display:flex;flex-direction:column;align-items:center;min-width:72px}
+.money-column-label{font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.money-reel{height:196px;width:76px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:74px 0;background:transparent;-webkit-overflow-scrolling:touch}
 .money-reel::-webkit-scrollbar{display:none}
-.money-digit{height:42px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:22px;font-weight:850;color:var(--muted)}
-.money-digit.selected{color:var(--text);font-size:27px}
-.money-wheel-decimal{font-size:28px;font-weight:900;align-self:center;padding:0 1px}
-.money-wheel-separator{font-size:22px;font-weight:900;align-self:center;color:var(--muted)}
+.money-digit{height:48px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:22px;font-weight:700;color:var(--muted);opacity:.44;transition:font-size .08s,opacity .08s,color .08s}
+.money-digit.selected{color:var(--text);font-size:29px;font-weight:850;opacity:1}
+.money-wheel-punct{font-size:30px;font-weight:900;align-self:center;color:var(--text);margin-top:13px;z-index:3}
 .money-wheel-actions{display:grid!important;grid-template-columns:1.3fr 1fr}
-@media(min-width:760px){
-  .money-wheel-backdrop{align-items:center;padding:18px}
-  .money-wheel-sheet{border-radius:24px}
+@media(min-width:760px){.money-wheel-backdrop{align-items:center;padding:18px}.money-wheel-sheet{border-radius:24px}}
+
+/* Classic Office: remove leftover dark pills/cards */
+body[data-skin="classic-office"] .status,
+body[data-skin="classic-office"] .status:not(.green):not(.blue):not(.red):not(.yellow):not(.orange):not(.purple){
+  background:#e8e8e8!important;color:#202020!important;border-color:#969696!important;box-shadow:none!important;
 }
+body[data-skin="classic-office"] .status.green{background:#d7eedb!important;color:#175c2b!important;border-color:#699b73!important}
+body[data-skin="classic-office"] .status.blue{background:#dbe8fa!important;color:#174f9e!important;border-color:#7899c6!important}
+body[data-skin="classic-office"] .status.red{background:#f2d9db!important;color:#8b1f26!important;border-color:#bd7378!important}
+body[data-skin="classic-office"] .status.yellow{background:#f7ebc9!important;color:#76510a!important;border-color:#c0a45b!important}
+body[data-skin="classic-office"] .status.orange{background:#f6e3cf!important;color:#8a4b12!important;border-color:#c7966b!important}
+body[data-skin="classic-office"] .status.purple{background:#e9def6!important;color:#633d8f!important;border-color:#a886c7!important}
+body[data-skin="classic-office"] .customer-health-card{background:linear-gradient(#f7f7f7,#e2e2e2)!important;color:#171717!important;border-color:#9f9f9f!important}
+body[data-skin="classic-office"] .customer-health-card strong,
+body[data-skin="classic-office"] .customer-health-card small,
+body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!important}
 
 </style>
 </head>
@@ -897,7 +916,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.3 Money Wheel</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.4 iOS Money Picker + Auto RFQ</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1725,7 +1744,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
         <div><label>Contact for This RFQ</label><select id="rfqContact"></select></div>
       </div>
       <div class="row">
-        <div><label>RFQ / Quote Number</label><input id="rfqNumber" placeholder="Quote number or reference"></div>
+        <div><label>RFQ / Quote Number <span class="mini">(auto-assigned · editable)</span></label><input id="rfqNumber" placeholder="Auto date/time reference"></div>
         <div><label>Contact Notes</label><input id="rfqContactNote" placeholder="Optional role, location, or note"></div>
       </div>
       <div class="row">
@@ -2016,6 +2035,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
     <div id="moneyWheelPreview" class="money-wheel-preview">$0.00</div>
     <div class="money-wheel-wrap">
+      <div class="money-wheel-highlight"></div>
       <span class="money-wheel-dollar">$</span>
       <div id="moneyWheelDigits" class="money-wheel-digits"></div>
     </div>
@@ -4227,39 +4247,52 @@ function enhanceMoneyInputs(root=document){
     shell.appendChild(btn);
   });
 }
-function moneyWheelDigitsFromValue(value){
+
+function moneyWheelPartsFromValue(value){
   const cents=Math.max(0,Math.round((Number(value)||0)*100));
-  const raw=String(cents).padStart(10,"0").slice(-10);
-  return raw.split("").map(Number);
+  const whole=Math.floor(cents/100);
+  return {
+    millions:Math.floor(whole/1000000)%100,
+    thousands:Math.floor(whole/1000)%1000,
+    dollars:whole%1000,
+    cents:cents%100
+  };
 }
 function moneyWheelValue(){
   const reels=[...document.querySelectorAll("#moneyWheelDigits .money-reel")];
-  const digits=reels.map(r=>Math.max(0,Math.min(9,Math.round(r.scrollTop/42))));
-  const str=digits.join("");
-  return Number(str.slice(0,8)||0)+Number(str.slice(8)||0)/100;
+  const vals={};
+  reels.forEach(r=>vals[r.dataset.part]=Math.max(0,Math.min(Number(r.dataset.max)||0,Math.round(r.scrollTop/48))));
+  return (vals.millions||0)*1000000+(vals.thousands||0)*1000+(vals.dollars||0)+(vals.cents||0)/100;
 }
 function updateMoneyWheelPreview(){
   document.querySelectorAll("#moneyWheelDigits .money-reel").forEach(reel=>{
-    const idx=Math.max(0,Math.min(9,Math.round(reel.scrollTop/42)));
+    const idx=Math.max(0,Math.min(Number(reel.dataset.max)||0,Math.round(reel.scrollTop/48)));
     reel.querySelectorAll(".money-digit").forEach((d,i)=>d.classList.toggle("selected",i===idx));
   });
   if($("moneyWheelPreview"))$("moneyWheelPreview").textContent=money.format(moneyWheelValue());
 }
+function addMoneyWheelColumn(holder,part,label,max,value,pad){
+  const wrap=document.createElement("div");wrap.className="money-column-wrap";
+  const lab=document.createElement("div");lab.className="money-column-label";lab.textContent=label;wrap.appendChild(lab);
+  const reel=document.createElement("div");reel.className="money-reel";reel.dataset.part=part;reel.dataset.max=max;
+  for(let n=0;n<=max;n++){
+    const d=document.createElement("div");d.className="money-digit";d.textContent=String(n).padStart(pad,"0");
+    d.onclick=()=>reel.scrollTo({top:n*48,behavior:"smooth"});reel.appendChild(d)
+  }
+  reel.addEventListener("scroll",()=>{clearTimeout(reel._moneyTimer);reel._moneyTimer=setTimeout(updateMoneyWheelPreview,55)},{passive:true});
+  wrap.appendChild(reel);holder.appendChild(wrap);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{reel.scrollTop=value*48}));
+}
+function moneyPunct(holder,text){
+  const s=document.createElement("span");s.className="money-wheel-punct";s.textContent=text;holder.appendChild(s)
+}
 function buildMoneyWheel(value){
-  const digits=moneyWheelDigitsFromValue(value),holder=$("moneyWheelDigits");holder.innerHTML="";
-  digits.forEach((digit,index)=>{
-    if(index===8){const dot=document.createElement("span");dot.className="money-wheel-decimal";dot.textContent=".";holder.appendChild(dot)}
-    if(index===2||index===5){const comma=document.createElement("span");comma.className="money-wheel-separator";comma.textContent=",";holder.appendChild(comma)}
-    const reel=document.createElement("div");reel.className="money-reel";reel.dataset.moneyReel=index;
-    for(let n=0;n<10;n++){const d=document.createElement("div");d.className="money-digit";d.textContent=n;d.onclick=()=>{reel.scrollTo({top:n*42,behavior:"smooth"})};reel.appendChild(d)}
-    reel.addEventListener("scroll",()=>{clearTimeout(reel._moneyTimer);reel._moneyTimer=setTimeout(updateMoneyWheelPreview,60)},{passive:true});
-    holder.appendChild(reel);
-  });
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const reels=[...holder.querySelectorAll(".money-reel")];
-    reels.forEach((r,i)=>{r.scrollTop=digits[i]*42});
-    updateMoneyWheelPreview();
-  }));
+  const p=moneyWheelPartsFromValue(value),holder=$("moneyWheelDigits");holder.innerHTML="";
+  addMoneyWheelColumn(holder,"millions","Millions",99,p.millions,2);moneyPunct(holder,",");
+  addMoneyWheelColumn(holder,"thousands","Thousands",999,p.thousands,3);moneyPunct(holder,",");
+  addMoneyWheelColumn(holder,"dollars","Dollars",999,p.dollars,3);moneyPunct(holder,".");
+  addMoneyWheelColumn(holder,"cents","Cents",99,p.cents,2);
+  setTimeout(updateMoneyWheelPreview,100);
 }
 function openMoneyWheel(input){
   activeMoneyInput=input;
@@ -4884,6 +4917,14 @@ function linkConvertedOpportunityToRfq(activityId,r){
   a.updatedAt=new Date().toISOString();
 }
 
+
+function autoRfqReference(d=new Date()){
+  const m=d.getMonth()+1,day=d.getDate(),yy=String(d.getFullYear()).slice(-2);
+  let hr=d.getHours(),ampm=hr>=12?"PM":"AM";hr=hr%12||12;
+  const min=String(d.getMinutes()).padStart(2,"0");
+  return `${m}/${day}/${yy}-${hr}-${min} ${ampm}`;
+}
+
 function newRfq(){
   const keepConversion=!!convertingOpportunityActivityId;
   if(!keepConversion)convertingOpportunityActivityId=null;
@@ -4893,6 +4934,7 @@ function newRfq(){
   if(!customers.length){alert("Add a customer first.");return}
   editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";
   ["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");
+  $("rfqNumber").value=autoRfqReference();
   $("rfqShipping").value="0.00";$("rfqTax").value="0.00";
   $("rfqStatus").value="Waiting on Customer";
   if($("rfqLostReason"))$("rfqLostReason").value="";
