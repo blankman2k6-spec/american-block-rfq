@@ -715,7 +715,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 
 
 
-/* v5.1.1 Compact Website Intelligence + Auto Opportunities */
+/* v5.1.2 Compact Website Intelligence + Auto Opportunities */
 .ai-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px}
 .ai-chat{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding:4px 1px 8px}
 .ai-msg{border:1px solid var(--line);border-radius:15px;padding:12px 13px;white-space:pre-wrap;line-height:1.45}
@@ -851,6 +851,21 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
       background:#f1eafe!important;color:#6541a5!important;border-color:#c8b4eb!important;
     }
 
+
+/* v5.1.2 quick status + account filters */
+.rfq-status-tap{cursor:pointer;border:1px solid #9fc5f8!important}
+.rfq-status-tap:active{transform:scale(.97)}
+.quick-status-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;padding:18px;z-index:300;backdrop-filter:blur(4px)}
+.quick-status-dialog{width:min(420px,100%);max-height:82vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 24px 70px rgba(0,0,0,.30)}
+.quick-status-choices{display:grid;gap:8px;margin-top:8px}
+.quick-status-choice{width:100%;text-align:left;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:14px;padding:12px 14px;font-weight:800}
+.quick-status-choice.current{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
+.customer-health-card{width:100%;text-align:left;color:var(--text);cursor:pointer}
+.customer-health-card.selected{outline:3px solid rgba(59,130,246,.22);border-color:var(--accent)!important}
+.account-list-row:last-child .account-menu{top:auto;bottom:38px}
+#customerList{padding-bottom:110px}
+@media(min-width:760px){#customerList{padding-bottom:150px}.account-list-row:nth-last-child(-n+2) .account-menu{top:auto;bottom:38px}}
+
 </style>
 </head>
 <body>
@@ -858,7 +873,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.1 Sales AI</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.2 Quick Status + Account Filters</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -971,13 +986,16 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <section id="customersView" class="view">
     <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2><div class="mini">Tap a company to open the full account.</div></div><button id="addCustomerBtn" class="primary">＋ Customer</button></div>
     <div class="grid metrics customer-health-grid" style="margin:0 0 12px">
-      <div class="metric"><small>Total Accounts</small><strong id="customerTotalCount">0</strong></div>
-      <div class="metric"><small>Active Accounts</small><strong id="customerActiveCount">0</strong></div>
-      <div class="metric"><small>At Risk Accounts</small><strong id="customerAtRiskCount">0</strong></div>
-      <div class="metric"><small>New Accounts</small><strong id="customerNewCount">0</strong></div>
-      <div class="metric"><small>Inactive Accounts</small><strong id="customerInactiveCount">0</strong></div>
+      <button class="metric customer-health-card" type="button" data-health-filter="all"><small>Total Accounts</small><strong id="customerTotalCount">0</strong><div class="sub">Tap to show all</div></button>
+      <button class="metric customer-health-card" type="button" data-health-filter="active"><small>Active Accounts</small><strong id="customerActiveCount">0</strong><div class="sub">Tap to view</div></button>
+      <button class="metric customer-health-card" type="button" data-health-filter="at-risk"><small>At Risk Accounts</small><strong id="customerAtRiskCount">0</strong><div class="sub">Tap to view</div></button>
+      <button class="metric customer-health-card" type="button" data-health-filter="new"><small>New Accounts</small><strong id="customerNewCount">0</strong><div class="sub">Tap to view</div></button>
+      <button class="metric customer-health-card" type="button" data-health-filter="inactive"><small>Inactive Accounts</small><strong id="customerInactiveCount">0</strong><div class="sub">Tap to view</div></button>
     </div>
-    <input id="customerSearch" placeholder="Search customer, contact, city, phone...">
+    <div class="row customer-filter-row" style="margin-bottom:10px">
+      <div><label>Account Status Filter</label><select id="customerHealthFilter"><option value="all">All Accounts</option><option value="active">Active</option><option value="at-risk">At Risk</option><option value="new">New</option><option value="inactive">Inactive</option></select></div>
+      <div><label>Search</label><input id="customerSearch" placeholder="Customer, contact, city, phone..."></div>
+    </div>
     <div id="customerList" class="list" style="margin-top:12px"></div>
   </section>
 
@@ -1441,7 +1459,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
     <div class="card">
       <div class="kicker">Management</div><h2>Reports</h2>
-      <div class="intel-actions"><button class="secondary" data-intel-report="lost">Lost Orders</button><button class="secondary" data-intel-report="product">Product Mix</button><button class="secondary" data-intel-report="inventory">OKC Inventory</button><button class="secondary" data-intel-report="geo">Geography</button><button class="secondary" data-intel-report="feedback">Business Case</button><button class="secondary" data-intel-report="qbr">Customer QBR</button></div>
+      <div class="intel-actions"><button class="secondary" data-intel-report="lost">Lost RFQs</button><button class="secondary" data-intel-report="product">Product Mix</button><button class="secondary" data-intel-report="inventory">OKC Inventory</button><button class="secondary" data-intel-report="geo">Geography</button><button class="secondary" data-intel-report="feedback">Business Case</button><button class="secondary" data-intel-report="qbr">Customer QBR</button></div>
       <div id="intelReportOutput" style="margin-top:14px"></div>
     </div>
     <div class="card"><h2>Recent Intelligence</h2><div id="intelRecordList"></div></div>
@@ -1703,7 +1721,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 
       <div id="rfqLostDetails" class="auto-log-box hidden">
         <div class="section-head" style="margin:0">
-          <div><strong>Lost Order Details</strong><div class="mini">When the RFQ is saved as Lost, these details feed the Lost Sales and Inventory Intelligence reports automatically.</div></div>
+          <div><strong>Lost RFQ Details</strong><div class="mini">When the RFQ is saved as Lost, these details feed the Lost RFQs and Inventory Intelligence reports automatically.</div></div>
           <span class="status red">LOST</span>
         </div>
         <div class="row">
@@ -1725,6 +1743,8 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
           <div><label>Competitor (if known)</label><input id="rfqLostCompetitor" placeholder="Optional"></div>
           <div><label>Lost Date</label><input id="rfqLostDate" type="date"></div>
         </div>
+        <label>Lost Reason Comments</label>
+        <textarea id="rfqLostComments" rows="3" placeholder="Add specifics — especially when Reason Lost is Other. Example: customer changed specification, project cancelled, already purchased elsewhere..."></textarea>
         <label class="verify-check" style="margin-top:10px"><input id="rfqCreateLostIntel" type="checkbox" checked> Automatically add RFQ line items to Lost Sales / Inventory Intelligence</label>
         <div class="mini" style="margin-top:7px">Each line item is recorded separately, so high-request/no-stock products can be ranked accurately.</div>
       </div>
@@ -1752,6 +1772,26 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
   </section>
 
+
+  <div id="quickRfqStatusModal" class="quick-status-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="quick-status-dialog">
+      <div class="section-head" style="margin:0 0 8px"><div><div class="kicker">Quick RFQ Update</div><h2 id="quickRfqStatusTitle" style="margin:3px 0">Update Status</h2></div><button id="quickRfqStatusClose" class="secondary" type="button">✕</button></div>
+      <div id="quickRfqStatusChoices" class="quick-status-choices"></div>
+      <div id="quickLostPanel" class="hidden">
+        <label>Reason Lost</label>
+        <select id="quickLostReason">
+          <option value="">Choose reason…</option><option>No Stock</option><option>Lead Time</option><option>Price</option><option>Delivery / Logistics</option><option>Product Not Offered</option><option>Competitor / Vendor Preference</option><option>Other</option>
+        </select>
+        <label>Comments</label><textarea id="quickLostComments" rows="4" placeholder="Why was this RFQ lost? Add specifics, especially for Other."></textarea>
+        <div class="row">
+          <div><label>Market / Location</label><input id="quickLostMarket" placeholder="OKC, Tulsa, Liberal…"></div>
+          <div><label>Competitor (if known)</label><input id="quickLostCompetitor" placeholder="Optional"></div>
+        </div>
+        <label class="verify-check" style="margin-top:10px"><input id="quickLostIntel" type="checkbox" checked> Add all RFQ line items to Lost RFQs / Inventory Intelligence</label>
+        <div class="toolbar" style="margin-top:12px"><button id="quickLostSave" class="primary" type="button">Save Lost RFQ</button><button id="quickLostCancel" class="secondary" type="button">Cancel</button></div>
+      </div>
+    </div>
+  </div>
 
   <section id="ackReviewView" class="view">
     <div class="section-head"><button id="backFromAck" class="secondary">← Back</button><h2 id="ackReviewTitle" style="margin:0">Review PDF Import</h2></div>
@@ -2367,7 +2407,13 @@ function renderCustomerHealthMetrics(){
 function renderCustomers(){
   renderCustomerHealthMetrics();
   const q=$("customerSearch").value.toLowerCase();
-  const list=customers.filter(c=>[c.company,c.city,...(c.contacts||[]).flatMap(x=>[x.name,x.email,x.phone])].join(" ").toLowerCase().includes(q)).sort((a,b)=>a.company.localeCompare(b.company));
+  const health=$("customerHealthFilter")?.value||"all";
+  const list=customers.filter(c=>{
+    const matchesSearch=[c.company,c.city,...(c.contacts||[]).flatMap(x=>[x.name,x.email,x.phone])].join(" ").toLowerCase().includes(q);
+    const matchesHealth=health==="all"||customerHealthStatus(c)===health;
+    return matchesSearch&&matchesHealth;
+  }).sort((a,b)=>a.company.localeCompare(b.company));
+  document.querySelectorAll("[data-health-filter]").forEach(b=>b.classList.toggle("selected",b.dataset.healthFilter===health));
   $("customerList").innerHTML=list.length?"":"<div class='empty'>No customers yet.</div>";
   list.forEach(c=>{
     const row=document.createElement("div");row.className="account-list-row";row.dataset.openAccount=c.id;
@@ -2517,6 +2563,62 @@ function groupRecords(records,mode){
   if(mode==="month")entries.sort((a,b)=>recordDate(b[1][0])-recordDate(a[1][0]));else entries.sort((a,b)=>a[0].localeCompare(b[0]));
   return entries;
 }
+
+let quickStatusRfqId=null;
+const QUICK_RFQ_STATUSES=["Waiting on Customer","Pricing Review","Verbal Yes","Hold","Closed Won","Lost"];
+function closeQuickRfqStatus(){
+  quickStatusRfqId=null;
+  $("quickRfqStatusModal")?.classList.add("hidden");
+  $("quickLostPanel")?.classList.add("hidden");
+}
+function openQuickRfqStatus(id){
+  const r=rfqs.find(x=>String(x.id)===String(id));if(!r)return;
+  quickStatusRfqId=r.id;
+  $("quickRfqStatusTitle").textContent=`${customerName(r)} — ${r.quoteNo||"RFQ"}`;
+  $("quickLostPanel").classList.add("hidden");
+  $("quickRfqStatusChoices").classList.remove("hidden");
+  $("quickRfqStatusChoices").innerHTML=QUICK_RFQ_STATUSES.map(s=>`<button type="button" class="quick-status-choice ${s===r.status?"current":""}" data-quick-status-choice="${esc(s)}">${s===r.status?"✓ ":""}${esc(s)}</button>`).join("");
+  $("quickRfqStatusModal").classList.remove("hidden");
+}
+function quickRfqStatusActivity(oldRec,newRec){
+  if(!oldRec||oldRec.status===newRec.status)return;
+  const c=customerById(newRec.customerId),ct=contactById(newRec.customerId,newRec.contactId),who=ct?.name||"customer",q=newRec.quoteNo?`RFQ ${newRec.quoteNo}`:"the RFQ";
+  let comment=`Updated ${q} with ${who}. Opportunity moved from ${oldRec.status||"open"} to ${newRec.status}.`;
+  if(newRec.status==="Lost"&&newRec.lostComments)comment+=` Reason/details: ${newRec.lostReason}${newRec.lostComments?` — ${newRec.lostComments}`:""}.`;
+  activities.unshift({id:uid(),date:localIsoDate(),type:"Internal Update",customerId:newRec.customerId,contactId:newRec.contactId||null,comments:comment,opportunityRfqId:newRec.id,opportunityTitle:newRec.quoteNo||"RFQ Opportunity",opportunityValue:total(newRec),opportunityStage:newRec.status,opportunityDetails:newRec.nextAction||newRec.feedback||"",internalOnly:true,autoLogged:true,source:"Quick RFQ Status Change",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+}
+function applyQuickRfqStatus(status){
+  const old=rfqs.find(x=>String(x.id)===String(quickStatusRfqId));if(!old)return;
+  if(status==="Lost"){
+    $("quickRfqStatusChoices").classList.add("hidden");
+    $("quickLostPanel").classList.remove("hidden");
+    $("quickLostReason").value=old.lostReason||"";
+    $("quickLostComments").value=old.lostComments||"";
+    $("quickLostMarket").value=old.lostMarket||customerById(old.customerId)?.city||"";
+    $("quickLostCompetitor").value=old.lostCompetitor||"";
+    $("quickLostIntel").checked=old.createLostIntel!==false;
+    return;
+  }
+  const rec={...old,status,updatedAt:new Date().toISOString()};
+  if(status==="Closed Won"&&old.status!=="Closed Won")rec.closedWonAt=new Date().toISOString();
+  if(status!=="Closed Won")rec.closedWonAt=null;
+  if(status!=="Lost"){rec.lostReason="";rec.lostComments="";rec.lostMarket="";rec.lostCompetitor="";rec.lostDate="";rec.createLostIntel=false}
+  rfqs=rfqs.map(r=>r.id===old.id?rec:r);
+  syncOpportunityActivityFromRfq(rec);quickRfqStatusActivity(old,rec);syncLostSaleIntelligence(old,rec);
+  save();renderAll();closeQuickRfqStatus();
+}
+function saveQuickLostRfq(){
+  const old=rfqs.find(x=>String(x.id)===String(quickStatusRfqId));if(!old)return;
+  const reason=$("quickLostReason").value;
+  if(!reason){$("quickLostReason").focus();return}
+  const comments=$("quickLostComments").value.trim();
+  if(reason==="Other"&&!comments){$("quickLostComments").focus();alert("Add a comment explaining the Other reason.");return}
+  const rec={...old,status:"Lost",lostReason:reason,lostComments:comments,lostMarket:$("quickLostMarket").value.trim(),lostCompetitor:$("quickLostCompetitor").value.trim(),lostDate:localIsoDate(),createLostIntel:$("quickLostIntel").checked,closedWonAt:null,updatedAt:new Date().toISOString()};
+  rfqs=rfqs.map(r=>r.id===old.id?rec:r);
+  syncOpportunityActivityFromRfq(rec);quickRfqStatusActivity(old,rec);syncLostSaleIntelligence(old,rec);
+  save();renderAll();closeQuickRfqStatus();
+}
+
 function renderRfqs(){
   const q=$("rfqSearch").value.toLowerCase(),status=$("rfqStatusFilter").value,mode=$("rfqGroup").value,sort=$("rfqSort").value;
   let list=rfqs.filter(r=>{const hay=[customerName(r),contactName(r),r.quoteNo,r.status,r.feedback,r.nextAction,...(r.items||[]).flatMap(i=>[i.part,i.product])].join(" ").toLowerCase();return(status==="All"||r.status===status)&&hay.includes(q)});
@@ -2528,9 +2630,9 @@ function renderRfqs(){
     const holder=wrap.querySelector(".list");
     records.forEach(r=>{
       const div=document.createElement("div");div.className="list-card";
-      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · "+esc(contactName(r)):""}</div></div><span class="status blue">${esc(r.status)}</span></div>
+      div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · "+esc(contactName(r)):""}</div></div><button type="button" class="status blue rfq-status-tap" data-quick-rfq-status="${r.id}">${esc(r.status)} ▾</button></div>
       <div class="money">${money.format(total(r))}</div><div class="mini">${(r.items||[]).length} line item${(r.items||[]).length===1?"":"s"} · Follow-up ${formatDate(r.followup)}</div>`;
-      div.onclick=()=>editRfq(r.id);holder.appendChild(div);
+      div.onclick=e=>{if(e.target.closest("[data-quick-rfq-status]"))return;editRfq(r.id)};holder.appendChild(div);
     });
     $("rfqList").appendChild(wrap);
   });
@@ -3784,7 +3886,7 @@ function deleteIntel(id){if(confirm("Delete this record?")){intelligence=intelli
 function agg(rs,key){let m=new Map();rs.forEach(r=>{let k=key(r)||"Unspecified",x=m.get(k)||{name:k,count:0,amount:0,qty:0};x.count++;x.amount+=+r.amount||0;x.qty+=+r.qty||0;m.set(k,x)});return [...m.values()].sort((a,b)=>b.amount-a.amount||b.count-a.count)}
 function intelTable(title,desc,heads,rows){$("intelReportOutput").innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
 function renderIntelReport(t){
-if(t==="lost"){let a=agg(intelligence.filter(r=>r.type==="lost"),r=>r.product);intelTable("Lost Orders Report","Lost demand including No Stock.",["Product","Requests","Units","Lost $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
+if(t==="lost"){let a=agg(intelligence.filter(r=>r.type==="lost"),r=>r.product);intelTable("Lost RFQs Report","Lost RFQ demand including No Stock.",["Product","Requests","Units","Lost $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
 if(t==="feedback"){let a=agg(intelligence.filter(r=>r.type==="feedback"),r=>r.need||r.category);intelTable("Feedback / Business Case","Measurable justification for staffing, delivery, inventory and services.",["Need","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
 if(t==="geo"){let a=agg(intelligence.filter(r=>r.market),r=>r.market);intelTable("Geographical Impact","Documented demand and value by market.",["Market","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
 if(t==="inventory"){
@@ -4754,7 +4856,7 @@ function syncLostSaleIntelligence(oldRec,newRec){
       reason:newRec.lostReason,
       market:newRec.lostMarket||c.city||"",
       competitor:newRec.lostCompetitor||"",
-      notes:newRec.feedback||newRec.nextAction||"",
+      notes:newRec.lostComments||newRec.feedback||newRec.nextAction||"",
       sourceRfqId:newRec.id,
       sourceQuoteNo:newRec.quoteNo||"",
       sourceLineIndex:index,
@@ -4849,6 +4951,10 @@ $("saveRfq").onclick=()=>{
     $("rfqMessage").textContent="Choose a reason the RFQ was lost.";
     $("rfqLostReason").focus();return;
   }
+  if(newStatus==="Lost"&&$("rfqLostReason").value==="Other"&&!$("rfqLostComments").value.trim()){
+    $("rfqMessage").textContent="Add comments explaining the Other lost reason.";
+    $("rfqLostComments").focus();return;
+  }
   let closedWonAt=old?.closedWonAt||null;
   if(newStatus==="Closed Won" && old?.status!=="Closed Won")closedWonAt=new Date().toISOString();
   if(newStatus!=="Closed Won")closedWonAt=null;
@@ -4860,6 +4966,7 @@ $("saveRfq").onclick=()=>{
     lostReason:newStatus==="Lost"?$("rfqLostReason").value:"",
     lostMarket:newStatus==="Lost"?$("rfqLostMarket").value.trim():"",
     lostCompetitor:newStatus==="Lost"?$("rfqLostCompetitor").value.trim():"",
+    lostComments:newStatus==="Lost"?$("rfqLostComments").value.trim():"",
     lostDate:newStatus==="Lost"?($("rfqLostDate").value||localIsoDate()):"",
     createLostIntel:newStatus==="Lost"?$("rfqCreateLostIntel").checked:false,
     closedWonAt,
@@ -5791,6 +5898,21 @@ if($("printManagementReview"))$("printManagementReview").onclick=()=>trPrintDocu
 if($("printPresenterReview"))$("printPresenterReview").onclick=()=>trPrintDocument("presenter");
 function loadTerritoryOverview(){const o=settings.territoryOverview||{};if($("trTexasPanhandle"))$("trTexasPanhandle").value=o.texasPanhandle||"";if($("trWesternOklahoma"))$("trWesternOklahoma").value=o.westernOklahoma||"";if($("trSouthernOklahoma"))$("trSouthernOklahoma").value=o.southernOklahoma||""}
 function saveTerritoryOverview(){settings.territoryOverview={texasPanhandle:$("trTexasPanhandle").value.trim(),westernOklahoma:$("trWesternOklahoma").value.trim(),southernOklahoma:$("trSouthernOklahoma").value.trim()};save();alert("Territory overview saved.")}
+
+document.addEventListener("click",e=>{
+  const statusTap=e.target.closest("[data-quick-rfq-status]");
+  if(statusTap){e.preventDefault();e.stopPropagation();openQuickRfqStatus(statusTap.dataset.quickRfqStatus);return}
+  const choice=e.target.closest("[data-quick-status-choice]");
+  if(choice){e.preventDefault();applyQuickRfqStatus(choice.dataset.quickStatusChoice);return}
+  const health=e.target.closest("[data-health-filter]");
+  if(health&&$("customerHealthFilter")){$("customerHealthFilter").value=health.dataset.healthFilter;renderCustomers();return}
+});
+if($("quickRfqStatusClose"))$("quickRfqStatusClose").onclick=closeQuickRfqStatus;
+if($("quickLostCancel"))$("quickLostCancel").onclick=()=>{ $("quickLostPanel").classList.add("hidden"); $("quickRfqStatusChoices").classList.remove("hidden"); };
+if($("quickLostSave"))$("quickLostSave").onclick=saveQuickLostRfq;
+if($("quickRfqStatusModal"))$("quickRfqStatusModal").onclick=e=>{if(e.target===$("quickRfqStatusModal"))closeQuickRfqStatus()};
+if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
+
 renderAll();
 initializeCloudSync();
 </script>
