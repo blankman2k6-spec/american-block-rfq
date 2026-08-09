@@ -2525,6 +2525,9 @@ function boRecognizedValueInRange(source,start,end){
   });
   return value;
 }
+function boRecognizedValue(source){
+  return boInitialCreditedValue(source)+boDeliveryEvents(source).reduce((sum,e)=>sum+(Number(e.value)||0),0);
+}
 function boOpenValue(source){
   const pv=(source?.items||[]).reduce((s,i)=>s+boLineProductValue(i,boRemainingQty(i)),0);
   return boAllocatedValue(source,pv);
