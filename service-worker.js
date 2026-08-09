@@ -1,5 +1,5 @@
-const CACHE="ab-sales-os-v5-0-0-sales-ai";
-const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png"];
+const CACHE="ab-sales-os-v5-1-0-customer-health-catalog-ai";
+const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));

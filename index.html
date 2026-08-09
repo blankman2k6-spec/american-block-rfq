@@ -715,7 +715,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 
 
 
-/* v5.0.1 Sales AI */
+/* v5.1.0 Customer Health + Catalog AI */
 .ai-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px}
 .ai-chat{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding:4px 1px 8px}
 .ai-msg{border:1px solid var(--line);border-radius:15px;padding:12px 13px;white-space:pre-wrap;line-height:1.45}
@@ -846,7 +846,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.0.1 Sales AI</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.0 Sales AI</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -958,6 +958,13 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 
   <section id="customersView" class="view">
     <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2><div class="mini">Tap a company to open the full account.</div></div><button id="addCustomerBtn" class="primary">＋ Customer</button></div>
+    <div class="grid metrics customer-health-grid" style="margin:0 0 12px">
+      <div class="metric"><small>Total Accounts</small><strong id="customerTotalCount">0</strong></div>
+      <div class="metric"><small>Active Accounts</small><strong id="customerActiveCount">0</strong></div>
+      <div class="metric"><small>At Risk Accounts</small><strong id="customerAtRiskCount">0</strong></div>
+      <div class="metric"><small>New Accounts</small><strong id="customerNewCount">0</strong></div>
+      <div class="metric"><small>Inactive Accounts</small><strong id="customerInactiveCount">0</strong></div>
+    </div>
     <input id="customerSearch" placeholder="Search customer, contact, city, phone...">
     <div id="customerList" class="list" style="margin-top:12px"></div>
   </section>
@@ -992,6 +999,18 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
       <div class="card">
         <div class="section-head" style="margin:0 0 8px"><div><h2 style="margin:0">Contacts</h2><div class="mini">Tap Call to dial directly from your phone.</div></div></div>
         <div id="accountContacts"></div>
+      </div>
+      <div class="card">
+        <div class="section-head" style="margin:0 0 10px">
+          <div><h2 style="margin:0">Company Website Intelligence</h2><div class="mini">Research the saved company website and compare its services to the ABCO Flowline catalog.</div></div>
+          <button id="accountResearchWebsite" class="secondary">✦ Research Website</button>
+        </div>
+        <div id="accountWebsiteLink" class="mini">No website saved.</div>
+        <div id="accountWebsiteResearch" class="ai-data-note" style="margin-top:10px">Use Edit Account to save a website, then run AI research.</div>
+      </div>
+      <div class="card">
+        <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">AI Product Opportunities</h2><div class="mini">Catalog-grounded products to discuss with this account.</div></div></div>
+        <div id="accountAiProductOpportunities"></div>
       </div>
       <div class="card">
         <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">Product Mix</h2><div class="mini">YTD product revenue by family</div></div></div>
@@ -1427,6 +1446,13 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
       <span id="aiConnectionBadge" class="status yellow"><span class="ai-status-dot"></span>SETUP</span>
     </div>
 
+    <div class="card" style="margin-bottom:12px">
+      <div class="section-head" style="margin:0">
+        <div><div class="kicker">Catalog Intelligence</div><strong>ABCO Flowline Catalog Loaded</strong><div class="mini">Sales AI uses the embedded catalog knowledge for product-fit recommendations.</div></div>
+        <a class="secondary" href="assets/ABCO-FLOWLINE-CATALOG.pdf" target="_blank" rel="noopener" style="text-decoration:none">Open Catalog</a>
+      </div>
+    </div>
+
     <div class="ai-hero">
       <div class="section-head" style="margin:0 0 8px">
         <div><strong>Ask about your territory</strong><div class="mini">The AI receives a limited CRM snapshot relevant to your question.</div></div>
@@ -1555,7 +1581,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
     </div>
 
     <div class="card">
-      <h2>Version 5.0.1 — Sales AI</h2>
+      <h2>Version 5.1.0 — Customer Health + Catalog AI</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -1816,6 +1842,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
           </select>
         </div>
       </div>
+      <label>Company Website</label><input id="cWebsite" inputmode="url" placeholder="https://www.company.com">
       <label>What This Customer Does</label><textarea id="cBusiness" placeholder="Specific operations, services, equipment, and why ABCO products are relevant..."></textarea>
       <div class="row">
         <div><label>Territory Section</label><select id="cMarket"><option value="">Not set</option><option>Texas/Oklahoma Panhandle Territory</option><option>Oklahoma Northwest Territory</option><option>Oklahoma City Metropolitan Territory</option><option>Oklahoma Northeastern Territory</option><option>Oklahoma Southern Territory</option><option>Oklahoma Western Territory</option><option>Oklahoma Eastern Territory</option><option>Oklahoma Northern Territory</option><option>Kansas Western Territory</option><option>Kansas Eastern Territory</option><option>Wichita Kansas Territory</option><option>Arkansas Territory</option><option>Dallas/FW Territory</option><option>Ohio Territory</option><option>New Mexico Territory</option><option>Colorado Territory</option></select></div>
@@ -2097,7 +2124,7 @@ function migrate(){
   [...new Set(rfqs.map(r=>r.company).filter(Boolean))].forEach(name=>{
     if(!customers.some(c=>normalizeCompany(c.company)===normalizeCompany(name))){
       customers.push({
-        id:uid(),company:name,city:"",address:"",notes:"",
+        id:uid(),company:name,city:"",address:"",notes:"",website:"",isNewAccount:false,aiRecommendedProducts:[],
         contacts:[],createdAt:new Date().toISOString()
       });
     }
@@ -2119,6 +2146,14 @@ function migrate(){
       keeper.address=keeper.address||c.address||"";
       keeper.zip=keeper.zip||c.zip||"";
       keeper.accountType=keeper.accountType||c.accountType||"";
+      keeper.website=keeper.website||c.website||"";
+      keeper.businessDescription=keeper.businessDescription||c.businessDescription||"";
+      keeper.marketRegion=keeper.marketRegion||c.marketRegion||"";
+      keeper.knownSuppliers=keeper.knownSuppliers||c.knownSuppliers||"";
+      keeper.buyingDrivers=keeper.buyingDrivers||c.buyingDrivers||"";
+      keeper.isNewAccount=keeper.isNewAccount===true||c.isNewAccount===true;
+      if(!Array.isArray(keeper.aiRecommendedProducts)||!keeper.aiRecommendedProducts.length)keeper.aiRecommendedProducts=Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[];
+      keeper.websiteResearchUpdatedAt=keeper.websiteResearchUpdatedAt||c.websiteResearchUpdatedAt||"";
       keeper.notes=[keeper.notes,c.notes].filter(Boolean).join("\n").trim();
       (c.contacts||[]).forEach(ct=>{
         const duplicate=keeper.contacts.some(k=>
@@ -2294,13 +2329,38 @@ function renderMiniList(el,arr,followup){
   });
 }
 
+function customerPurchaseDate(c){
+  const dates=[];
+  orders.filter(o=>String(o.customerId)===String(c.id)).forEach(o=>{const d=orderDateObj(o);if(!isNaN(d))dates.push(d)});
+  rfqs.filter(r=>String(r.customerId)===String(c.id)&&r.status==="Closed Won").forEach(r=>{const d=r.closedWonAt?new Date(r.closedWonAt):recordDate(r);if(!isNaN(d))dates.push(d)});
+  return dates.length?new Date(Math.max(...dates.map(d=>d.getTime()))):null;
+}
+function customerHealthStatus(c){
+  const last=customerPurchaseDate(c);
+  if(!last)return c.isNewAccount===true?"new":"inactive";
+  const age=Math.floor((today0()-new Date(last.getFullYear(),last.getMonth(),last.getDate()))/86400000);
+  if(age<=90)return "active";
+  if(age<=135)return "at-risk";
+  return "inactive";
+}
+function renderCustomerHealthMetrics(){
+  const counts={active:0,"at-risk":0,new:0,inactive:0};
+  customers.forEach(c=>{const st=customerHealthStatus(c);counts[st]=(counts[st]||0)+1});
+  if($("customerTotalCount"))$("customerTotalCount").textContent=customers.length.toLocaleString();
+  if($("customerActiveCount"))$("customerActiveCount").textContent=counts.active.toLocaleString();
+  if($("customerAtRiskCount"))$("customerAtRiskCount").textContent=counts["at-risk"].toLocaleString();
+  if($("customerNewCount"))$("customerNewCount").textContent=counts.new.toLocaleString();
+  if($("customerInactiveCount"))$("customerInactiveCount").textContent=counts.inactive.toLocaleString();
+}
 function renderCustomers(){
+  renderCustomerHealthMetrics();
   const q=$("customerSearch").value.toLowerCase();
   const list=customers.filter(c=>[c.company,c.city,...(c.contacts||[]).flatMap(x=>[x.name,x.email,x.phone])].join(" ").toLowerCase().includes(q)).sort((a,b)=>a.company.localeCompare(b.company));
   $("customerList").innerHTML=list.length?"":"<div class='empty'>No customers yet.</div>";
   list.forEach(c=>{
     const row=document.createElement("div");row.className="account-list-row";row.dataset.openAccount=c.id;
-    row.innerHTML=`<div><strong>${esc(c.company)}</strong><div class="mini">${esc(c.marketRegion||"Territory not assigned")}</div></div>
+    const hs=customerHealthStatus(c),hsLabel=hs==="at-risk"?"AT RISK":hs.toUpperCase();
+    row.innerHTML=`<div><strong>${esc(c.company)}</strong><div class="mini">${esc(c.marketRegion||"Territory not assigned")}</div><span class="status ${hs==="active"?"green":hs==="at-risk"?"orange":hs==="new"?"blue":""}" style="margin-top:6px;display:inline-block">${hsLabel}</span></div>
       <div class="account-row-actions">
         <button class="menu-btn" data-account-menu="${c.id}" aria-label="Account actions">⋮</button>
         <div class="account-menu hidden" data-account-menu-panel="${c.id}">
@@ -2384,6 +2444,14 @@ function openCustomerAccount(id){
 }
 function renderCustomerAccount(){
   const c=customerById(activeCustomerId);if(!c)return;
+  const website=String(c.website||"").trim();
+  if($("accountWebsiteLink"))$("accountWebsiteLink").innerHTML=website?`<a href="${esc(website)}" target="_blank" rel="noopener">${esc(website)}</a>`:"No website saved.";
+  if($("accountWebsiteResearch"))$("accountWebsiteResearch").textContent=c.websiteResearchUpdatedAt?`Last researched ${new Date(c.websiteResearchUpdatedAt).toLocaleString()}. Run again anytime to refresh company intelligence.`:"Use Edit Account to save a website, then run AI research.";
+  if($("accountAiProductOpportunities")){
+    const recs=Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[];
+    $("accountAiProductOpportunities").innerHTML=recs.length?recs.map(r=>`<div class="list-card"><div class="list-title">${esc(r.product||"Product")}</div><div class="mini">${esc(r.reason||r.application||"")}</div></div>`).join(""):"<div class='empty'>No AI product recommendations saved yet.</div>";
+  }
+
   $("accountDetailName").textContent=c.company;
   if($("accountDetailTerritory"))$("accountDetailTerritory").textContent=c.marketRegion||"Territory not assigned";
   const primary=(c.contacts||[]).find(x=>x.primary)||(c.contacts||[])[0];
@@ -3746,12 +3814,41 @@ function openMeetingText(){
 }
 function refreshLinkedOpportunityValues(){rfqs.forEach(syncOpportunityActivityFromRfq)}
 
+const ABCO_FLOWLINE_CATALOG={
+  source:"American Block Flowline Products catalog",
+  productFamilies:[
+    {family:"Hammer Unions",details:"Figures 40, 50, 100, 200, 201, 206, 207, 211, 300, 301, 400, 600, 602, 1002, 1003, 1004, 1502, 2202 and AG. Threaded and/or butt-weld options vary by figure. Figure 1502 is 15,000 PSI standard service and 10,000 PSI sour service; common applications include fracturing, cementing, fracturing/testing and flowline use."},
+    {family:"Swivel Joints",details:"Long sweep swivel joints: 15,000 PSI standard / 10,000 PSI sour, 2–3 inch, styles 10,20,30,40,50,60,70,80; applications include fracturing, choke and kill, testing. Short sweep swivel joints: 6,000 PSI; applications include rotary, choke and kill, mud, cementing and circulating."},
+    {family:"Plug Valves",details:"Top-entry and bottom-entry plug valves, 1–3 inch Fig. 1502, maximum working pressure 15,000 PSI. Inline serviceable; forged steel body. Bottom-entry design emphasizes reduced maintenance and installation versatility; 3x3 handle or gear options are available."},
+    {family:"Pup Joints",details:"Integral pup joints in 2 and 3 inch, 1–15 ft, one-piece alloy steel construction, 15,000 PSI standard / 10,000 PSI sour. NPST pup joints in 2 and 3 inch, 1–20 ft, 15,000 PSI standard / 10,000 PSI sour."},
+    {family:"Flexible Flowline",details:"High-pressure flexible SR-1-6: max CWP 6,000 PSI, ABCO union plus Style 50 or Style 10 swivels with threaded connection. Long sweep flexible LR-4-10: max CWP 10,000 PSI, 4 unions and four Style 50/10 long-sweep swivels; sour option. LR-1-15 / LR-2-15 and LR-4-15: max CWP 15,000 PSI with long-sweep swivels and integral ABCO union ends; sour option."},
+    {family:"Integral Fittings",details:"2 and 3 inch Fig. 1502; Fig. 602 can be made to order; standard and sour service; forged alloy steel one-piece construction; maximum working pressure 15,000 PSI. Configurations include crossover/X-over, tee, cross, cushion elbow and long radius."},
+    {family:"Check Valves",details:"2 inch dart check valve, available in 2 and 3 inch Fig. 1502 standard service, NSCWP 15,000 PSI. Prevents feedback pressure from pumping and is used for flowback; application: well servicing."},
+    {family:"Choke Valves",details:"2 inch choke valve with adjustable bonnet, available in 2 and 3 inch Fig. 1502 standard service, NSCWP 15,000 PSI. Provides control in fracturing and flowback applications and is suitable for manifold applications; serialized and pressure tested to 22,500 PSI."},
+    {family:"Safety Relief Valves",details:"2 inch high-pressure safety relief valve, Fig. 1502 standard service, NSCWP 15,000 PSI. Relieves static pressure in gas or liquid and helps prevent equipment damage from high-pressure buildup; application: pumping services."},
+    {family:"Dual Choke Manifolds",details:"2 and 3 inch Fig. 1502, maximum working pressure 15,000 PSI, 5-valve or 9-valve configurations. Components and assembly serialized and pressure tested to 22,500 PSI; NACE MR-01-75 capability when specified; optional engineered containment skid."},
+    {family:"Hammer Seal Unions",details:"6, 8, 10 and 12 inch; 500 PSI; mud tanks and line connections; accommodates minor pipe misalignment with leak-proof seal. Part numbers HSUNION-6.0, HSUNION-8.0, HSUNION-10.0, HSUNION-12.0 with corresponding O-ring part numbers."},
+    {family:"Cementing & Circulating Hoses",details:"The American Block Flowline catalog includes cementing and circulating hoses as a Flowline product family. Use only documented customer service fit; the supplied catalog does not provide additional dimensional specifications in this edition."},
+    {family:"Reset Relief Valves",details:"The American Block Flowline catalog lists reset relief valves and notes DNV Type Approval for reset relief valves. Do not infer pressure or size details beyond CRM/catalog data."},
+    {family:"Ring Gaskets",details:"Precision finish; 316 stainless steel or low-carbon steel; dual certification for 316 stainless steel; BX octagonal, R oval and RX octagonal types."},
+    {family:"Flow Iron Recertification",details:"Mobile recertification includes visual inspection, magnetic particle inspection, ultrasonic thickness inspection, ID banding, seal/wing-nut repair or replacement, valve rebuild and repainting; pressure testing to 6K, 10K and 15K PSI."}
+  ],
+  recommendationRules:[
+    "Match products to documented customer services/applications, never just company type.",
+    "For fracturing or high-pressure flowback: consider 1502 plug valves, long-sweep swivel joints, integral fittings, pup joints, choke valves, dart check valves and manifolds where service fit is supported.",
+    "For pumping/cementing/circulating: consider appropriate swivel joints, pup joints, integral fittings, hoses/flexible flowline, hammer unions and safety relief valves where supported.",
+    "For mud tanks/large-diameter low-pressure line connections: consider Hammer Seal unions.",
+    "For maintenance/repair operations involving existing flow iron: consider mobile flow iron recertification.",
+    "Do not invent part numbers, sizes, pressure ratings or availability not contained in the catalog or CRM."
+  ]
+};
+
 function aiSaveQueue(){localStorage.setItem("abSalesOS_aiPending_v1",JSON.stringify(aiPendingActions))}
 function aiCustomerSummary(c){
   const cid=c.id,acctOrders=orders.filter(o=>o.customerId===cid),acctRfqs=rfqs.filter(r=>r.customerId===cid),acctActivities=activities.filter(a=>a.customerId===cid);
   return {
     id:cid,company:c.company,city:c.city||"",accountType:c.accountType||"",marketRegion:c.marketRegion||"",
-    notes:c.notes||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",
+    notes:c.notes||"",website:c.website||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",aiRecommendedProducts:Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[],
     contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,primary:!!x.primary})),
     orderCount:acctOrders.length,totalSales:acctOrders.reduce((s,o)=>s+boRecognizedValue(o),0),
     lastOrderDate:acctOrders.map(o=>o.orderDate).filter(Boolean).sort().pop()||"",
@@ -3775,6 +3872,7 @@ function aiBuildContext(customerId=""){
     generatedAt:new Date().toISOString(),activeYear,annualGoal:Number(settings.yearGoals?.[activeYear])||0,
     annualCreditedSales:annualClosedSales(activeYear),
     monthlyGoal:Number(settings.goal)||0,
+    flowlineCatalog:ABCO_FLOWLINE_CATALOG,
     backorders:boBackorderRows().filter(x=>x.remainingQty>0).slice(0,80),
     openRfqs:rfqs.filter(isOpen).map(r=>({id:r.id,customerId:r.customerId,company:customerName(r),quoteNo:r.quoteNo,status:r.status,total:total(r),followup:r.followup,nextAction:r.nextAction,feedback:r.feedback,items:r.items||[]})),
     recentActivities:activities.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,depth==="full"?120:50).map(a=>({id:a.id,date:a.date,type:a.type,customerId:a.customerId,company:customerById(a.customerId)?.company||"",contactId:a.contactId,comments:a.comments,opportunityRfqId:a.opportunityRfqId,opportunityTitle:a.opportunityTitle,opportunityValue:a.opportunityValue,opportunityStage:a.opportunityStage,opportunityDetails:a.opportunityDetails}))
@@ -3794,12 +3892,12 @@ function aiAuthHeaders(){
   if(cloud?.session?.access_token)h["Authorization"]="Bearer "+cloud.session.access_token;
   return h;
 }
-async function aiAsk(question,{customerId="",mode="chat"}={}){
+async function aiAsk(question,{customerId="",mode="chat",website=""}={}){
   ensureAiSettings();
   if(!settings.ai.enabled)throw new Error("Sales AI is disabled. Enable it in Settings → AI Integration.");
   const endpoint=String(settings.ai.endpoint||"").trim();
   if(!/^https:\/\//i.test(endpoint))throw new Error("Enter a secure HTTPS AI endpoint in Settings.");
-  const payload={question,mode,customerId,writePolicy:settings.ai.writePolicy,context:aiBuildContext(customerId),conversation:aiChatHistory.slice(-8)};
+  const payload={question,mode,customerId,website,writePolicy:settings.ai.writePolicy,context:aiBuildContext(customerId),conversation:aiChatHistory.slice(-8)};
   const res=await fetch(endpoint,{method:"POST",headers:aiAuthHeaders(),body:JSON.stringify(payload)});
   const raw=await res.text();let body={};try{body=JSON.parse(raw)}catch{body={error:raw||`HTTP ${res.status}`}}
   if(!res.ok)throw new Error(body.error||body.message||`AI endpoint returned ${res.status}`);
@@ -3820,7 +3918,7 @@ function aiAppendMessage(role,content){
   holder.appendChild(d);holder.scrollTop=holder.scrollHeight;
 }
 function aiActionLabel(a){
-  const names={create_activity:"Create Activity",update_customer_notes:"Update Customer Notes",create_rfq:"Create RFQ",update_rfq:"Update RFQ",set_followup:"Set RFQ Follow-up"};
+  const names={create_activity:"Create Activity",update_customer_notes:"Update Customer Notes",update_customer_profile:"Update Customer Profile",create_rfq:"Create RFQ",update_rfq:"Update RFQ",set_followup:"Set RFQ Follow-up"};
   return names[a.type]||a.type||"CRM Change";
 }
 function aiResolveCustomerId(a){
@@ -3839,6 +3937,15 @@ function aiApplyAction(id){
       const c=customerById(cid);if(!c)throw new Error("Customer could not be resolved.");
       const note=String(p.note||p.notes||"").trim();if(!note)throw new Error("No note supplied.");
       c.notes=[c.notes,note].filter(Boolean).join("\n\n");c.updatedAt=now;
+    }else if(a.type==="update_customer_profile"){
+      const c=customerById(cid);if(!c)throw new Error("Customer could not be resolved.");
+      if(p.website!==undefined)c.website=String(p.website||"").trim();
+      if(p.businessDescription!==undefined)c.businessDescription=String(p.businessDescription||"").trim();
+      if(p.buyingDrivers!==undefined)c.buyingDrivers=String(p.buyingDrivers||"").trim();
+      if(p.knownSuppliers!==undefined)c.knownSuppliers=String(p.knownSuppliers||"").trim();
+      if(p.notes){const note=String(p.notes).trim();if(note)c.notes=[c.notes,note].filter(Boolean).join("\n\n");}
+      if(Array.isArray(p.recommendedProducts))c.aiRecommendedProducts=p.recommendedProducts.map(x=>({product:String(x.product||x.family||""),reason:String(x.reason||""),application:String(x.application||"")})).filter(x=>x.product);
+      c.websiteResearchUpdatedAt=now;c.updatedAt=now;
     }else if(a.type==="create_rfq"){
       if(!cid)throw new Error("Customer could not be resolved.");
       const items=(p.items||[]).map(i=>({part:i.part||"",product:i.product||"",qty:Number(i.qty)||0,price:Number(i.price)||0}));
@@ -3856,6 +3963,21 @@ function aiApplyAction(id){
   }catch(e){alert("Could not apply AI action: "+e.message)}
 }
 function aiRejectAction(id){const a=aiPendingActions.find(x=>x.id===id);if(a){a.status="rejected";a.reviewedAt=new Date().toISOString();aiSaveQueue();renderAi()}}
+async function aiResearchCustomerWebsite(){
+  const c=customerById(activeCustomerId);if(!c)return;
+  const website=String(c.website||"").trim();
+  if(!website){alert("Save the company's website in Edit Account first.");return}
+  if(!settings.ai?.enabled){alert("Sales AI is disabled. Enable it in Settings first.");return}
+  const btn=$("accountResearchWebsite"),out=$("accountWebsiteResearch");
+  if(btn){btn.disabled=true;btn.textContent="Researching…"}if(out)out.textContent="Researching the company website and matching services to the ABCO Flowline catalog…";
+  try{
+    const q=`Research the official company website ${website}. Identify the company's actual services, operations, equipment or markets that are relevant to American Block. Then compare ONLY those documented needs to the ABCO Flowline catalog in the CRM context. Recommend specific catalog product families and explain the sales opportunity. Propose an update_customer_profile action so I can approve transferring the researched business description and recommended products into this account. Do not invent products, services, inventory, prices or customer needs.`;
+    const r=await aiAsk(q,{customerId:c.id,mode:"website_research",website});
+    if(out)out.innerHTML=esc(r.answer||"Research complete.").replace(/\n/g,"<br>");
+  }catch(e){if(out)out.textContent="Website research failed: "+e.message}
+  finally{if(btn){btn.disabled=false;btn.textContent="✦ Research Website"}}
+}
+
 function renderAiQueue(){
   if(!$("aiApprovalQueue"))return;
   const pending=aiPendingActions.filter(a=>a.status==="pending");
@@ -4556,8 +4678,8 @@ function getContactRows(){
     primary:row.querySelector('[data-c="primary"]').value==="yes"
   })).filter(c=>c.name||c.phone||c.email);
 }
-function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cBusiness","cSuppliers","cBuyingWhy","cNotes"].forEach(id=>$(id).value="");$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
-function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
+function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes"].forEach(id=>$(id).value="");$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
+function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
 
 
@@ -4711,7 +4833,7 @@ $("saveRfq").onclick=()=>{
   convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
 }
-$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
+$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:old?.isNewAccount??(!editingCustomerId),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
 if($("saveAnnualGoal"))$("saveAnnualGoal").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();settings.yearGoals[y]=Math.max(0,Number($("annualGoalInput").value)||0);save();renderAll();};
 if($("closeSalesYear"))$("closeSalesYear").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();const goal=Number(settings.yearGoals[y])||0,sales=annualClosedSales(y);if(!confirm(`Close ${y} with credited sales of ${money.format(sales)} against a goal of ${money.format(goal)}? Orders will remain in history.`))return;settings.yearArchives[y]={year:y,goal,sales,closedAt:new Date().toISOString()};save();renderAll();};
@@ -5580,6 +5702,7 @@ if($("aiAnalyzeAccount"))$("aiAnalyzeAccount").onclick=async()=>{
   const q=`Analyze ${c?.company||"this account"}. Summarize purchase history, product mix, open RFQs, recent activity, risks, product expansion opportunities, and give me the best three next actions. Propose CRM actions only when they are useful.`;
   $("aiQuestion").value=q;$("aiSend")?.click();
 };
+if($("accountResearchWebsite"))$("accountResearchWebsite").onclick=aiResearchCustomerWebsite;
 if($("saveAiSettings"))$("saveAiSettings").onclick=()=>{settings.ai={enabled:!!$("aiEnabled").checked,endpoint:$("aiEndpoint").value.trim(),contextDepth:$("aiContextDepth").value,writePolicy:$("aiWritePolicy").value};save();renderAi();alert("AI settings saved.")};
 if($("testAiConnection"))$("testAiConnection").onclick=async()=>{
   settings.ai={enabled:!!$("aiEnabled").checked,endpoint:$("aiEndpoint").value.trim(),contextDepth:$("aiContextDepth").value,writePolicy:$("aiWritePolicy").value};save();$("aiSettingsStatus").textContent="TESTING…";
