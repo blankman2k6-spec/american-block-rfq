@@ -715,7 +715,7 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 
 
 
-/* v5.1.0 Customer Health + Catalog AI */
+/* v5.1.1 Compact Website Intelligence + Auto Opportunities */
 .ai-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px}
 .ai-chat{display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow:auto;padding:4px 1px 8px}
 .ai-msg{border:1px solid var(--line);border-radius:15px;padding:12px 13px;white-space:pre-wrap;line-height:1.45}
@@ -737,6 +737,18 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 .ai-brief-list{display:grid;gap:8px}
 .ai-brief-item{padding:10px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
 .ai-data-note{font-size:11px;color:var(--muted);line-height:1.45}
+.website-intel-compact{display:grid;gap:12px;margin-top:10px}
+.website-intel-block{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px}
+.website-intel-block h3{font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.website-intel-block p{margin:0;line-height:1.5}
+.website-opportunity-chips{display:flex;flex-wrap:wrap;gap:7px}
+.website-opportunity-chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800}
+.website-full-analysis{border-top:1px solid var(--line);padding-top:10px}
+.website-full-analysis summary{cursor:pointer;font-weight:900;color:var(--accent);list-style:none}
+.website-full-analysis summary::-webkit-details-marker{display:none}
+.website-full-analysis summary:before{content:"›";display:inline-block;margin-right:7px;transition:transform .15s}
+.website-full-analysis[open] summary:before{transform:rotate(90deg)}
+.website-full-text{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5;white-space:normal}
 @media(max-width:700px){
   .ai-composer{grid-template-columns:1fr}
   .ai-composer button{width:100%}
@@ -846,7 +858,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.0 Sales AI</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.1 Sales AI</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1006,7 +1018,7 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
           <button id="accountResearchWebsite" class="secondary">✦ Research Website</button>
         </div>
         <div id="accountWebsiteLink" class="mini">No website saved.</div>
-        <div id="accountWebsiteResearch" class="ai-data-note" style="margin-top:10px">Use Edit Account to save a website, then run AI research.</div>
+        <div id="accountWebsiteResearch" style="margin-top:12px"></div>
       </div>
       <div class="card">
         <div class="section-head" style="margin:0 0 10px"><div><h2 style="margin:0">AI Product Opportunities</h2><div class="mini">Catalog-grounded products to discuss with this account.</div></div></div>
@@ -2446,7 +2458,23 @@ function renderCustomerAccount(){
   const c=customerById(activeCustomerId);if(!c)return;
   const website=String(c.website||"").trim();
   if($("accountWebsiteLink"))$("accountWebsiteLink").innerHTML=website?`<a href="${esc(website)}" target="_blank" rel="noopener">${esc(website)}</a>`:"No website saved.";
-  if($("accountWebsiteResearch"))$("accountWebsiteResearch").textContent=c.websiteResearchUpdatedAt?`Last researched ${new Date(c.websiteResearchUpdatedAt).toLocaleString()}. Run again anytime to refresh company intelligence.`:"Use Edit Account to save a website, then run AI research.";
+  if($("accountWebsiteResearch")){
+    const summary=String(c.websiteResearchSummary||"").trim();
+    const why=String(c.websiteResearchWhyFit||"").trim();
+    const full=String(c.websiteResearchFullAnalysis||"").trim();
+    const recs=Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[];
+    if(c.websiteResearchUpdatedAt&&(summary||why||full||recs.length)){
+      $("accountWebsiteResearch").innerHTML=`<div class="website-intel-compact">
+        ${summary?`<div class="website-intel-block"><h3>Website Intelligence</h3><p>${esc(summary)}</p></div>`:""}
+        ${recs.length?`<div class="website-intel-block"><h3>Best ABCO Opportunities</h3><div class="website-opportunity-chips">${recs.slice(0,8).map(r=>`<span class="website-opportunity-chip">${esc(r.product||"Product")}</span>`).join("")}</div></div>`:""}
+        ${why?`<div class="website-intel-block"><h3>Why They Fit</h3><p>${esc(why)}</p></div>`:""}
+        ${full?`<details class="website-full-analysis"><summary>View Full Analysis</summary><div class="website-full-text">${esc(full).replace(/\n/g,"<br>")}</div></details>`:""}
+        <div class="mini">Last researched ${new Date(c.websiteResearchUpdatedAt).toLocaleString()}.</div>
+      </div>`;
+    }else{
+      $("accountWebsiteResearch").textContent=website?"Website saved. Run AI research to build company intelligence and product opportunities.":"Use Edit Account to save a website, then run AI research.";
+    }
+  }
   if($("accountAiProductOpportunities")){
     const recs=Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[];
     $("accountAiProductOpportunities").innerHTML=recs.length?recs.map(r=>`<div class="list-card"><div class="list-title">${esc(r.product||"Product")}</div><div class="mini">${esc(r.reason||r.application||"")}</div></div>`).join(""):"<div class='empty'>No AI product recommendations saved yet.</div>";
@@ -3969,11 +3997,23 @@ async function aiResearchCustomerWebsite(){
   if(!website){alert("Save the company's website in Edit Account first.");return}
   if(!settings.ai?.enabled){alert("Sales AI is disabled. Enable it in Settings first.");return}
   const btn=$("accountResearchWebsite"),out=$("accountWebsiteResearch");
-  if(btn){btn.disabled=true;btn.textContent="Researching…"}if(out)out.textContent="Researching the company website and matching services to the ABCO Flowline catalog…";
+  if(btn){btn.disabled=true;btn.textContent="Researching…"}if(out)out.innerHTML="<div class='ai-data-note'>Researching the company website and matching services to the ABCO Flowline catalog…</div>";
   try{
-    const q=`Research the official company website ${website}. Identify the company's actual services, operations, equipment or markets that are relevant to American Block. Then compare ONLY those documented needs to the ABCO Flowline catalog in the CRM context. Recommend specific catalog product families and explain the sales opportunity. Propose an update_customer_profile action so I can approve transferring the researched business description and recommended products into this account. Do not invent products, services, inventory, prices or customer needs.`;
+    const q=`Research the official company website ${website}. Identify the company's actual services, operations, equipment and markets relevant to American Block. Compare ONLY documented website facts to the ABCO Flowline catalog in CRM context. Return a concise customer-facing analysis and propose exactly one update_customer_profile action for this customer. In that action payload include: businessDescription (1-2 sentence factual website summary), websiteFitSummary (1 concise sentence explaining why ABCO Flowline is relevant), and recommendedProducts (3-8 catalog-grounded product families, each with product, reason, and application when supported). Do not invent products, services, inventory, prices or customer needs.`;
     const r=await aiAsk(q,{customerId:c.id,mode:"website_research",website});
-    if(out)out.innerHTML=esc(r.answer||"Research complete.").replace(/\n/g,"<br>");
+    const profileAction=(r.actions||[]).find(a=>a.type==="update_customer_profile");
+    const p=profileAction?.payload||{};
+    const recs=Array.isArray(p.recommendedProducts)?p.recommendedProducts.map(x=>({product:String(x.product||x.family||"").trim(),reason:String(x.reason||"").trim(),application:String(x.application||"").trim()})).filter(x=>x.product):[];
+    // Website research is a user-initiated enrichment action. Product opportunities are saved immediately;
+    // other profile changes still remain in the normal Approval Queue.
+    if(recs.length)c.aiRecommendedProducts=recs;
+    c.websiteResearchSummary=String(p.businessDescription||"").trim()||String(r.answer||"").split(/\n\n|How that maps|Sales opportunity/i)[0].replace(/^Research summary[^:]*:\s*/i,"").trim();
+    c.websiteResearchWhyFit=String(p.websiteFitSummary||profileAction?.reason||"").trim();
+    c.websiteResearchFullAnalysis=String(r.answer||"").trim();
+    c.websiteResearchUpdatedAt=new Date().toISOString();
+    c.updatedAt=new Date().toISOString();
+    save();
+    renderCustomerAccount();
   }catch(e){if(out)out.textContent="Website research failed: "+e.message}
   finally{if(btn){btn.disabled=false;btn.textContent="✦ Research Website"}}
 }
@@ -4833,7 +4873,7 @@ $("saveRfq").onclick=()=>{
   convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
 }
-$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:old?.isNewAccount??(!editingCustomerId),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
+$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:old?.isNewAccount??(!editingCustomerId),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
 if($("saveAnnualGoal"))$("saveAnnualGoal").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();settings.yearGoals[y]=Math.max(0,Number($("annualGoalInput").value)||0);save();renderAll();};
 if($("closeSalesYear"))$("closeSalesYear").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();const goal=Number(settings.yearGoals[y])||0,sales=annualClosedSales(y);if(!confirm(`Close ${y} with credited sales of ${money.format(sales)} against a goal of ${money.format(goal)}? Orders will remain in history.`))return;settings.yearArchives[y]={year:y,goal,sales,closedAt:new Date().toISOString()};save();renderAll();};

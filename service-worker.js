@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-1-0-customer-health-catalog-ai";
+const CACHE="ab-sales-os-v5-1-1-compact-web-intel-auto-opportunities";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
