@@ -909,8 +909,6 @@ body[data-skin="classic-office"] .customer-health-card strong,
 body[data-skin="classic-office"] .customer-health-card small,
 body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!important}
 
-
-.activity-goal-select{width:100%;min-height:58px;padding:8px 42px 8px 18px;border:1px solid var(--border);border-radius:22px;background:var(--card);color:var(--text);font:inherit;font-size:24px;font-weight:700;appearance:auto;-webkit-appearance:menulist;box-shadow:none}
 </style>
 </head>
 <body>
@@ -918,7 +916,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.7 Activity Goal Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.8 Excel Date Repair</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1229,8 +1227,8 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
         <span class="status blue">TRACKING</span>
       </div>
       <div class="row">
-        <div><label>Minimum Daily Goal</label><select id="dailyGoalMin" class="activity-goal-select"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div>
-        <div><label>Strong Day Goal</label><select id="dailyGoalMax" class="activity-goal-select"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option></select></div>
+        <div><label>Minimum Daily Goal</label><input id="dailyGoalMin" type="number" min="1" max="20" step="1" value="4"></div>
+        <div><label>Strong Day Goal</label><input id="dailyGoalMax" type="number" min="1" max="20" step="1" value="8"></div>
       </div>
       <div class="tracker-summary">
         <div class="mini-metric"><span>Workdays Hit</span><strong id="trackerHitDays">0</strong></div>
@@ -3427,7 +3425,18 @@ function localIsoDate(d=new Date()){
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
-function activityDateObj(a){return new Date((a.date||"1970-01-01")+"T12:00:00")}
+function safeActivityDate(value){
+  if(value instanceof Date&&!isNaN(value))return new Date(value);
+  const raw=String(value||"").trim();
+  if(!raw)return null;
+  let m=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){const d=new Date(+m[1],+m[2]-1,+m[3],12,0,0,0);if(d.getFullYear()==+m[1]&&d.getMonth()==+m[2]-1&&d.getDate()==+m[3])return d;}
+  m=raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})/);
+  if(m){let y=+m[3];if(y<100)y+=2000;const d=new Date(y,+m[1]-1,+m[2],12,0,0,0);if(d.getFullYear()==y&&d.getMonth()==+m[1]-1&&d.getDate()==+m[2])return d;}
+  const parsed=new Date(raw);if(!isNaN(parsed)){parsed.setHours(12,0,0,0);return parsed;}
+  return null;
+}
+function activityDateObj(a){return safeActivityDate(a?.date)||safeActivityDate(a?.createdAt)||new Date(1970,0,1,12,0,0,0)}
 function activityCustomer(a){return customerById(a.customerId)}
 function activityContact(a){return contactById(a.customerId,a.contactId)}
 function activityMonthKey(a){
@@ -3550,8 +3559,8 @@ function editActivity(id){
   $("activityMessage").textContent="";showView("activityFormView",false);
 }
 
-function activityGoalMin(){const n=Number(localStorage.getItem("abSalesOS_dailyGoalMin"));return Number.isFinite(n)?Math.min(9,Math.max(0,n)):4}
-function activityGoalMax(){const n=Number(localStorage.getItem("abSalesOS_dailyGoalMax"));return Math.max(activityGoalMin(),Number.isFinite(n)?Math.min(9,Math.max(0,n)):8)}
+function activityGoalMin(){return Math.max(1,Number(localStorage.getItem("abSalesOS_dailyGoalMin")||4)||4)}
+function activityGoalMax(){return Math.max(activityGoalMin(),Number(localStorage.getItem("abSalesOS_dailyGoalMax")||8)||8)}
 function activityDayLabel(dateStr){
   const d=new Date(dateStr+"T12:00:00");
   return d.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
@@ -3607,11 +3616,11 @@ function renderActivityLog(){
   const month=$("activityMonth").value;
   const list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
   const reportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
-  $("activityMonthCount").textContent=reportable.filter(a=>["Visit","Call","Email"].includes(a.type)).length;
+  $("activityMonthCount").textContent=reportable.length;
   $("activityVisitCount").textContent=reportable.filter(a=>a.type==="Visit").length;
   $("activityCallCount").textContent=reportable.filter(a=>a.type==="Call").length;
   $("activityEmailCount").textContent=reportable.filter(a=>a.type==="Email").length;
-  renderDailyTracker(month,reportable.filter(a=>["Visit","Call","Email"].includes(a.type)));
+  renderDailyTracker(month,reportable);
 
   if(!list.length){$("activityLogList").innerHTML="<div class='empty'>No activities saved for this month yet.</div>";return}
   const groups=new Map();
@@ -3644,16 +3653,18 @@ function excelMonthTab(dateStr){
   return d.toLocaleDateString("en-US",{month:"short",year:"2-digit"}).replace(" "," ");
 }
 function activityWeekStart(dateStr){
-  const d=new Date(dateStr+"T12:00:00");
-  const day=d.getDay(); // Sunday=0
-  const diff=(day===0?-6:1-day); // Monday-based work week
+  const d=safeActivityDate(dateStr);
+  if(!d)return "";
+  const day=d.getDay();
+  const diff=(day===0?-6:1-day);
   d.setDate(d.getDate()+diff);
-  return d.toISOString().slice(0,10);
+  return localIsoDate(d);
 }
 function bossLogRowData(a){
   const c=activityCustomer(a)||{},ct=activityContact(a)||{};
   const contactInfo=[ct.email,ct.phone].filter(Boolean).join(" | ");
-  const dateDisplay=new Date(a.date+"T12:00:00").toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"2-digit"});
+  const safeDate=safeActivityDate(a.date)||safeActivityDate(a.createdAt);
+  const dateDisplay=safeDate?safeDate.toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"2-digit"}):(a.date||"");
   return {
     date:dateDisplay,
     customer:c.company||"",
@@ -5999,15 +6010,15 @@ if($("quickExportExcel"))$("quickExportExcel").onclick=exportCustomerLogWorkbook
 if($("exportCustomerLogExcel"))$("exportCustomerLogExcel").onclick=exportCustomerLogWorkbook;
 if($("activityMonth"))$("activityMonth").onchange=renderActivityLog;
 if($("dailyGoalMin"))$("dailyGoalMin").onchange=()=>{
-  const min=Math.min(9,Math.max(0,Number($("dailyGoalMin").value)));
-  const max=Math.max(min,Math.min(9,Math.max(0,Number($("dailyGoalMax").value))));
+  const min=Math.max(1,Number($("dailyGoalMin").value)||4);
+  const max=Math.max(min,Number($("dailyGoalMax").value)||8);
   localStorage.setItem("abSalesOS_dailyGoalMin",String(min));
   localStorage.setItem("abSalesOS_dailyGoalMax",String(max));
   renderActivityLog();
 };
 if($("dailyGoalMax"))$("dailyGoalMax").onchange=()=>{
-  const min=Math.min(9,Math.max(0,Number($("dailyGoalMin").value)));
-  const max=Math.max(min,Math.min(9,Math.max(0,Number($("dailyGoalMax").value))));
+  const min=Math.max(1,Number($("dailyGoalMin").value)||4);
+  const max=Math.max(min,Number($("dailyGoalMax").value)||8);
   $("dailyGoalMax").value=max;
   localStorage.setItem("abSalesOS_dailyGoalMin",String(min));
   localStorage.setItem("abSalesOS_dailyGoalMax",String(max));
