@@ -916,7 +916,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.5 Catalog Viewer Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.6 Excel Export Hotfix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -3752,7 +3752,50 @@ async function exportCustomerLogWorkbook(){
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),5000);
   }catch(err){
-    console.error(err);alert("I could not create the Excel workbook. Please try again.");
+    console.error("Primary Excel export failed",err);
+    // iOS/Safari safety fallback: rebuild a simpler workbook if a formatting
+    // feature fails during ExcelJS serialization. The data and boss spacing
+    // rules are preserved.
+    try{
+      const safeWb=new ExcelJS.Workbook();
+      safeWb.creator="American Block Sales OS";
+      const safeByMonth=new Map();
+      reportable.slice().sort((a,b)=>activityDateObj(a)-activityDateObj(b)).forEach(a=>{
+        const k=activityMonthKey(a);if(!safeByMonth.has(k))safeByMonth.set(k,[]);safeByMonth.get(k).push(a);
+      });
+      [...safeByMonth.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([month,records])=>{
+        const d=new Date(month+"-01T12:00:00");
+        const ws=safeWb.addWorksheet(d.toLocaleDateString("en-US",{month:"short",year:"2-digit"}));
+        ws.columns=[
+          {header:"DATE",key:"date",width:12},{header:"CUSTOMER",key:"customer",width:28},
+          {header:"City",key:"city",width:20},{header:"Address",key:"address",width:42},
+          {header:"Zip",key:"zip",width:12},{header:"End User (EU) or Distributor (D)",key:"accountType",width:30},
+          {header:"CONTACT ",key:"contact",width:24},{header:"Contact Info",key:"contactInfo",width:36},
+          {header:"Visit / Call / Email ",key:"type",width:21},{header:"COMMENTS",key:"comments",width:95}
+        ];
+        ws.addRow([]);
+        let lastDate="",lastWeek="";
+        records.forEach((a,index)=>{
+          const week=activityWeekStart(a.date);
+          if(index>0&&a.date!==lastDate){
+            const blankCount=(week!==lastWeek)?2:1;
+            for(let i=0;i<blankCount;i++)ws.addRow([]);
+          }
+          lastDate=a.date;lastWeek=week;ws.addRow(bossLogRowData(a));
+        });
+      });
+      const safeBuffer=await safeWb.xlsx.writeBuffer();
+      const safeBlob=new Blob([safeBuffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+      const safeName="Cazares Customer Log TT.xlsx";
+      if(typeof File!=="undefined"&&navigator.share&&navigator.canShare){
+        try{const f=new File([safeBlob],safeName,{type:safeBlob.type});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Customer Log"});return}}catch(e){if(e?.name==="AbortError")return}
+      }
+      const safeUrl=URL.createObjectURL(safeBlob),link=document.createElement("a");
+      link.href=safeUrl;link.download=safeName;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(safeUrl),10000);
+    }catch(fallbackErr){
+      console.error("Fallback Excel export failed",fallbackErr);
+      alert("Excel export failed: "+(fallbackErr?.message||err?.message||"Unknown error")+". Please take a screenshot of this message.");
+    }
   }
 }
 
