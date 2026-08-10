@@ -916,7 +916,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.8 Excel Date Repair</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.9 RFQ Auto Customer Log</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1748,7 +1748,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
         <div><label>Contact Notes</label><input id="rfqContactNote" placeholder="Optional role, location, or note"></div>
       </div>
       <div class="row">
-        <div><label>Status</label><select id="rfqStatus"><option>Waiting on Customer</option><option>Pricing Review</option><option>Verbal Yes</option><option>Hold</option><option>Closed Won</option><option>Lost</option></select></div>
+        <div><label>Status</label><select id="rfqStatus"><option>RFQ Received</option><option>Waiting on Customer</option><option>Pricing Review</option><option>Verbal Yes</option><option>Hold</option><option>Closed Won</option><option>Lost</option></select><div id="rfqStatusNote" class="mini" style="margin-top:5px"></div></div>
         <div><label>Next Follow-up</label><input id="rfqFollowup" type="date"></div>
       </div>
       <div class="section-head"><h2 style="margin:0">Products</h2><button id="addItem" class="secondary">＋ Add Item</button></div>
@@ -1794,8 +1794,8 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 
       <div id="rfqAutoLogBox" class="auto-log-box hidden">
         <div class="section-head" style="margin:0">
-          <div><strong>Log This Customer Activity</strong><div class="mini">The RFQ status changed, so this can be added to your monthly activity report automatically.</div></div>
-          <label class="verify-check"><input id="rfqAutoLogEnabled" type="checkbox" checked> Log</label>
+          <div><strong>Log This RFQ Update?</strong><div class="mini">Any change to an existing RFQ can be added to the customer log. The comment below is generated from the RFQ status and merged with Customer Feedback.</div></div>
+          <label class="verify-check"><input id="rfqAutoLogEnabled" type="checkbox" checked> Yes, log it</label>
         </div>
         <div class="auto-log-grid">
           <div><label>How did you connect?</label><select id="rfqAutoLogType"><option>Call</option><option>Email</option><option>Visit</option><option>Internal Update</option></select></div>
@@ -2646,11 +2646,11 @@ function openQuickRfqStatus(id){
 }
 function quickRfqStatusActivity(oldRec,newRec){
   if(!oldRec||oldRec.status===newRec.status)return;
-  const c=customerById(newRec.customerId),ct=contactById(newRec.customerId,newRec.contactId),who=ct?.name||"customer",q=newRec.quoteNo?`RFQ ${newRec.quoteNo}`:"the RFQ";
-  let comment=`Updated ${q} with ${who}. Opportunity moved from ${oldRec.status||"open"} to ${newRec.status}.`;
-  if(newRec.status==="Lost"&&newRec.lostComments)comment+=` Reason/details: ${newRec.lostReason}${newRec.lostComments?` — ${newRec.lostComments}`:""}.`;
-  activities.unshift({id:uid(),date:localIsoDate(),type:"Internal Update",customerId:newRec.customerId,contactId:newRec.contactId||null,comments:comment,opportunityRfqId:newRec.id,opportunityTitle:newRec.quoteNo||"RFQ Opportunity",opportunityValue:total(newRec),opportunityStage:newRec.status,opportunityDetails:newRec.nextAction||newRec.feedback||"",internalOnly:true,autoLogged:true,source:"Quick RFQ Status Change",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+  const comment=rfqStatusNarrative(newRec,oldRec.status);
+  if(!confirm(`Add this status change to the customer log?\\n\\n${comment}`))return;
+  activities.unshift({id:uid(),date:localIsoDate(),type:'RFQ Update',customerId:newRec.customerId,contactId:newRec.contactId||null,comments:comment,opportunityRfqId:newRec.id,opportunityTitle:newRec.quoteNo||'RFQ Opportunity',opportunityValue:total(newRec),opportunityStage:newRec.status,opportunityDetails:newRec.nextAction||newRec.feedback||'',internalOnly:false,autoLogged:true,source:'Quick RFQ Status Change',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
 }
+
 function applyQuickRfqStatus(status){
   const old=rfqs.find(x=>String(x.id)===String(quickStatusRfqId));if(!old)return;
   if(status==="Lost"){
@@ -3615,7 +3615,8 @@ function renderActivityLog(){
   if(!$("activityMonth").value)$("activityMonth").value=localIsoDate().slice(0,7);
   const month=$("activityMonth").value;
   const list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
-  const reportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
+  const exportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
+  const reportable=exportable.filter(a=>["Visit","Call","Email"].includes(a.type));
   $("activityMonthCount").textContent=reportable.length;
   $("activityVisitCount").textContent=reportable.filter(a=>a.type==="Visit").length;
   $("activityCallCount").textContent=reportable.filter(a=>a.type==="Call").length;
@@ -4981,6 +4982,71 @@ function autoRfqReference(d=new Date()){
   return `${m}/${day}/${yy}-${hr}-${min} ${ampm}`;
 }
 
+
+let rfqEditBaseline=null;
+function rfqContactFirstName(customerId,contactId){
+  const ct=contactById(customerId,contactId);
+  const raw=(ct?.name||'Customer').trim();
+  return raw.split(/\s+/)[0]||'Customer';
+}
+function rfqItemDescriptionList(items){
+  const vals=(items||[]).map(i=>(i.product||i.part||'').trim()).filter(Boolean);
+  const unique=[...new Set(vals)];
+  if(!unique.length)return 'the requested products';
+  if(unique.length===1)return unique[0];
+  if(unique.length===2)return `${unique[0]} and ${unique[1]}`;
+  return `${unique.slice(0,-1).join(', ')}, and ${unique[unique.length-1]}`;
+}
+function rfqFeedbackSentence(feedback){
+  const f=(feedback||'').trim();
+  if(!f)return '';
+  return ` Customer feedback: ${f}${/[.!?]$/.test(f)?'':'.'}`;
+}
+function rfqStatusNarrative(rec,oldStatus=''){
+  const first=rfqContactFirstName(rec.customerId,rec.contactId);
+  const items=rfqItemDescriptionList(rec.items);
+  const feedback=rfqFeedbackSentence(rec.feedback);
+  const next=(rec.nextAction||'').trim();
+  const lostReason=(rec.lostReason||'').trim();
+  const lostComments=(rec.lostComments||'').trim();
+  switch(rec.status){
+    case 'RFQ Received': return `${first} requested P&A on ${items}.${feedback}`;
+    case 'Pricing Review': return `${first} requested ${items} and is currently comparing and reviewing pricing.${feedback}`;
+    case 'Waiting on Customer': return `Followed up with ${first} regarding ${items}. Pricing and availability have been provided and we are currently waiting on customer response.${feedback}${next?` Next action: ${next}${/[.!?]$/.test(next)?'':'.'}`:''}`;
+    case 'Verbal Yes': return `${first} indicated they intend to move forward with ${items}. The RFQ is currently at Verbal Yes.${feedback}${next?` Next action: ${next}${/[.!?]$/.test(next)?'':'.'}`:''}`;
+    case 'Hold': return `${first} requested ${items}. The RFQ is currently on hold.${feedback}${next?` Next action: ${next}${/[.!?]$/.test(next)?'':'.'}`:''}`;
+    case 'Closed Won': return `${first} confirmed moving forward with ${items}. The RFQ has been moved to Closed Won.${feedback}`;
+    case 'Lost': return `${first} did not move forward with ${items}. The RFQ has been marked Lost${lostReason?` — ${lostReason}`:''}.${feedback}${lostComments?` Lost details: ${lostComments}${/[.!?]$/.test(lostComments)?'':'.'}`:''}`;
+    default: return `Followed up with ${first} regarding ${items}. RFQ status is ${rec.status||'open'}.${feedback}`;
+  }
+}
+function rfqComparableFromForm(){
+  return {
+    customerId:$('rfqCustomer').value||'',contactId:$('rfqContact').value||'',contactNote:$('rfqContactNote').value.trim(),
+    quoteNo:$('rfqNumber').value.trim(),status:$('rfqStatus').value,followup:$('rfqFollowup').value,
+    feedback:$('rfqFeedback').value.trim(),nextAction:$('rfqNextAction').value.trim(),items:getItems(),
+    shipping:Number($('rfqShipping').value)||0,tax:Number($('rfqTax').value)||0,
+    lostReason:$('rfqLostReason')?.value||'',lostMarket:$('rfqLostMarket')?.value.trim()||'',
+    lostCompetitor:$('rfqLostCompetitor')?.value.trim()||'',lostComments:$('rfqLostComments')?.value.trim()||''
+  };
+}
+function rfqMeaningfullyChanged(){
+  if(!editingRfqId||!rfqEditBaseline)return false;
+  try{return JSON.stringify(rfqComparableFromForm())!==JSON.stringify(rfqEditBaseline)}catch(e){return true}
+}
+function lockInitialRfqStatus(isNew){
+  if(!$('rfqStatus'))return;
+  $('rfqStatus').disabled=!!isNew;
+  if($('rfqStatusNote'))$('rfqStatusNote').textContent=isNew?'Initial status is RFQ Received and is locked until you save and reopen the RFQ.':'Status can be updated. Changes can be logged automatically to the customer log.';
+}
+function logInitialRfqActivity(rec){
+  activities.unshift({
+    id:uid(),date:localIsoDate(),type:'RFQ',customerId:rec.customerId,contactId:rec.contactId||null,
+    comments:rfqStatusNarrative(rec),opportunityRfqId:rec.id,opportunityTitle:rec.quoteNo||'RFQ Opportunity',
+    opportunityValue:total(rec),opportunityStage:rec.status,opportunityDetails:rec.nextAction||rec.feedback||'',
+    internalOnly:false,autoLogged:true,source:'New RFQ',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+  });
+}
 function newRfq(){
   const keepConversion=!!convertingOpportunityActivityId;
   if(!keepConversion)convertingOpportunityActivityId=null;
@@ -4988,11 +5054,11 @@ function newRfq(){
   if($("rfqAutoLogBox"))$("rfqAutoLogBox").classList.add("hidden"); if($("rfqAutoLogEnabled"))$("rfqAutoLogEnabled").checked=true; if($("rfqAutoLogDate"))$("rfqAutoLogDate").value=localIsoDate();
 
   if(!customers.length){alert("Add a customer first.");return}
-  editingRfqId=null;$("rfqFormTitle").textContent="New RFQ";
+  editingRfqId=null;rfqEditBaseline=null;$("rfqFormTitle").textContent="New RFQ";
   ["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");
   $("rfqNumber").value=autoRfqReference();
   $("rfqShipping").value="0.00";$("rfqTax").value="0.00";
-  $("rfqStatus").value="Waiting on Customer";
+  $("rfqStatus").value="RFQ Received";lockInitialRfqStatus(true);
   if($("rfqLostReason"))$("rfqLostReason").value="";
   if($("rfqLostMarket"))$("rfqLostMarket").value="";
   if($("rfqLostCompetitor"))$("rfqLostCompetitor").value="";
@@ -5016,7 +5082,7 @@ function editRfq(id){
   if($("rfqCreateLostIntel"))$("rfqCreateLostIntel").checked=r.createLostIntel!==false;
   refreshRfqLostDetails();
   $("rfqShipping").value=Number(r.shipping||0).toFixed(2);$("rfqTax").value=Number(r.tax||0).toFixed(2);
-  $("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();updateDraft();showView("rfqFormView",false)
+  $("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();updateDraft();lockInitialRfqStatus(false);rfqEditBaseline=rfqComparableFromForm();showView("rfqFormView",false)
 }
 function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",primary:false}){
   const row=$("contactTemplate").content.firstElementChild.cloneNode(true);
@@ -5125,43 +5191,32 @@ function customerOrderSavings(customerId){
     .reduce((s,o)=>s+(Number(o.savingsTotal)||0),0);
 }
 function rfqStatusActivityTemplate(oldStatus,newStatus){
-  const cid=$("rfqCustomer").value,c=customerById(cid);
-  const contact=contactById(cid,$("rfqContact").value);
-  const who=contact?.name||"customer";
-  const quote=$("rfqNumber").value.trim();
-  const value=getItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)+(Number($("rfqShipping").value)||0)+(Number($("rfqTax").value)||0);
-  const q=quote?`RFQ ${quote}`:"the RFQ";
-  if(newStatus==="Closed Won")return `Connected with ${who} regarding ${q}. Customer confirmed moving forward. Opportunity moved from ${oldStatus||"open"} to Closed Won for ${money.format(value)}.`;
-  if(newStatus==="Lost")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Lost.${$("rfqFeedback").value.trim()?` Customer feedback: ${$("rfqFeedback").value.trim()}`:""}`;
-  if(newStatus==="Verbal Yes")return `Connected with ${who} regarding ${q}. Customer indicated they intend to move forward. Opportunity moved from ${oldStatus||"open"} to Verbal Yes for ${money.format(value)}.`;
-  if(newStatus==="Waiting on Customer")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Waiting on Customer.${$("rfqNextAction").value.trim()?` Next action: ${$("rfqNextAction").value.trim()}.`:""}`;
-  if(newStatus==="Pricing Review")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Pricing Review.${$("rfqFeedback").value.trim()?` Customer feedback: ${$("rfqFeedback").value.trim()}`:""}`;
-  if(newStatus==="Hold")return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to Hold.${$("rfqFeedback").value.trim()?` Customer feedback: ${$("rfqFeedback").value.trim()}`:""}`;
-  return `Connected with ${who} regarding ${q}. Opportunity moved from ${oldStatus||"open"} to ${newStatus}.`;
+  const draft=rfqComparableFromForm();
+  draft.status=newStatus;
+  return rfqStatusNarrative(draft,oldStatus);
 }
 function refreshRfqAutoLog(){
-  if(!$("rfqAutoLogBox"))return;
-  const old=rfqs.find(r=>r.id===editingRfqId),newStatus=$("rfqStatus").value;
-  const changed=!!old&&old.status!==newStatus;
-  $("rfqAutoLogBox").classList.toggle("hidden",!changed);
+  if(!$('rfqAutoLogBox'))return;
+  const old=rfqs.find(r=>r.id===editingRfqId);
+  const changed=!!old&&rfqMeaningfullyChanged();
+  $('rfqAutoLogBox').classList.toggle('hidden',!changed);
   if(!changed)return;
-  $("rfqAutoLogDate").value=$("rfqAutoLogDate").value||localIsoDate();
-  const generated=rfqStatusActivityTemplate(old.status,newStatus);
-  $("rfqAutoLogComment").value=generated;
-  $("rfqAutoLogPreview").textContent=`${old.status} → ${newStatus} · ${money.format(getItems().reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.price)||0),0)+(Number($("rfqShipping").value)||0)+(Number($("rfqTax").value)||0))}`;
+  $('rfqAutoLogDate').value=$('rfqAutoLogDate').value||localIsoDate();
+  const generated=rfqStatusNarrative(rfqComparableFromForm(),old.status);
+  $('rfqAutoLogComment').value=generated;
+  const statusChanged=old.status!==$('rfqStatus').value;
+  $('rfqAutoLogPreview').textContent=statusChanged?`${old.status} → ${$('rfqStatus').value}`:`${$('rfqStatus').value} · RFQ details updated`;
 }
-function logRfqStatusActivity(old,rec){
-  if(!old||old.status===rec.status||!$("rfqAutoLogEnabled").checked)return;
-  const type=$("rfqAutoLogType").value;
-  const comment=$("rfqAutoLogComment").value.trim()||rfqStatusActivityTemplate(old.status,rec.status);
-  const ct=contactById(rec.customerId,rec.contactId);
+function logRfqUpdateActivity(old,rec,forceType=''){
+  if(!old)return;
+  const type=forceType||$('rfqAutoLogType').value||'RFQ Update';
+  const comment=forceType?rfqStatusNarrative(rec,old.status):($('rfqAutoLogComment').value.trim()||rfqStatusNarrative(rec,old.status));
   activities.unshift({
-    id:uid(),date:$("rfqAutoLogDate").value||localIsoDate(),type,
+    id:uid(),date:forceType?localIsoDate():($('rfqAutoLogDate').value||localIsoDate()),type,
     customerId:rec.customerId,contactId:rec.contactId||null,comments:comment,
-    opportunityRfqId:rec.id,opportunityTitle:rec.quoteNo||"RFQ Opportunity",
-    opportunityValue:total(rec),opportunityStage:rec.status,opportunityDetails:rec.nextAction||rec.feedback||"",
-    internalOnly:type==="Internal Update",
-    autoLogged:true,source:"RFQ Status Change",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+    opportunityRfqId:rec.id,opportunityTitle:rec.quoteNo||'RFQ Opportunity',opportunityValue:total(rec),
+    opportunityStage:rec.status,opportunityDetails:rec.nextAction||rec.feedback||'',
+    internalOnly:false,autoLogged:true,source:'RFQ Update',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
   });
 }
 
@@ -5194,10 +5249,18 @@ $("saveRfq").onclick=()=>{
     closedWonAt,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
   };
+  const isNew=!editingRfqId;
+  const shouldOfferUpdateLog=!!old&&rfqMeaningfullyChanged();
+  let shouldLogUpdate=false;
+  if(shouldOfferUpdateLog&&$('rfqAutoLogEnabled')?.checked){
+    const proposed=$('rfqAutoLogComment')?.value.trim()||rfqStatusNarrative(rec,old.status);
+    shouldLogUpdate=confirm(`Add this RFQ update to the customer log?\n\n${proposed}`);
+  }
   if(editingRfqId)rfqs=rfqs.map(r=>r.id===editingRfqId?rec:r);else rfqs.unshift(rec);
   if(convertingOpportunityActivityId)linkConvertedOpportunityToRfq(convertingOpportunityActivityId,rec);
   syncOpportunityActivityFromRfq(rec);
-  logRfqStatusActivity(old,rec);
+  if(isNew)logInitialRfqActivity(rec);
+  else if(shouldLogUpdate)logRfqUpdateActivity(old,rec);
   syncLostSaleIntelligence(old,rec);
   convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
@@ -5209,7 +5272,8 @@ if($("closeSalesYear"))$("closeSalesYear").onclick=()=>{ensureYearSettings();con
 if($("startNewSalesYear"))$("startNewSalesYear").onclick=()=>{const y=new Date().getFullYear();settings.activeYear=y;settings.yearGoals=settings.yearGoals||{};if(!Number(settings.yearGoals[y]))settings.yearGoals[y]=(Number(settings.goal)||100000)*12;save();renderAll();};
 $("rfqCustomer").onchange=()=>{renderContactOptions();refreshRfqAutoLog()};$("addContact").onclick=()=>addContactRow();
 $("rfqStatus").onchange=()=>{refreshRfqAutoLog();refreshRfqLostDetails()};
-["rfqContact","rfqNumber","rfqFeedback","rfqNextAction","rfqShipping","rfqTax"].forEach(id=>$(id)&&$(id).addEventListener("input",()=>{if(!$("rfqAutoLogBox").classList.contains("hidden"))refreshRfqAutoLog()}));
+["rfqCustomer","rfqContact","rfqNumber","rfqContactNote","rfqStatus","rfqFollowup","rfqFeedback","rfqNextAction","rfqShipping","rfqTax","rfqLostReason","rfqLostMarket","rfqLostCompetitor","rfqLostComments"].forEach(id=>$(id)&&["input","change"].forEach(ev=>$(id).addEventListener(ev,()=>{if(editingRfqId)refreshRfqAutoLog()})));
+document.addEventListener("input",e=>{if(editingRfqId&&e.target.closest?.("#rfqItems"))refreshRfqAutoLog()});
 $("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
 $("backFromRfq").onclick=$("cancelRfq").onclick=()=>{convertingOpportunityActivityId=null;showView(lastMainView,true)};$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);

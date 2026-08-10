@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-1-6-excel-export-hotfix";
+const CACHE="ab-sales-os-v5-1-9-rfq-auto-log";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
