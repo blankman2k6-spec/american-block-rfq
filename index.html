@@ -912,7 +912,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 
 .rfq-feedback-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.rfq-feedback-checks .verify-check{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:0}.rfq-feedback-checks input{width:auto!important}
 
-/* v5.2.2 month-specific manual sales adjustments */
+/* v5.2.3 month-specific manual sales adjustments */
 .sales-adjustment-period-row{align-items:end}
 .sales-adjustment-period-summary{display:flex;flex-direction:column;justify-content:flex-end}
 .sales-adjustment-period-pill{
@@ -931,7 +931,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.2 Sales Adjustment Period</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.3 Period Sales + Year Adjustment</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1006,7 +1006,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
         <div><label>Monthly Goal</label><input id="monthlyGoal" type="number" min="0" step="1000" value="100000"></div>
         <div>
           <label>Manual Sales Adjustment</label>
-          <input id="monthlySales" type="number" min="0" step="0.01" value="0">
+          <input id="monthlySales" type="number" step="0.01" value="0">
         </div>
       </div>
       <div class="row sales-adjustment-period-row" style="margin-top:10px">
@@ -1022,7 +1022,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
       <div class="mini" style="margin-top:7px">Choose the month and year this manual adjustment belongs to. Historical adjustments are saved separately and do not change another month's sales.</div>
       <div class="progress-wrap" style="margin-top:14px"><div id="goalProgress" class="progress"></div></div>
       <div class="grid metrics" style="margin-top:12px">
-        <div class="metric"><small>Sales This Month</small><strong id="importedMonthSales">$0</strong><div class="sub">Delivered/invoiced qty only</div></div>
+        <div class="metric"><small>Sales for Selected Month</small><strong id="importedMonthSales">$0</strong><div class="sub">Closed/credited sales + adjustment</div></div>
         <div class="metric"><small>Remaining</small><strong id="goalRemaining">$0</strong></div>
         <div class="metric"><small>Daily Run Rate Needed</small><strong id="dailyNeeded">$0</strong><div class="sub"><span id="businessDaysLeft">0</span> business days left</div></div>
       </div>
@@ -2400,7 +2400,7 @@ function annualClosedSales(year=Number(settings.activeYear)||new Date().getFullY
   const real=orders.reduce((s,o)=>s+boRecognizedValueInRange(o,start,end),0);
   const synthetic=rfqs.filter(r=>r.status==="Closed Won"&&!orderLinkedToRfq(r.id))
     .reduce((s,r)=>s+boRecognizedValueInRange(boSyntheticSource(r),start,end),0);
-  return real+synthetic;
+  return real+synthetic+annualManualAdjustments(year);
 }
 function remainingMonthsInYear(year){
   const now=new Date();
@@ -2455,11 +2455,54 @@ function formatSalesAdjustmentPeriod(key){
   if(!m)return "Current Month";
   return new Date(Number(m[1]),Number(m[2])-1,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
 }
-function loadSelectedSalesAdjustment(){
+
+function salesPeriodRange(key=selectedSalesAdjustmentPeriod()){
+  const m=/^(\d{4})-(\d{2})$/.exec(key||"");
+  if(!m)return boMonthRange(new Date());
+  const y=Number(m[1]),month=Number(m[2])-1;
+  return {
+    start:new Date(y,month,1,0,0,0,0),
+    end:new Date(y,month+1,0,23,59,59,999)
+  };
+}
+function importedSalesForPeriod(key){
+  const {start,end}=salesPeriodRange(key);
+  return orders.reduce((s,o)=>s+boRecognizedValueInRange(o,start,end),0);
+}
+function closedWonSalesForPeriod(key){
+  const {start,end}=salesPeriodRange(key);
+  return rfqs.filter(r=>r.status==="Closed Won"&&!orderLinkedToRfq(r.id))
+    .reduce((s,r)=>s+boRecognizedValueInRange(boSyntheticSource(r),start,end),0);
+}
+function creditedSalesForPeriod(key){
+  return importedSalesForPeriod(key)+closedWonSalesForPeriod(key);
+}
+function businessDaysRemainingForPeriod(key){
+  const {start,end}=salesPeriodRange(key),now=new Date();
+  const y=start.getFullYear(),m=start.getMonth();
+  if(end<new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0,0))return 0;
+  let firstDay=1;
+  if(y===now.getFullYear()&&m===now.getMonth())firstDay=now.getDate()+1;
+  let count=0;
+  for(let d=firstDay;d<=end.getDate();d++){
+    const day=new Date(y,m,d).getDay();
+    if(day!==0&&day!==6)count++;
+  }
+  return count;
+}
+function annualManualAdjustments(year){
+  ensureMonthlySalesAdjustments();
+  return Object.entries(settings.monthlySalesAdjustments||{}).reduce((sum,[key,value])=>{
+    return key.startsWith(String(year)+"-")?sum+(Number(value)||0):sum;
+  },0);
+}
+function loadSelectedSalesAdjustment(render=true){
   ensureMonthlySalesAdjustments();
   const key=selectedSalesAdjustmentPeriod();
+  settings.salesAdjustmentViewPeriod=key;
   if($("monthlySales"))$("monthlySales").value=monthlySalesAdjustmentFor(key);
   if($("monthlySalesPeriodLabel"))$("monthlySalesPeriodLabel").textContent=formatSalesAdjustmentPeriod(key);
+  if(render)renderDashboard();
 }
 
 function renderDashboard(){
@@ -2471,19 +2514,24 @@ function renderDashboard(){
   $("dDue").textContent=due.length;
   ensureMonthlySalesAdjustments();
   $("monthlyGoal").value=settings.goal||100000;
-  if($("monthlySalesPeriod")&&!$("monthlySalesPeriod").value)$("monthlySalesPeriod").value=salesAdjustmentMonthKey();
-  loadSelectedSalesAdjustment();
-  const currentAdjustment=monthlySalesAdjustmentFor(salesAdjustmentMonthKey());
-  const goal=Number(settings.goal)||0,autoSales=currentMonthSalesTotal(),sales=currentAdjustment+autoSales,remain=Math.max(0,goal-sales),days=businessDaysLeft();
-  const pct=goal?Math.min(100,(sales/goal)*100):0;
-  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(autoSales);
-  $("dailyNeeded").textContent=money.format(days?remain/days:remain);$("businessDaysLeft").textContent=days;
+  const defaultPeriod=settings.salesAdjustmentViewPeriod||salesAdjustmentMonthKey();
+  if($("monthlySalesPeriod")&&!$("monthlySalesPeriod").value)$("monthlySalesPeriod").value=defaultPeriod;
+  const selectedPeriod=selectedSalesAdjustmentPeriod();
+  loadSelectedSalesAdjustment(false);
+  const selectedAdjustment=monthlySalesAdjustmentFor(selectedPeriod);
+  const importedSales=importedSalesForPeriod(selectedPeriod);
+  const closedWonSales=closedWonSalesForPeriod(selectedPeriod);
+  const autoSales=importedSales+closedWonSales;
+  const goal=Number(settings.goal)||0,sales=selectedAdjustment+autoSales,remain=Math.max(0,goal-sales),days=businessDaysRemainingForPeriod(selectedPeriod);
+  const pct=goal?Math.max(0,Math.min(100,(sales/goal)*100)):0;
+  $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(sales);
+  $("dailyNeeded").textContent=money.format(days?remain/days:0);$("businessDaysLeft").textContent=days;
 
   // Top dashboard goal pie
   if($("goalPie")){
     $("goalPie").style.setProperty("--goal-pct",pct.toFixed(2));
     $("goalPiePct").textContent=Math.round(pct)+"%";
-    $("goalPieTitle").textContent=`${money.format(goal).replace(".00","")} Goal`;
+    $("goalPieTitle").textContent=`${formatSalesAdjustmentPeriod(selectedPeriod)} · ${money.format(goal).replace(".00","")} Goal`;
     $("goalPieSales").textContent=money.format(sales);
     $("goalPieRemaining").textContent=money.format(remain);
     $("goalPieRunRate").textContent=money.format(days?remain/days:remain);
@@ -2492,7 +2540,7 @@ function renderDashboard(){
     $("goalPieStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
     $("goalPie").setAttribute("aria-label",`${Math.round(pct)} percent of monthly sales goal complete`);
   }
-  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Credited orders ${money.format(currentMonthImportedSales())} · Credited Closed Won ${money.format(currentMonthClosedWonSales())}${currentAdjustment?` · Manual adjustment ${money.format(currentAdjustment)}`:""}`;
+  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Credited orders ${money.format(importedSales)} · Credited Closed Won ${money.format(closedWonSales)}${selectedAdjustment?` · Manual adjustment ${selectedAdjustment>=0?"+":""}${money.format(selectedAdjustment)}`:""}`;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
 
@@ -5378,8 +5426,8 @@ $("saveGoal").onclick=()=>{
   ensureMonthlySalesAdjustments();
   settings.goal=Number($("monthlyGoal").value)||0;
   const key=selectedSalesAdjustmentPeriod();
+  settings.salesAdjustmentViewPeriod=key;
   settings.monthlySalesAdjustments[key]=Number($("monthlySales").value)||0;
-  // Keep legacy setting aligned only for the current month for backward compatibility.
   if(key===salesAdjustmentMonthKey())settings.sales=settings.monthlySalesAdjustments[key];
   save();
   renderDashboard();
@@ -6284,8 +6332,8 @@ if($("moneyWheelModal"))$("moneyWheelModal").onclick=e=>{if(e.target===$("moneyW
 
 
 if($("monthlySalesPeriod")){
-  $("monthlySalesPeriod").value=$("monthlySalesPeriod").value||salesAdjustmentMonthKey();
-  $("monthlySalesPeriod").onchange=loadSelectedSalesAdjustment;
+  $("monthlySalesPeriod").value=settings.salesAdjustmentViewPeriod||$("monthlySalesPeriod").value||salesAdjustmentMonthKey();
+  $("monthlySalesPeriod").onchange=()=>loadSelectedSalesAdjustment(true);
 }
 
 renderAll();
