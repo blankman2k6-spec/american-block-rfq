@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-2-1-activity-goal-fix";
+const CACHE="ab-sales-os-v5-2-2-sales-adjustment-period";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{

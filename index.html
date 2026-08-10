@@ -911,6 +911,19 @@ body[data-skin="classic-office"] .customer-health-card small,
 body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!important}
 
 .rfq-feedback-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.rfq-feedback-checks .verify-check{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:0}.rfq-feedback-checks input{width:auto!important}
+
+/* v5.2.2 month-specific manual sales adjustments */
+.sales-adjustment-period-row{align-items:end}
+.sales-adjustment-period-summary{display:flex;flex-direction:column;justify-content:flex-end}
+.sales-adjustment-period-pill{
+  min-height:46px;display:flex;align-items:center;padding:0 14px;
+  border:1px solid var(--line);border-radius:13px;background:var(--panel2);
+  color:var(--text);font-weight:800
+}
+@media(max-width:620px){
+  .sales-adjustment-period-row{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -918,7 +931,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.1 Activity Goal Control Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.2 Sales Adjustment Period</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -991,8 +1004,22 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
       <div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">$100K Monthly Goal</h2><span id="goalStatus" class="status">Set up</span></div>
       <div class="row">
         <div><label>Monthly Goal</label><input id="monthlyGoal" type="number" min="0" step="1000" value="100000"></div>
-        <div><label>Manual Sales Adjustment</label><input id="monthlySales" type="number" min="0" step="0.01" value="0"></div>
+        <div>
+          <label>Manual Sales Adjustment</label>
+          <input id="monthlySales" type="number" min="0" step="0.01" value="0">
+        </div>
       </div>
+      <div class="row sales-adjustment-period-row" style="margin-top:10px">
+        <div>
+          <label>Adjustment Month / Year</label>
+          <input id="monthlySalesPeriod" type="month">
+        </div>
+        <div class="sales-adjustment-period-summary">
+          <label>Selected Period</label>
+          <div id="monthlySalesPeriodLabel" class="sales-adjustment-period-pill">Current Month</div>
+        </div>
+      </div>
+      <div class="mini" style="margin-top:7px">Choose the month and year this manual adjustment belongs to. Historical adjustments are saved separately and do not change another month's sales.</div>
       <div class="progress-wrap" style="margin-top:14px"><div id="goalProgress" class="progress"></div></div>
       <div class="grid metrics" style="margin-top:12px">
         <div class="metric"><small>Sales This Month</small><strong id="importedMonthSales">$0</strong><div class="sub">Delivered/invoiced qty only</div></div>
@@ -2399,6 +2426,42 @@ function renderYearManagement(){
   }
 }
 
+
+function salesAdjustmentMonthKey(d=new Date()){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0");
+  return `${y}-${m}`;
+}
+function ensureMonthlySalesAdjustments(){
+  settings.monthlySalesAdjustments=settings.monthlySalesAdjustments||{};
+  // Migrate the legacy single adjustment into the current month once.
+  if(!settings.monthlySalesAdjustmentsMigrated){
+    const legacy=Number(settings.sales)||0;
+    if(legacy){
+      const key=salesAdjustmentMonthKey();
+      if(settings.monthlySalesAdjustments[key]===undefined)settings.monthlySalesAdjustments[key]=legacy;
+    }
+    settings.monthlySalesAdjustmentsMigrated=true;
+  }
+}
+function monthlySalesAdjustmentFor(key=salesAdjustmentMonthKey()){
+  ensureMonthlySalesAdjustments();
+  return Number(settings.monthlySalesAdjustments?.[key])||0;
+}
+function selectedSalesAdjustmentPeriod(){
+  return $("monthlySalesPeriod")?.value||salesAdjustmentMonthKey();
+}
+function formatSalesAdjustmentPeriod(key){
+  const m=/^(\d{4})-(\d{2})$/.exec(key||"");
+  if(!m)return "Current Month";
+  return new Date(Number(m[1]),Number(m[2])-1,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
+}
+function loadSelectedSalesAdjustment(){
+  ensureMonthlySalesAdjustments();
+  const key=selectedSalesAdjustmentPeriod();
+  if($("monthlySales"))$("monthlySales").value=monthlySalesAdjustmentFor(key);
+  if($("monthlySalesPeriodLabel"))$("monthlySalesPeriodLabel").textContent=formatSalesAdjustmentPeriod(key);
+}
+
 function renderDashboard(){
   const open=rfqs.filter(isOpen),today=today0();
   $("dOpenCount").textContent=open.length;
@@ -2406,8 +2469,12 @@ function renderDashboard(){
   $("dVerbal").textContent=money.format(rfqs.filter(r=>r.status==="Verbal Yes").reduce((s,r)=>s+total(r),0));
   const due=open.filter(r=>r.followup&&new Date(r.followup+"T00:00:00")<=today);
   $("dDue").textContent=due.length;
-  $("monthlyGoal").value=settings.goal||100000;$("monthlySales").value=settings.sales||0;
-  const goal=Number(settings.goal)||0,autoSales=currentMonthSalesTotal(),sales=(Number(settings.sales)||0)+autoSales,remain=Math.max(0,goal-sales),days=businessDaysLeft();
+  ensureMonthlySalesAdjustments();
+  $("monthlyGoal").value=settings.goal||100000;
+  if($("monthlySalesPeriod")&&!$("monthlySalesPeriod").value)$("monthlySalesPeriod").value=salesAdjustmentMonthKey();
+  loadSelectedSalesAdjustment();
+  const currentAdjustment=monthlySalesAdjustmentFor(salesAdjustmentMonthKey());
+  const goal=Number(settings.goal)||0,autoSales=currentMonthSalesTotal(),sales=currentAdjustment+autoSales,remain=Math.max(0,goal-sales),days=businessDaysLeft();
   const pct=goal?Math.min(100,(sales/goal)*100):0;
   $("goalProgress").style.width=pct+"%";$("goalRemaining").textContent=money.format(remain);$("importedMonthSales").textContent=money.format(autoSales);
   $("dailyNeeded").textContent=money.format(days?remain/days:remain);$("businessDaysLeft").textContent=days;
@@ -2425,7 +2492,7 @@ function renderDashboard(){
     $("goalPieStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
     $("goalPie").setAttribute("aria-label",`${Math.round(pct)} percent of monthly sales goal complete`);
   }
-  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Credited orders ${money.format(currentMonthImportedSales())} · Credited Closed Won ${money.format(currentMonthClosedWonSales())}${Number(settings.sales)?` · Manual adjustment ${money.format(Number(settings.sales)||0)}`:""}`;
+  if($("monthlySalesBreakdown"))$("monthlySalesBreakdown").textContent=`Credited orders ${money.format(currentMonthImportedSales())} · Credited Closed Won ${money.format(currentMonthClosedWonSales())}${currentAdjustment?` · Manual adjustment ${money.format(currentAdjustment)}`:""}`;
   $("goalStatus").textContent=pct>=100?"GOAL MET":pct>=50?"IN PROGRESS":"BUILDING";
   $("goalStatus").className="status "+(pct>=100?"green":pct>=50?"yellow":"red");
 
@@ -5307,48 +5374,15 @@ $("saveRfq").onclick=()=>{
   save();showView("rfqsView",true)
 }
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:old?.isNewAccount??(!editingCustomerId),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
-$("saveGoal").onclick=()=>{settings.goal=Number($("monthlyGoal").value)||0;settings.sales=Number($("monthlySales").value)||0;save();renderDashboard()}
-if($("saveAnnualGoal"))$("saveAnnualGoal").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();settings.yearGoals[y]=Math.max(0,Number($("annualGoalInput").value)||0);save();renderAll();};
-if($("closeSalesYear"))$("closeSalesYear").onclick=()=>{ensureYearSettings();const y=Number(settings.activeYear)||new Date().getFullYear();const goal=Number(settings.yearGoals[y])||0,sales=annualClosedSales(y);if(!confirm(`Close ${y} with credited sales of ${money.format(sales)} against a goal of ${money.format(goal)}? Orders will remain in history.`))return;settings.yearArchives[y]={year:y,goal,sales,closedAt:new Date().toISOString()};save();renderAll();};
-if($("startNewSalesYear"))$("startNewSalesYear").onclick=()=>{const y=new Date().getFullYear();settings.activeYear=y;settings.yearGoals=settings.yearGoals||{};if(!Number(settings.yearGoals[y]))settings.yearGoals[y]=(Number(settings.goal)||100000)*12;save();renderAll();};
-$("rfqCustomer").onchange=()=>{renderContactOptions();refreshRfqAutoLog()};$("addContact").onclick=()=>addContactRow();
-$("rfqStatus").onchange=()=>{refreshRfqAutoLog();refreshRfqLostDetails()};
-["rfqCustomer","rfqContact","rfqNumber","rfqContactNote","rfqStatus","rfqFollowup","rfqFeedback","rfqAbcoFeedback","rfqInsideSalesFeedback","rfqNextAction","rfqShipping","rfqTax","rfqLostReason","rfqLostMarket","rfqLostCompetitor","rfqLostComments","rfqISOkc","rfqISHouston","rfqISOdessa","rfqISNorthDakota","rfqISManager"].forEach(id=>$(id)&&["input","change"].forEach(ev=>$(id).addEventListener(ev,()=>{if(editingRfqId)refreshRfqAutoLog()})));
-document.addEventListener("input",e=>{if(editingRfqId&&e.target.closest?.("#rfqItems"))refreshRfqAutoLog()});
-$("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
-$("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
-$("backFromRfq").onclick=$("cancelRfq").onclick=()=>{convertingOpportunityActivityId=null;showView(lastMainView,true)};$("backFromCustomer").onclick=$("cancelCustomer").onclick=()=>showView(lastMainView,true);
-$("goRfqs").onclick=()=>showView("rfqsView",true);$("goFollowups").onclick=()=>showView("followupsView",true);
-["rfqSearch","customerSearch","followupSearch","productSearch"].forEach(id=>$(id)&&($(id).oninput=renderAll));
-["rfqStatusFilter","rfqGroup","rfqSort","followupFilter","productPeriod","productRankBy"].forEach(id=>$(id)&&($(id).onchange=renderAll));
-
-function exportBackup(){
-  const data={version:6,exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings,cloud};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);a.download=`american-block-sales-os-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)
-}
-function importBackup(){ $("importFile").click() }
-$("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(Array.isArray(data)){rfqs=data}else{rfqs=data.rfqs||[];customers=data.customers||[];orders=data.orders||[];communications=data.communications||[];if(Object.prototype.hasOwnProperty.call(data,"activities")){activities=Array.isArray(data.activities)?data.activities:activities}if(Object.prototype.hasOwnProperty.call(data,"intelligence")){intelligence=Array.isArray(data.intelligence)?data.intelligence:intelligence}settings=data.settings||settings;cloud=data.cloud||cloud}migrate();save();renderAll();alert("Backup imported.")}catch{alert("That backup file could not be imported.")}}
-["exportBackup","settingsExport"].forEach(id=>$(id).onclick=exportBackup);
-["importBackup","settingsImport"].forEach(id=>$(id).onclick=importBackup);
-function importActivitiesOnly(){ $("activityImportFile").click() }
-$("settingsActivityImport").onclick=importActivitiesOnly;
-$("activityImportFile").onchange=async e=>{
-  try{
-    const file=e.target.files?.[0]; if(!file)return;
-    const data=JSON.parse(await file.text());
-    const incoming=Array.isArray(data)?data:(Array.isArray(data.activities)?data.activities:null);
-    if(!incoming)throw new Error("No activities array found");
-    const valid=incoming.filter(a=>a&&typeof a==="object"&&a.id&&a.date&&a.customerId&&a.comments);
-    if(!valid.length)throw new Error("No valid activities found");
-    const existing=new Map(activities.map(a=>[a.id,a]));
-    let added=0,updated=0;
-    valid.forEach(a=>{ if(existing.has(a.id))updated++; else added++; existing.set(a.id,a); });
-    activities=[...existing.values()];
-    save(); renderAll();
-    alert(`Activities imported safely. Added ${added}, updated ${updated}. Existing customers, RFQs, orders, and communications were not changed.`);
-  }catch(err){alert(`Activity import failed: ${err?.message||err}`)}
-  finally{e.target.value=""}
+$("saveGoal").onclick=()=>{
+  ensureMonthlySalesAdjustments();
+  settings.goal=Number($("monthlyGoal").value)||0;
+  const key=selectedSalesAdjustmentPeriod();
+  settings.monthlySalesAdjustments[key]=Number($("monthlySales").value)||0;
+  // Keep legacy setting aligned only for the current month for backward compatibility.
+  if(key===salesAdjustmentMonthKey())settings.sales=settings.monthlySalesAdjustments[key];
+  save();
+  renderDashboard();
 };
 
 function teamReport(){
@@ -6247,6 +6281,12 @@ if($("moneyWheelClose"))$("moneyWheelClose").onclick=closeMoneyWheel;
 if($("moneyWheelCancel"))$("moneyWheelCancel").onclick=closeMoneyWheel;
 if($("moneyWheelApply"))$("moneyWheelApply").onclick=applyMoneyWheel;
 if($("moneyWheelModal"))$("moneyWheelModal").onclick=e=>{if(e.target===$("moneyWheelModal"))closeMoneyWheel()};
+
+
+if($("monthlySalesPeriod")){
+  $("monthlySalesPeriod").value=$("monthlySalesPeriod").value||salesAdjustmentMonthKey();
+  $("monthlySalesPeriod").onchange=loadSelectedSalesAdjustment;
+}
 
 renderAll();
 initializeCloudSync();
