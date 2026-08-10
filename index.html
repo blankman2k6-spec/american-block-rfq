@@ -909,6 +909,7 @@ body[data-skin="classic-office"] .customer-health-card strong,
 body[data-skin="classic-office"] .customer-health-card small,
 body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!important}
 
+.rfq-feedback-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.rfq-feedback-checks .verify-check{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:0}.rfq-feedback-checks input{width:auto!important}
 </style>
 </head>
 <body>
@@ -916,7 +917,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.1.9 RFQ Auto Customer Log</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.0 RFQ Feedback Tracking</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1760,6 +1761,21 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
       </div>
       <div class="total"><span>Quote Total</span><strong id="rfqDraftTotal">$0.00</strong></div>
       <label>Customer Feedback</label><textarea id="rfqFeedback" placeholder="What did the customer say?"></textarea>
+      <label>American Block Feedback to Customer</label>
+      <textarea id="rfqAbcoFeedback" placeholder="What did American Block communicate back to the customer? Example: We only offer SCH XXH; SCH 80 is not available. Houston has 70 pcs and Odessa has 33 pcs available."></textarea>
+
+      <div class="auto-log-box" style="margin-top:12px">
+        <div class="section-head" style="margin:0"><div><strong>Inside Sales Feedback</strong><div class="mini">Internal record only. Timestamp is captured automatically when feedback is entered or changed.</div></div><span id="rfqInsideSalesTimestamp" class="status blue">Not recorded</span></div>
+        <textarea id="rfqInsideSalesFeedback" rows="3" placeholder="Document feedback or information received from Inside Sales..."></textarea>
+        <label style="margin-top:10px">Feedback From / Location</label>
+        <div class="rfq-feedback-checks">
+          <label class="verify-check"><input id="rfqISOkc" type="checkbox"> OKC</label>
+          <label class="verify-check"><input id="rfqISHouston" type="checkbox"> Houston</label>
+          <label class="verify-check"><input id="rfqISOdessa" type="checkbox"> Odessa</label>
+          <label class="verify-check"><input id="rfqISNorthDakota" type="checkbox"> North Dakota</label>
+          <label class="verify-check"><input id="rfqISManager" type="checkbox"> Inside Sales Manager</label>
+        </div>
+      </div>
       <label>Next Action</label><input id="rfqNextAction" placeholder="Call, visit, revise quote, check inventory...">
 
       <div id="rfqLostDetails" class="auto-log-box hidden">
@@ -5002,7 +5018,25 @@ function rfqFeedbackSentence(feedback){
   if(!f)return '';
   return ` Customer feedback: ${f}${/[.!?]$/.test(f)?'':'.'}`;
 }
-function rfqStatusNarrative(rec,oldStatus=''){
+function rfqAbcoFeedbackSentence(value){
+  const f=(value||'').trim(); if(!f)return '';
+  return ` American Block feedback to customer: ${f}${/[.!?]$/.test(f)?'':'.'}`;
+}
+function rfqInsideSalesSources(rec){
+  const s=rec.insideSalesSources||{}; return [s.okc&&'OKC',s.houston&&'Houston',s.odessa&&'Odessa',s.northDakota&&'North Dakota',s.manager&&'Inside Sales Manager'].filter(Boolean);
+}
+function rfqInsideSalesSentence(rec){
+  const f=(rec.insideSalesFeedback||'').trim(); if(!f)return '';
+  const sources=rfqInsideSalesSources(rec); const ts=rec.insideSalesFeedbackAt?new Date(rec.insideSalesFeedbackAt):null;
+  const stamp=ts&&!isNaN(ts)?ts.toLocaleString():'';
+  return ` Inside Sales feedback${sources.length?` (${sources.join(', ')})`:''}${stamp?` [${stamp}]`:''}: ${f}${/[.!?]$/.test(f)?'':'.'}`;
+}
+function rfqFullFeedbackNarrative(rec,base){return `${base}${rfqAbcoFeedbackSentence(rec.abcoFeedback)}${rfqInsideSalesSentence(rec)}`}
+function updateInsideSalesTimestampDisplay(value){
+  const el=$('rfqInsideSalesTimestamp'); if(!el)return; const d=value?new Date(value):null;
+  el.textContent=d&&!isNaN(d)?d.toLocaleString():'Not recorded';
+}
+function rfqStatusNarrativeBase(rec,oldStatus=''){
   const first=rfqContactFirstName(rec.customerId,rec.contactId);
   const items=rfqItemDescriptionList(rec.items);
   const feedback=rfqFeedbackSentence(rec.feedback);
@@ -5020,11 +5054,12 @@ function rfqStatusNarrative(rec,oldStatus=''){
     default: return `Followed up with ${first} regarding ${items}. RFQ status is ${rec.status||'open'}.${feedback}`;
   }
 }
+function rfqStatusNarrative(rec,oldStatus=''){return rfqFullFeedbackNarrative(rec,rfqStatusNarrativeBase(rec,oldStatus))}
 function rfqComparableFromForm(){
   return {
     customerId:$('rfqCustomer').value||'',contactId:$('rfqContact').value||'',contactNote:$('rfqContactNote').value.trim(),
     quoteNo:$('rfqNumber').value.trim(),status:$('rfqStatus').value,followup:$('rfqFollowup').value,
-    feedback:$('rfqFeedback').value.trim(),nextAction:$('rfqNextAction').value.trim(),items:getItems(),
+    feedback:$('rfqFeedback').value.trim(),abcoFeedback:$('rfqAbcoFeedback').value.trim(),insideSalesFeedback:$('rfqInsideSalesFeedback').value.trim(),insideSalesSources:{okc:$('rfqISOkc').checked,houston:$('rfqISHouston').checked,odessa:$('rfqISOdessa').checked,northDakota:$('rfqISNorthDakota').checked,manager:$('rfqISManager').checked},nextAction:$('rfqNextAction').value.trim(),items:getItems(),
     shipping:Number($('rfqShipping').value)||0,tax:Number($('rfqTax').value)||0,
     lostReason:$('rfqLostReason')?.value||'',lostMarket:$('rfqLostMarket')?.value.trim()||'',
     lostCompetitor:$('rfqLostCompetitor')?.value.trim()||'',lostComments:$('rfqLostComments')?.value.trim()||''
@@ -5055,7 +5090,7 @@ function newRfq(){
 
   if(!customers.length){alert("Add a customer first.");return}
   editingRfqId=null;rfqEditBaseline=null;$("rfqFormTitle").textContent="New RFQ";
-  ["rfqNumber","rfqFollowup","rfqFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value="");
+  ["rfqNumber","rfqFollowup","rfqFeedback","rfqAbcoFeedback","rfqInsideSalesFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value=""); ["rfqISOkc","rfqISHouston","rfqISOdessa","rfqISNorthDakota","rfqISManager"].forEach(id=>$(id).checked=false); updateInsideSalesTimestampDisplay("");
   $("rfqNumber").value=autoRfqReference();
   $("rfqShipping").value="0.00";$("rfqTax").value="0.00";
   $("rfqStatus").value="RFQ Received";lockInitialRfqStatus(true);
@@ -5074,7 +5109,7 @@ function editRfq(id){
 
   const r=rfqs.find(x=>x.id===id);if(!r)return;
   editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");
-  $("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqNextAction").value=r.nextAction||"";
+  $("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqAbcoFeedback").value=r.abcoFeedback||"";$("rfqInsideSalesFeedback").value=r.insideSalesFeedback||""; const iss=r.insideSalesSources||{}; $("rfqISOkc").checked=!!iss.okc;$("rfqISHouston").checked=!!iss.houston;$("rfqISOdessa").checked=!!iss.odessa;$("rfqISNorthDakota").checked=!!iss.northDakota;$("rfqISManager").checked=!!iss.manager;updateInsideSalesTimestampDisplay(r.insideSalesFeedbackAt||"");$("rfqNextAction").value=r.nextAction||"";
   if($("rfqLostReason"))$("rfqLostReason").value=r.lostReason||"";
   if($("rfqLostMarket"))$("rfqLostMarket").value=r.lostMarket||"";
   if($("rfqLostCompetitor"))$("rfqLostCompetitor").value=r.lostCompetitor||"";
@@ -5235,10 +5270,14 @@ $("saveRfq").onclick=()=>{
   let closedWonAt=old?.closedWonAt||null;
   if(newStatus==="Closed Won" && old?.status!=="Closed Won")closedWonAt=new Date().toISOString();
   if(newStatus!=="Closed Won")closedWonAt=null;
+  const insideSalesFeedback=$('rfqInsideSalesFeedback').value.trim();
+  const insideSalesSources={okc:$('rfqISOkc').checked,houston:$('rfqISHouston').checked,odessa:$('rfqISOdessa').checked,northDakota:$('rfqISNorthDakota').checked,manager:$('rfqISManager').checked};
+  const insideSalesChanged=insideSalesFeedback!==(old?.insideSalesFeedback||'')||JSON.stringify(insideSalesSources)!==JSON.stringify(old?.insideSalesSources||{});
+  const insideSalesFeedbackAt=insideSalesFeedback?(insideSalesChanged?new Date().toISOString():(old?.insideSalesFeedbackAt||new Date().toISOString())):'';
   const rec={
     id:editingRfqId||uid(),customerId:cid,contactId:$("rfqContact").value||null,contactNote:$("rfqContactNote").value.trim(),
     company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:newStatus,followup:$("rfqFollowup").value,
-    feedback:$("rfqFeedback").value.trim(),nextAction:$("rfqNextAction").value.trim(),items:getItems(),
+    feedback:$("rfqFeedback").value.trim(),abcoFeedback:$("rfqAbcoFeedback").value.trim(),insideSalesFeedback,insideSalesSources,insideSalesFeedbackAt,nextAction:$("rfqNextAction").value.trim(),items:getItems(),
     shipping:Number($("rfqShipping").value)||0,tax:Number($("rfqTax").value)||0,
     lostReason:newStatus==="Lost"?$("rfqLostReason").value:"",
     lostMarket:newStatus==="Lost"?$("rfqLostMarket").value.trim():"",
@@ -5272,7 +5311,7 @@ if($("closeSalesYear"))$("closeSalesYear").onclick=()=>{ensureYearSettings();con
 if($("startNewSalesYear"))$("startNewSalesYear").onclick=()=>{const y=new Date().getFullYear();settings.activeYear=y;settings.yearGoals=settings.yearGoals||{};if(!Number(settings.yearGoals[y]))settings.yearGoals[y]=(Number(settings.goal)||100000)*12;save();renderAll();};
 $("rfqCustomer").onchange=()=>{renderContactOptions();refreshRfqAutoLog()};$("addContact").onclick=()=>addContactRow();
 $("rfqStatus").onchange=()=>{refreshRfqAutoLog();refreshRfqLostDetails()};
-["rfqCustomer","rfqContact","rfqNumber","rfqContactNote","rfqStatus","rfqFollowup","rfqFeedback","rfqNextAction","rfqShipping","rfqTax","rfqLostReason","rfqLostMarket","rfqLostCompetitor","rfqLostComments"].forEach(id=>$(id)&&["input","change"].forEach(ev=>$(id).addEventListener(ev,()=>{if(editingRfqId)refreshRfqAutoLog()})));
+["rfqCustomer","rfqContact","rfqNumber","rfqContactNote","rfqStatus","rfqFollowup","rfqFeedback","rfqAbcoFeedback","rfqInsideSalesFeedback","rfqNextAction","rfqShipping","rfqTax","rfqLostReason","rfqLostMarket","rfqLostCompetitor","rfqLostComments","rfqISOkc","rfqISHouston","rfqISOdessa","rfqISNorthDakota","rfqISManager"].forEach(id=>$(id)&&["input","change"].forEach(ev=>$(id).addEventListener(ev,()=>{if(editingRfqId)refreshRfqAutoLog()})));
 document.addEventListener("input",e=>{if(editingRfqId&&e.target.closest?.("#rfqItems"))refreshRfqAutoLog()});
 $("rfqShipping").oninput=updateDraft;$("rfqTax").oninput=updateDraft;
 $("quickAdd").onclick=newRfq;$("addRfqTop").onclick=newRfq;$("addItem").onclick=()=>addItem();$("addCustomerBtn").onclick=newCustomer;
