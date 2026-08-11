@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.10 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.2.11 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -965,7 +965,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.10 RFQ Contact Selector Repair</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.11 Daily Tracker RFQ Log Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1287,7 +1287,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
     </div>
 
     <div class="grid metrics">
-      <div class="metric"><small>Activities This Month</small><strong id="activityMonthCount">0</strong><div class="sub">Visits, calls, and emails</div></div>
+      <div class="metric"><small>Activities This Month</small><strong id="activityMonthCount">0</strong><div class="sub">Customer-facing logged activity</div></div>
       <div class="metric"><small>Customer Visits</small><strong id="activityVisitCount">0</strong><div class="sub">Face-to-face activity</div></div>
       <div class="metric"><small>Calls</small><strong id="activityCallCount">0</strong><div class="sub">Phone follow-up</div></div>
       <div class="metric"><small>Emails</small><strong id="activityEmailCount">0</strong><div class="sub">Email activity</div></div>
@@ -1295,7 +1295,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 
     <div class="card">
       <div class="section-head" style="margin:0 0 10px">
-        <div><h2 style="margin:0">Daily Activity Tracker</h2><div class="mini">Target: 4–8 visits, calls, or emails per workday</div></div>
+        <div><h2 style="margin:0">Daily Activity Tracker</h2><div class="mini">Target: 4–8 customer-facing activities per workday</div></div>
         <span class="status blue">TRACKING</span>
       </div>
       <div class="row">
@@ -3824,6 +3824,7 @@ function renderDailyTracker(month,list){
   $("dailyTracker").innerHTML=workdays.slice().reverse().map(d=>{
     const acts=byDay.get(d)||[],count=acts.length;
     const visits=acts.filter(a=>a.type==="Visit").length,calls=acts.filter(a=>a.type==="Call").length,emails=acts.filter(a=>a.type==="Email").length;
+    const rfqTouches=acts.filter(a=>a.type==="RFQ"||a.type==="RFQ Update").length;
     const pct=Math.min(100,(count/max)*100);
     const cls=count>=max?"green":count>=min?"blue":"red";
     const label=count>=max?"Strong Day":count>=min?"Goal Met":"Below Goal";
@@ -3834,7 +3835,7 @@ function renderDailyTracker(month,list){
       </div>
       <div class="daily-progress"><span style="width:${pct}%"></span></div>
       <div class="day-track-meta">
-        <span class="track-chip">Visits ${visits}</span><span class="track-chip">Calls ${calls}</span><span class="track-chip">Emails ${emails}</span>
+        <span class="track-chip">Visits ${visits}</span><span class="track-chip">Calls ${calls}</span><span class="track-chip">Emails ${emails}</span>${rfqTouches?`<span class="track-chip">RFQs ${rfqTouches}</span>`:""}
       </div>
     </div>`;
   }).join("") || "<div class='empty'>No workdays found for this month.</div>";
@@ -3845,12 +3846,13 @@ function renderActivityLog(){
   const month=$("activityMonth").value;
   const list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
   const exportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
-  const reportable=exportable.filter(a=>["Visit","Call","Email"].includes(a.type));
-  $("activityMonthCount").textContent=reportable.length;
-  $("activityVisitCount").textContent=reportable.filter(a=>a.type==="Visit").length;
-  $("activityCallCount").textContent=reportable.filter(a=>a.type==="Call").length;
-  $("activityEmailCount").textContent=reportable.filter(a=>a.type==="Email").length;
-  renderDailyTracker(month,reportable);
+  const directTouches=exportable.filter(a=>["Visit","Call","Email"].includes(a.type));
+  const trackerTouches=exportable.filter(a=>["Visit","Call","Email","RFQ","RFQ Update"].includes(a.type));
+  $("activityMonthCount").textContent=trackerTouches.length;
+  $("activityVisitCount").textContent=directTouches.filter(a=>a.type==="Visit").length;
+  $("activityCallCount").textContent=directTouches.filter(a=>a.type==="Call").length;
+  $("activityEmailCount").textContent=directTouches.filter(a=>a.type==="Email").length;
+  renderDailyTracker(month,trackerTouches);
 
   if(!list.length){$("activityLogList").innerHTML="<div class='empty'>No activities saved for this month yet.</div>";return}
   const groups=new Map();
@@ -6482,7 +6484,7 @@ if($("accountingMonthSales")){
 }
 
 
-/* v5.2.10 Interaction Repair
+/* v5.2.11 Interaction Repair
    Restores direct bindings that were missing from recent builds. */
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;

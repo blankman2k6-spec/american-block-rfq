@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-2-10-rfq-contact-selector";
+const CACHE="ab-sales-os-v5-2-11-daily-tracker-rfq-log";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
