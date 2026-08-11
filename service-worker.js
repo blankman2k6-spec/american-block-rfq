@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-2-3-period-sales-year-adjustment";
+const CACHE="ab-sales-os-v5-2-4-accounting-reconciliation";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
