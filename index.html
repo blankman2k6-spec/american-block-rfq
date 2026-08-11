@@ -586,6 +586,10 @@
     .menu-btn:hover,.menu-btn:focus{background:rgba(127,127,127,.15)!important;color:var(--text)!important}
     .order-menu-wrap{right:14px!important;top:58px!important;bottom:auto!important}
     .order-menu{bottom:auto!important;top:40px!important}
+    /* Keep the final order action menu clear of the bottom navigation/quick actions. */
+    .order-month-body .list > .order-card:last-child .order-menu{top:auto!important;bottom:40px!important}
+    /* Extra breathing room so the final order can scroll fully above the fixed bottom UI. */
+    #ordersView{padding-bottom:150px}
     body[data-skin="classic-office"] .menu-btn,
     body[data-skin="clean-corporate"] .menu-btn{
       background:#f1f1f1!important;color:#555!important;border-color:#aaa!important;
@@ -931,11 +935,21 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   position:relative;display:flex;align-items:center;margin-top:8px
 }
 .accounting-actual-input-wrap input{
-  width:100%;font-size:28px;font-weight:900;padding:8px 10px 8px 28px;
+  width:100%;min-width:0;box-sizing:border-box;font-size:22px;font-weight:900;padding:8px 10px 8px 27px;
   border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text)
 }
 .accounting-dollar{
-  position:absolute;left:10px;z-index:2;font-size:24px;font-weight:900;color:var(--muted);pointer-events:none
+  position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
+}
+/* v5.2.7 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+#importedMonthSales,#goalRemaining,#dailyNeeded{
+  display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(18px,5.2vw,25px);line-height:1.12
+}
+@media(max-width:560px){
+  #importedMonthSales,#goalRemaining,#dailyNeeded{font-size:clamp(17px,5vw,22px)!important}
+  .accounting-actual-input-wrap input{font-size:20px;padding-left:25px}
+  .accounting-dollar{font-size:18px;left:9px}
 }
 #monthlySales[readonly]{
   font-weight:900;background:var(--panel2);cursor:default
@@ -951,7 +965,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.5 Accounting Reconciliation</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.6 Order Edit + Menu Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -3288,7 +3302,11 @@ function renderOrders(){
   document.querySelectorAll("[data-order-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.orderMenu;document.querySelectorAll(".order-menu").forEach(m=>{if(m.dataset.orderMenuPanel!==id)m.classList.add("hidden")});document.querySelector(`[data-order-menu-panel="${id}"]`)?.classList.toggle("hidden")});
   document.querySelectorAll("[data-manage-backorder-order]").forEach(b=>b.onclick=e=>{e.stopPropagation();openBackorderEditor("order",b.dataset.manageBackorderOrder)});
   document.querySelectorAll("[data-manage-backorder-rfq]").forEach(b=>b.onclick=e=>{e.stopPropagation();openBackorderEditor("rfq",b.dataset.manageBackorderRfq)});
-  document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=e=>{e.stopPropagation();editImportedOrder(b.dataset.orderEdit)});
+  document.querySelectorAll("[data-order-edit]").forEach(b=>b.onclick=e=>{
+    e.preventDefault();e.stopPropagation();
+    document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));
+    editImportedOrder(b.dataset.orderEdit);
+  });
   document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.stopPropagation();confirmDeleteImportedOrder(b.dataset.orderDelete)});
 }
 
@@ -4901,7 +4919,7 @@ function editImportedOrder(id){
   if(!o)return;
   editingOrderId=id;
   pendingAck={fileName:o.fileName||"Imported acknowledgment"};
-  $("ackReviewTitle").textContent="Edit Imported Order";
+  $("ackReviewTitle").textContent="Edit Order";
   $("confirmAck").textContent="Save Order Changes";
   $("ackFileName").textContent=o.fileName||"Imported acknowledgment";
   refreshAckCustomerDropdown(o.customerId||"");
@@ -4984,11 +5002,19 @@ function updateAckVerificationState(){
   if(!s.totalMatches)issues.push(`order total does not reconcile`);
   if(ackVerificationRequired&&s.verified<s.rows.length)issues.push(`${s.rows.length-s.verified} row${s.rows.length-s.verified===1?" still needs":"s still need"} manual verification`);
 
-  const ready=!s.invalidRows.length&&s.countMatches&&s.totalMatches&&(!ackVerificationRequired||s.verified===s.rows.length);
+  // Existing orders are manual edits, not a fresh PDF import. Allow valid rows to be saved
+  // even when an older acknowledgment total does not perfectly reconcile to its line math.
+  // This prevents the Edit Order workflow from being blocked by historical PDF/parser differences.
+  const editingExisting=!!editingOrderId;
+  const ready=editingExisting
+    ? !s.invalidRows.length
+    : !s.invalidRows.length&&s.countMatches&&s.totalMatches&&(!ackVerificationRequired||s.verified===s.rows.length);
   $("ackVerificationBanner").className="verify-banner "+(ready?"good":issues.length?"warn":"");
-  $("ackVerificationText").textContent=ready
-    ?"Ready to import. Every line is complete, totals reconcile, and each extracted row has been verified."
-    :(issues.length?issues.join(" · "):"Review every extracted line against the source PDF.");
+  $("ackVerificationText").textContent=editingExisting
+    ? (ready?"Editing existing order. Make your changes and save when ready.":"Complete each order line before saving changes.")
+    : (ready
+      ?"Ready to import. Every line is complete, totals reconcile, and each extracted row has been verified."
+      :(issues.length?issues.join(" · "):"Review every extracted line against the source PDF."));
   $("confirmAck").disabled=!ready;
   $("confirmAck").style.opacity=ready?"1":".45";
   return ready;
