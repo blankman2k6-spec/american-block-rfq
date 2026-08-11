@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-2-8-interaction-repair";
+const CACHE="ab-sales-os-v5-2-9-contact-add-repair";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
