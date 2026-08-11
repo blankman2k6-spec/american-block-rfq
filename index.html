@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.13 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.2.14 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -958,6 +958,16 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 #monthlySales.adjustment-negative{color:#b4232d!important}
 #monthlySales.adjustment-zero{color:var(--text)!important}
 
+
+/* v5.2.14 collapsible customer-log days */
+.day-log-collapsible{overflow:hidden}
+.day-log-summary{cursor:pointer;list-style:none;user-select:none}
+.day-log-summary::-webkit-details-marker{display:none}
+.day-log-summary-right{display:flex;align-items:center;gap:9px}
+.day-log-chevron{font-size:22px;line-height:1;transition:transform .18s ease}
+.day-log-collapsible:not([open]) .day-log-chevron{transform:rotate(-90deg)}
+.day-log-content{padding-top:4px}
+
 </style>
 </head>
 <body>
@@ -965,7 +975,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.13 Add Item Top Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.14 RFQ Date + Collapsible Logs</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1312,7 +1322,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 
     <div class="card">
       <div class="section-head" style="margin:0 0 10px">
-        <div><h2 style="margin:0">Activities by Day</h2><div class="mini">Each day is separated so you can quickly verify 4–8 touches.</div></div>
+        <div><h2 style="margin:0">Activities by Day</h2><div class="mini">Tap a day to collapse or expand it. Includes all saved customer logs, including RFQs.</div></div>
       </div>
       <div id="activityLogList"></div>
     </div>
@@ -1817,8 +1827,9 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
       </div>
       <div class="row">
         <div><label>RFQ / Quote Number <span class="mini">(auto-assigned · editable)</span></label><input id="rfqNumber" placeholder="Auto date/time reference"></div>
-        <div><label>Contact Notes</label><input id="rfqContactNote" placeholder="Optional role, location, or note"></div>
+        <div><label>RFQ Date <span class="mini">(editable)</span></label><input id="rfqDate" type="date"></div>
       </div>
+      <label>Contact Notes</label><input id="rfqContactNote" placeholder="Optional role, location, or note">
       <div class="row">
         <div><label>Status</label><select id="rfqStatus"><option>RFQ Received</option><option>Waiting on Customer</option><option>Pricing Review</option><option>Verbal Yes</option><option>Hold</option><option>Closed Won</option><option>Lost</option></select><div id="rfqStatusNote" class="mini" style="margin-top:5px"></div></div>
         <div><label>Next Follow-up</label><input id="rfqFollowup" type="date"></div>
@@ -3864,11 +3875,12 @@ function renderActivityLog(){
   if(!list.length){$("activityLogList").innerHTML="<div class='empty'>No activities saved for this month yet.</div>";return}
   const groups=new Map();
   list.forEach(a=>{const k=a.date;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(a)});
-  $("activityLogList").innerHTML=[...groups.entries()].map(([date,records])=>`<div class="day-section">
-    <div class="day-section-head">
+  $("activityLogList").innerHTML=[...groups.entries()].map(([date,records])=>`<details class="day-section day-log-collapsible" open>
+    <summary class="day-section-head day-log-summary">
       <div><div class="day-section-title">${esc(activityDayLabel(date))}</div><div class="mini">${formatDate(date)}</div></div>
-      <span class="meta-badge compact-badge">${records.length} entr${records.length===1?"y":"ies"}</span>
-    </div>
+      <div class="day-log-summary-right"><span class="meta-badge compact-badge">${records.length} entr${records.length===1?"y":"ies"}</span><span class="day-log-chevron">⌄</span></div>
+    </summary>
+    <div class="day-log-content">
     ${records.map(a=>{
       const c=activityCustomer(a),ct=activityContact(a);
       return `<div class="activity-card">
@@ -3880,7 +3892,8 @@ function renderActivityLog(){
         <div class="toolbar" style="margin-top:10px"><button class="secondary" data-edit-activity="${a.id}">Edit</button><button class="secondary" data-delete-activity="${a.id}">Delete</button></div>
       </div>`;
     }).join("")}
-  </div>`).join("");
+    </div>
+  </details>`).join("");
   document.querySelectorAll("[data-edit-activity]").forEach(b=>b.onclick=()=>editActivity(b.dataset.editActivity));
   document.querySelectorAll("[data-delete-activity]").forEach(b=>b.onclick=()=>{
     const a=activities.find(x=>x.id===b.dataset.deleteActivity);
@@ -5379,7 +5392,7 @@ function rfqStatusNarrative(rec,oldStatus=''){return rfqFullFeedbackNarrative(re
 function rfqComparableFromForm(){
   return {
     customerId:$('rfqCustomer').value||'',contactId:$('rfqContact').value||'',contactNote:$('rfqContactNote').value.trim(),
-    quoteNo:$('rfqNumber').value.trim(),status:$('rfqStatus').value,followup:$('rfqFollowup').value,
+    quoteNo:$('rfqNumber').value.trim(),rfqDate:$('rfqDate')?.value||localIsoDate(),status:$('rfqStatus').value,followup:$('rfqFollowup').value,
     feedback:$('rfqFeedback').value.trim(),abcoFeedback:$('rfqAbcoFeedback').value.trim(),insideSalesFeedback:$('rfqInsideSalesFeedback').value.trim(),insideSalesSources:{okc:$('rfqISOkc').checked,houston:$('rfqISHouston').checked,odessa:$('rfqISOdessa').checked,northDakota:$('rfqISNorthDakota').checked,manager:$('rfqISManager').checked},nextAction:$('rfqNextAction').value.trim(),items:getItems(),
     shipping:Number($('rfqShipping').value)||0,tax:Number($('rfqTax').value)||0,
     lostReason:$('rfqLostReason')?.value||'',lostMarket:$('rfqLostMarket')?.value.trim()||'',
@@ -5397,12 +5410,27 @@ function lockInitialRfqStatus(isNew){
 }
 function logInitialRfqActivity(rec){
   activities.unshift({
-    id:uid(),date:localIsoDate(),type:'RFQ',customerId:rec.customerId,contactId:rec.contactId||null,
+    id:uid(),date:rec.rfqDate||localIsoDate(),type:'RFQ',customerId:rec.customerId,contactId:rec.contactId||null,
     comments:rfqStatusNarrative(rec),opportunityRfqId:rec.id,opportunityTitle:rec.quoteNo||'RFQ Opportunity',
     opportunityValue:total(rec),opportunityStage:rec.status,opportunityDetails:rec.nextAction||rec.feedback||'',
     internalOnly:false,autoLogged:true,source:'New RFQ',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
   });
 }
+
+function rfqRecordDate(rec){
+  if(rec?.rfqDate)return rec.rfqDate;
+  const created=safeActivityDate(rec?.createdAt);
+  return created?localIsoDate(created):localIsoDate();
+}
+function syncInitialRfqActivityDate(rec){
+  if(!rec?.id)return;
+  const initial=activities.find(a=>a.source==="New RFQ"&&String(a.opportunityRfqId||"")===String(rec.id));
+  if(initial){
+    initial.date=rec.rfqDate||rfqRecordDate(rec);
+    initial.updatedAt=new Date().toISOString();
+  }
+}
+
 function newRfq(){
   const keepConversion=!!convertingOpportunityActivityId;
   if(!keepConversion)convertingOpportunityActivityId=null;
@@ -5413,6 +5441,7 @@ function newRfq(){
   editingRfqId=null;rfqEditBaseline=null;$("rfqFormTitle").textContent="New RFQ";
   ["rfqNumber","rfqFollowup","rfqFeedback","rfqAbcoFeedback","rfqInsideSalesFeedback","rfqNextAction","rfqContactNote"].forEach(id=>$(id).value=""); ["rfqISOkc","rfqISHouston","rfqISOdessa","rfqISNorthDakota","rfqISManager"].forEach(id=>$(id).checked=false); updateInsideSalesTimestampDisplay("");
   $("rfqNumber").value=autoRfqReference();
+  if($("rfqDate"))$("rfqDate").value=localIsoDate();
   $("rfqShipping").value="0.00";$("rfqTax").value="0.00";
   $("rfqStatus").value="RFQ Received";lockInitialRfqStatus(true);
   if($("rfqLostReason"))$("rfqLostReason").value="";
@@ -5430,7 +5459,7 @@ function editRfq(id){
 
   const r=rfqs.find(x=>x.id===id);if(!r)return;
   editingRfqId=id;$("rfqFormTitle").textContent="Edit RFQ";renderCustomerOptions();$("rfqCustomer").value=r.customerId||"";renderContactOptions(r.contactId||"");
-  $("rfqNumber").value=r.quoteNo||"";$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqAbcoFeedback").value=r.abcoFeedback||"";$("rfqInsideSalesFeedback").value=r.insideSalesFeedback||""; const iss=r.insideSalesSources||{}; $("rfqISOkc").checked=!!iss.okc;$("rfqISHouston").checked=!!iss.houston;$("rfqISOdessa").checked=!!iss.odessa;$("rfqISNorthDakota").checked=!!iss.northDakota;$("rfqISManager").checked=!!iss.manager;updateInsideSalesTimestampDisplay(r.insideSalesFeedbackAt||"");$("rfqNextAction").value=r.nextAction||"";
+  $("rfqNumber").value=r.quoteNo||"";if($("rfqDate"))$("rfqDate").value=rfqRecordDate(r);$("rfqContactNote").value=r.contactNote||"";$("rfqStatus").value=r.status;$("rfqFollowup").value=r.followup||"";$("rfqFeedback").value=r.feedback||"";$("rfqAbcoFeedback").value=r.abcoFeedback||"";$("rfqInsideSalesFeedback").value=r.insideSalesFeedback||""; const iss=r.insideSalesSources||{}; $("rfqISOkc").checked=!!iss.okc;$("rfqISHouston").checked=!!iss.houston;$("rfqISOdessa").checked=!!iss.odessa;$("rfqISNorthDakota").checked=!!iss.northDakota;$("rfqISManager").checked=!!iss.manager;updateInsideSalesTimestampDisplay(r.insideSalesFeedbackAt||"");$("rfqNextAction").value=r.nextAction||"";
   if($("rfqLostReason"))$("rfqLostReason").value=r.lostReason||"";
   if($("rfqLostMarket"))$("rfqLostMarket").value=r.lostMarket||"";
   if($("rfqLostCompetitor"))$("rfqLostCompetitor").value=r.lostCompetitor||"";
@@ -5609,7 +5638,7 @@ $("saveRfq").onclick=()=>{
   const insideSalesFeedbackAt=insideSalesFeedback?(insideSalesChanged?new Date().toISOString():(old?.insideSalesFeedbackAt||new Date().toISOString())):'';
   const rec={
     id:editingRfqId||uid(),customerId:cid,contactId:$("rfqContact").value||null,contactNote:$("rfqContactNote").value.trim(),
-    company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),status:newStatus,followup:$("rfqFollowup").value,
+    company:customerById(cid)?.company||"",quoteNo:$("rfqNumber").value.trim(),rfqDate:$("rfqDate")?.value||localIsoDate(),status:newStatus,followup:$("rfqFollowup").value,
     feedback:$("rfqFeedback").value.trim(),abcoFeedback:$("rfqAbcoFeedback").value.trim(),insideSalesFeedback,insideSalesSources,insideSalesFeedbackAt,nextAction:$("rfqNextAction").value.trim(),items:getItems(),
     shipping:Number($("rfqShipping").value)||0,tax:Number($("rfqTax").value)||0,
     lostReason:newStatus==="Lost"?$("rfqLostReason").value:"",
@@ -5633,6 +5662,7 @@ $("saveRfq").onclick=()=>{
   syncOpportunityActivityFromRfq(rec);
   if(isNew)logInitialRfqActivity(rec);
   else if(shouldLogUpdate)logRfqUpdateActivity(old,rec);
+  syncInitialRfqActivityDate(rec);
   syncLostSaleIntelligence(old,rec);
   convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
@@ -6612,7 +6642,7 @@ if($("accountingMonthSales")){
 }
 
 
-/* v5.2.13 Interaction Repair
+/* v5.2.14 Interaction Repair
    Restores direct bindings that were missing from recent builds. */
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
