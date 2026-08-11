@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.9 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.2.10 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -965,7 +965,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.9 Contact Add Repair</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.10 RFQ Contact Selector Repair</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2944,7 +2944,8 @@ function renderFollowups(){
 function renderContactOptions(selectedContact=""){
   const customer=customerById($("rfqCustomer").value);
   const contacts=customer?.contacts||[];
-  $("rfqContact").innerHTML='<option value="">No specific contact</option>'+contacts.map(c=>`<option value="${c.id}">${esc(c.name||"Unnamed Contact")}${c.role?" — "+esc(c.role):""}${c.primary?" (Primary)":""}</option>`).join("");
+  const placeholder=contacts.length?"No specific contact":"No saved contacts for this account";
+  $("rfqContact").innerHTML=`<option value="">${placeholder}</option>`+contacts.map(c=>`<option value="${c.id}">${esc(c.name||"Unnamed Contact")}${c.role?" — "+esc(c.role):""}${c.primary?" (Primary)":""}</option>`).join("");
   if(selectedContact)$("rfqContact").value=selectedContact;
 }
 function renderCustomerOptions(){
@@ -6481,7 +6482,7 @@ if($("accountingMonthSales")){
 }
 
 
-/* v5.2.9 Interaction Repair
+/* v5.2.10 Interaction Repair
    Restores direct bindings that were missing from recent builds. */
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
@@ -6494,6 +6495,10 @@ if($("quickAdd"))$("quickAdd").onclick=newRfq;
 if($("addRfqTop"))$("addRfqTop").onclick=newRfq;
 if($("backFromRfq"))$("backFromRfq").onclick=()=>showView("rfqsView",true);
 if($("cancelRfq"))$("cancelRfq").onclick=()=>showView("rfqsView",true);
+if($("rfqCustomer"))$("rfqCustomer").onchange=()=>{
+  renderContactOptions();
+  if($("rfqContactNote"))$("rfqContactNote").value="";
+};
 if($("rfqSearch"))$("rfqSearch").oninput=renderRfqs;
 if($("rfqStatusFilter"))$("rfqStatusFilter").onchange=renderRfqs;
 if($("rfqGroup"))$("rfqGroup").onchange=renderRfqs;
