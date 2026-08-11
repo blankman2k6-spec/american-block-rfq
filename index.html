@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.11 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.2.12 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -965,7 +965,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.11 Daily Tracker RFQ Log Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.12 Contact Follow-up Auto Log</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2820,7 +2820,7 @@ function renderCustomerAccount(){
   $("accountDetailMeta").textContent=[c.city,c.zip,primary?.name,primary?.email].filter(Boolean).join(" · ");
   $("accountContacts").innerHTML=(c.contacts||[]).length?(c.contacts||[]).map(ct=>`<div class="contact-call-card">
     <div><strong>${esc(ct.name||"Unnamed Contact")}</strong><div class="mini">${esc(ct.role||"")}${ct.phone?`${ct.role?" · ":""}${esc(ct.phone)}`:""}${ct.email?` · ${esc(ct.email)}`:""}</div></div>
-    <div class="contact-call-actions">${ct.phone?`<a class="call-link" href="tel:${esc(String(ct.phone).replace(/[^\d+]/g,""))}">☎ Call</a>`:""}${ct.email?`<a class="secondary" style="text-decoration:none;padding:9px 11px" href="mailto:${esc(ct.email)}">Email</a>`:""}</div>
+    <div class="contact-call-actions">${ct.phone?`<button type="button" class="call-link" data-account-contact-action="Call" data-customer-id="${esc(c.id)}" data-contact-id="${esc(ct.id)}">☎ Call</button>`:""}${ct.email?`<button type="button" class="secondary" style="padding:9px 11px" data-account-contact-action="Email" data-customer-id="${esc(c.id)}" data-contact-id="${esc(ct.id)}">✉ Email</button>`:""}${ct.phone?`<button type="button" class="secondary" style="padding:9px 11px" data-account-contact-action="Text" data-customer-id="${esc(c.id)}" data-contact-id="${esc(ct.id)}">💬 Text</button>`:""}</div>
   </div>`).join(""):"<div class='empty'>No customer phone numbers saved yet.</div>";
   const ytd=ytdSalesForCustomer(c.id),open=rfqs.filter(r=>r.customerId===c.id&&isOpen(r));
   $("accountYtdSales").textContent=money.format(ytd);
@@ -2838,7 +2838,8 @@ function renderCustomerAccount(){
   const rfqCards=open.map(r=>`<div class="opportunity-card"><div class="list-head"><div><strong>${esc(r.quoteNo||"RFQ Opportunity")}</strong><div class="mini">${esc(r.nextAction||r.feedback||"Open RFQ")}</div></div><span class="status blue">${esc(r.status)}</span></div><div class="money" style="font-size:18px">${money.format(total(r))}</div></div>`);
   const actCards=activityOpps.map(a=>{
     const linked=a.opportunityRfqId?rfqs.find(r=>r.id===a.opportunityRfqId):null;
-    return `<div class="opportunity-card"><div class="list-head"><div><strong>${esc(a.opportunityTitle||(linked?.quoteNo||"Logged Opportunity"))}</strong><div class="mini">${formatDate(a.date)} · ${esc(linked?.status||a.opportunityStage||"Opportunity")}${linked?" · RFQ linked":" · Pre-RFQ"}</div></div><span class="pill">${money.format(linked?total(linked):(Number(a.opportunityValue)||0))}</span></div><div class="activity-comments">${esc(a.opportunityDetails||a.comments||"")}</div><div class="toolbar" style="margin-top:9px"><button class="secondary" data-opportunity-convert="${esc(a.id)}">${linked?"Open Linked RFQ":"Convert to RFQ"}</button></div></div>`;
+    const actionCt=customerContactForAction(a.customerId,a.contactId);
+    return `<div class="opportunity-card"><div class="list-head"><div><strong>${esc(a.opportunityTitle||(linked?.quoteNo||"Logged Opportunity"))}</strong><div class="mini">${formatDate(a.date)} · ${esc(linked?.status||a.opportunityStage||"Opportunity")}${linked?" · RFQ linked":" · Pre-RFQ"}</div></div><span class="pill">${money.format(linked?total(linked):(Number(a.opportunityValue)||0))}</span></div><div class="activity-comments">${esc(a.opportunityDetails||a.comments||"")}</div><div class="toolbar" style="margin-top:9px"><button class="secondary" data-opportunity-convert="${esc(a.id)}">${linked?"Open Linked RFQ":"Convert to RFQ"}</button>${linked?"":`<button class="secondary" data-opportunity-contact-action="Call" data-opportunity-id="${esc(a.id)}" ${actionCt?.phone?"":"disabled"}>☎ Call</button><button class="secondary" data-opportunity-contact-action="Email" data-opportunity-id="${esc(a.id)}" ${actionCt?.email?"":"disabled"}>✉ Email</button><button class="secondary" data-opportunity-contact-action="Text" data-opportunity-id="${esc(a.id)}" ${actionCt?.phone?"":"disabled"}>💬 Text</button>`}</div></div>`;
   });
   $("accountOpportunities").innerHTML=[...rfqCards,...actCards].join("")||"<div class='empty'>No opportunities yet.</div>";
   $("accountActivityList").innerHTML=acts.map(a=>`<div class="activity-card"><div class="activity-top"><div><strong>${esc(a.type)}</strong><div class="mini">${formatDate(a.date)}</div></div><span class="activity-type">${esc(a.type)}</span></div><div class="activity-comments">${esc(a.comments||"")}</div></div>`).join("")||"<div class='empty'>No activity yet.</div>";
@@ -2918,9 +2919,15 @@ function renderRfqs(){
     const holder=wrap.querySelector(".list");
     records.forEach(r=>{
       const div=document.createElement("div");div.className="list-card";
+      const actionContact=customerContactForAction(r.customerId,r.contactId);
       div.innerHTML=`<div class="list-head"><div><div class="list-title">${esc(customerName(r))}</div><div class="mini">${esc(r.quoteNo||"No RFQ number")}${contactName(r)?" · "+esc(contactName(r)):""}</div></div><button type="button" class="status blue rfq-status-tap" data-quick-rfq-status="${r.id}">${esc(r.status)} ▾</button></div>
-      <div class="money">${money.format(total(r))}</div><div class="mini">${(r.items||[]).length} line item${(r.items||[]).length===1?"":"s"} · Follow-up ${formatDate(r.followup)}</div>`;
-      div.onclick=e=>{if(e.target.closest("[data-quick-rfq-status]"))return;editRfq(r.id)};holder.appendChild(div);
+      <div class="money">${money.format(total(r))}</div><div class="mini">${(r.items||[]).length} line item${(r.items||[]).length===1?"":"s"} · Follow-up ${formatDate(r.followup)}</div>
+      <div class="toolbar rfq-contact-actions" style="margin-top:9px">
+        <button type="button" class="secondary" data-rfq-contact-action="Call" data-rfq-id="${esc(r.id)}" ${actionContact?.phone?"":"disabled"}>☎ Call</button>
+        <button type="button" class="secondary" data-rfq-contact-action="Email" data-rfq-id="${esc(r.id)}" ${actionContact?.email?"":"disabled"}>✉ Email</button>
+        <button type="button" class="secondary" data-rfq-contact-action="Text" data-rfq-id="${esc(r.id)}" ${actionContact?.phone?"":"disabled"}>💬 Text</button>
+      </div>`;
+      div.onclick=e=>{if(e.target.closest("[data-quick-rfq-status],[data-rfq-contact-action]"))return;editRfq(r.id)};holder.appendChild(div);
     });
     $("rfqList").appendChild(wrap);
   });
@@ -3823,7 +3830,7 @@ function renderDailyTracker(month,list){
   $("trackerAvg").textContent=(workdays.length?total/workdays.length:0).toFixed(1);
   $("dailyTracker").innerHTML=workdays.slice().reverse().map(d=>{
     const acts=byDay.get(d)||[],count=acts.length;
-    const visits=acts.filter(a=>a.type==="Visit").length,calls=acts.filter(a=>a.type==="Call").length,emails=acts.filter(a=>a.type==="Email").length;
+    const visits=acts.filter(a=>a.type==="Visit").length,calls=acts.filter(a=>a.type==="Call").length,emails=acts.filter(a=>a.type==="Email").length,texts=acts.filter(a=>a.type==="Text").length;
     const rfqTouches=acts.filter(a=>a.type==="RFQ"||a.type==="RFQ Update").length;
     const pct=Math.min(100,(count/max)*100);
     const cls=count>=max?"green":count>=min?"blue":"red";
@@ -3835,7 +3842,7 @@ function renderDailyTracker(month,list){
       </div>
       <div class="daily-progress"><span style="width:${pct}%"></span></div>
       <div class="day-track-meta">
-        <span class="track-chip">Visits ${visits}</span><span class="track-chip">Calls ${calls}</span><span class="track-chip">Emails ${emails}</span>${rfqTouches?`<span class="track-chip">RFQs ${rfqTouches}</span>`:""}
+        <span class="track-chip">Visits ${visits}</span><span class="track-chip">Calls ${calls}</span><span class="track-chip">Emails ${emails}</span>${texts?`<span class="track-chip">Texts ${texts}</span>`:""}${rfqTouches?`<span class="track-chip">RFQs ${rfqTouches}</span>`:""}
       </div>
     </div>`;
   }).join("") || "<div class='empty'>No workdays found for this month.</div>";
@@ -3847,7 +3854,7 @@ function renderActivityLog(){
   const list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
   const exportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
   const directTouches=exportable.filter(a=>["Visit","Call","Email"].includes(a.type));
-  const trackerTouches=exportable.filter(a=>["Visit","Call","Email","RFQ","RFQ Update"].includes(a.type));
+  const trackerTouches=exportable.filter(a=>["Visit","Call","Email","Text","RFQ","RFQ Update"].includes(a.type));
   $("activityMonthCount").textContent=trackerTouches.length;
   $("activityVisitCount").textContent=directTouches.filter(a=>a.type==="Visit").length;
   $("activityCallCount").textContent=directTouches.filter(a=>a.type==="Call").length;
@@ -5229,6 +5236,84 @@ function rfqContactFirstName(customerId,contactId){
   const raw=(ct?.name||'Customer').trim();
   return raw.split(/\s+/)[0]||'Customer';
 }
+
+function customerContactForAction(customerId,contactId){
+  const customer=customerById(customerId);
+  if(!customer)return null;
+  return contactById(customerId,contactId)||(customer.contacts||[]).find(c=>c.primary)||(customer.contacts||[])[0]||null;
+}
+function contactFirstNameForAction(customerId,contactId){
+  const ct=customerContactForAction(customerId,contactId);
+  const raw=(ct?.name||"Customer").trim();
+  return raw.split(/\s+/)[0]||"Customer";
+}
+function ensureSentence(value){
+  const v=(value||"").trim();
+  return v?`${v}${/[.!?]$/.test(v)?"":"."}`:"";
+}
+function logCustomerContactAction({customerId,contactId,type,comments,rfqId=null,opportunityActivityId=null,source=""}){
+  const now=new Date().toISOString();
+  const rfq=rfqId?rfqs.find(r=>String(r.id)===String(rfqId)):null;
+  const opp=opportunityActivityId?activities.find(a=>String(a.id)===String(opportunityActivityId)):null;
+  activities.unshift({
+    id:uid(),date:localIsoDate(),type,customerId,contactId:contactId||null,comments,
+    opportunityRfqId:rfq?.id||opp?.opportunityRfqId||null,
+    opportunityTitle:rfq?.quoteNo||opp?.opportunityTitle||"",
+    opportunityValue:rfq?total(rfq):(Number(opp?.opportunityValue)||0),
+    opportunityStage:rfq?.status||opp?.opportunityStage||"",
+    opportunityDetails:rfq?.nextAction||rfq?.feedback||opp?.opportunityDetails||"",
+    internalOnly:false,autoLogged:true,source:source||`${type} Follow-up`,
+    createdAt:now,updatedAt:now
+  });
+  save();
+  renderActivityLog();
+}
+function rfqContactActionTemplate(r,type){
+  const first=contactFirstNameForAction(r.customerId,r.contactId);
+  const ref=(r.quoteNo||"this RFQ").trim();
+  const items=rfqItemDescriptionList(r.items);
+  const verb=type==="Call"?"Called":type==="Email"?"Emailed":"Texted";
+  let note=`${verb} ${first} to follow up on RFQ ${ref} regarding ${items}. Current status: ${r.status||"Open"}.`;
+  if((r.nextAction||"").trim())note+=` Next action: ${ensureSentence(r.nextAction)}`;
+  return note;
+}
+function opportunityContactActionTemplate(a,type){
+  const first=contactFirstNameForAction(a.customerId,a.contactId);
+  const title=(a.opportunityTitle||"the open opportunity").trim();
+  const details=(a.opportunityDetails||"").trim();
+  const stage=(a.opportunityStage||"Open").trim();
+  const verb=type==="Call"?"Called":type==="Email"?"Emailed":"Texted";
+  let note=`${verb} ${first} to follow up on opportunity ${title}. Current stage: ${stage}.`;
+  if(details)note+=` Opportunity details: ${ensureSentence(details)}`;
+  return note;
+}
+function openLoggedContactAction({customerId,contactId,type,rfqId=null,opportunityActivityId=null}){
+  const ct=customerContactForAction(customerId,contactId);
+  if(!ct){alert("No customer contact is saved for this record.");return}
+  const rfq=rfqId?rfqs.find(r=>String(r.id)===String(rfqId)):null;
+  const opp=opportunityActivityId?activities.find(a=>String(a.id)===String(opportunityActivityId)):null;
+  const comments=rfq?rfqContactActionTemplate(rfq,type):opportunityContactActionTemplate(opp||{},type);
+  if(type==="Call"){
+    if(!ct.phone){alert(`${ct.name||"This contact"} does not have a phone number saved.`);return}
+    logCustomerContactAction({customerId,contactId:ct.id,type:"Call",comments,rfqId,opportunityActivityId,source:rfq?"RFQ Call Follow-up":"Opportunity Call Follow-up"});
+    window.location.href=`tel:${String(ct.phone).replace(/[^\d+]/g,"")}`;
+    return;
+  }
+  if(type==="Email"){
+    if(!ct.email){alert(`${ct.name||"This contact"} does not have an email address saved.`);return}
+    logCustomerContactAction({customerId,contactId:ct.id,type:"Email",comments,rfqId,opportunityActivityId,source:rfq?"RFQ Email Follow-up":"Opportunity Email Follow-up"});
+    const subject=rfq?`ABCO RFQ Follow-Up — ${rfq.quoteNo||"RFQ"}`:`ABCO Opportunity Follow-Up — ${opp?.opportunityTitle||"Opportunity"}`;
+    const body=comments;
+    window.location.href=`mailto:${encodeURIComponent(ct.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    return;
+  }
+  if(type==="Text"){
+    if(!ct.phone){alert(`${ct.name||"This contact"} does not have a phone number saved.`);return}
+    logCustomerContactAction({customerId,contactId:ct.id,type:"Text",comments,rfqId,opportunityActivityId,source:rfq?"RFQ Text Follow-up":"Opportunity Text Follow-up"});
+    window.location.href=`sms:${String(ct.phone).replace(/[^\d+]/g,"")}?&body=${encodeURIComponent(comments)}`;
+  }
+}
+
 function rfqItemDescriptionList(items){
   const vals=(items||[]).map(i=>(i.product||i.part||'').trim()).filter(Boolean);
   const unique=[...new Set(vals)];
@@ -6366,6 +6451,37 @@ if($("saveActivity"))$("saveActivity").onclick=()=>{
 
 
 document.addEventListener("click",e=>{
+  const rfqAction=e.target.closest("[data-rfq-contact-action]");
+  if(rfqAction){
+    e.preventDefault();e.stopPropagation();
+    const r=rfqs.find(x=>String(x.id)===String(rfqAction.dataset.rfqId));
+    if(r)openLoggedContactAction({customerId:r.customerId,contactId:r.contactId,type:rfqAction.dataset.rfqContactAction,rfqId:r.id});
+    return;
+  }
+  const oppAction=e.target.closest("[data-opportunity-contact-action]");
+  if(oppAction){
+    e.preventDefault();e.stopPropagation();
+    const a=activities.find(x=>String(x.id)===String(oppAction.dataset.opportunityId));
+    if(a)openLoggedContactAction({customerId:a.customerId,contactId:a.contactId,type:oppAction.dataset.opportunityContactAction,opportunityActivityId:a.id});
+    return;
+  }
+  const acctAction=e.target.closest("[data-account-contact-action]");
+  if(acctAction){
+    e.preventDefault();e.stopPropagation();
+    const customerId=acctAction.dataset.customerId,contactId=acctAction.dataset.contactId,type=acctAction.dataset.accountContactAction;
+    const ct=customerContactForAction(customerId,contactId);
+    if(!ct)return;
+    const first=(ct.name||"Customer").split(/\s+/)[0]||"Customer";
+    const comments=`${type==="Call"?"Called":type==="Email"?"Emailed":"Texted"} ${first} for customer follow-up.`;
+    if(type==="Call"&&!ct.phone){alert("No phone number saved.");return}
+    if(type==="Email"&&!ct.email){alert("No email address saved.");return}
+    if(type==="Text"&&!ct.phone){alert("No phone number saved.");return}
+    logCustomerContactAction({customerId,contactId,type,comments,source:`Customer ${type} Follow-up`});
+    if(type==="Call")window.location.href=`tel:${String(ct.phone).replace(/[^\d+]/g,"")}`;
+    if(type==="Email")window.location.href=`mailto:${encodeURIComponent(ct.email)}?subject=${encodeURIComponent("ABCO Follow-Up")}&body=${encodeURIComponent(comments)}`;
+    if(type==="Text")window.location.href=`sms:${String(ct.phone).replace(/[^\d+]/g,"")}?&body=${encodeURIComponent(comments)}`;
+    return;
+  }
   const b=e.target.closest("[data-opportunity-convert]");
   if(!b)return;
   e.preventDefault();e.stopPropagation();
@@ -6484,7 +6600,7 @@ if($("accountingMonthSales")){
 }
 
 
-/* v5.2.11 Interaction Repair
+/* v5.2.12 Interaction Repair
    Restores direct bindings that were missing from recent builds. */
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
