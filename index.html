@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.7 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.2.8 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -965,7 +965,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.6 Order Edit + Menu Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.8 Interaction Repair</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -6467,6 +6467,33 @@ if($("accountingMonthSales")){
     }
   });
 }
+
+
+/* v5.2.8 Interaction Repair
+   Restores direct bindings that were missing from recent builds. */
+if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
+if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
+if($("addCustomerBtn"))$("addCustomerBtn").onclick=newCustomer;
+if($("backFromCustomer"))$("backFromCustomer").onclick=()=>showView("customersView",true);
+if($("cancelCustomer"))$("cancelCustomer").onclick=()=>showView("customersView",true);
+
+if($("quickAdd"))$("quickAdd").onclick=newRfq;
+if($("addRfqTop"))$("addRfqTop").onclick=newRfq;
+if($("backFromRfq"))$("backFromRfq").onclick=()=>showView("rfqsView",true);
+if($("cancelRfq"))$("cancelRfq").onclick=()=>showView("rfqsView",true);
+if($("rfqSearch"))$("rfqSearch").oninput=renderRfqs;
+if($("rfqStatusFilter"))$("rfqStatusFilter").onchange=renderRfqs;
+if($("rfqGroup"))$("rfqGroup").onchange=renderRfqs;
+if($("rfqSort"))$("rfqSort").onchange=renderRfqs;
+
+if($("goRfqs"))$("goRfqs").onclick=()=>showView("rfqsView",true);
+if($("goFollowups"))$("goFollowups").onclick=()=>showView("followupsView",true);
+if($("followupSearch"))$("followupSearch").oninput=renderFollowups;
+if($("followupFilter"))$("followupFilter").onchange=renderFollowups;
+
+if($("productSearch"))$("productSearch").oninput=renderProducts;
+if($("productPeriod"))$("productPeriod").onchange=renderProducts;
+if($("productMetric"))$("productMetric").onchange=renderProducts;
 
 renderAll();
 initializeCloudSync();
