@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.12 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.2.13 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -965,7 +965,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.12 Contact Follow-up Auto Log</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.13 Add Item Top Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -5157,12 +5157,24 @@ async function importAcknowledgment(file){
 function chooseAckFile(){$("ackFile").value="";$("ackFile").click()}
 
 
-function addItem(data={part:"",product:"",qty:1,price:0}){
+function addItem(data={part:"",product:"",qty:1,price:0},placement="bottom"){
   const node=$("itemTemplate").content.firstElementChild.cloneNode(true);
   ["part","product","qty","price"].forEach(k=>node.querySelector(`[data-k="${k}"]`).value=data[k]??"");
   node.querySelectorAll("input").forEach(i=>i.addEventListener("input",updateDraft));
   node.querySelector('[data-action="remove"]').onclick=()=>{node.remove();if(!$("rfqItems").children.length)addItem();updateDraft()};
-  $("rfqItems").appendChild(node);updateDraft();
+  const holder=$("rfqItems");
+  if(placement==="top"&&holder.firstChild)holder.insertBefore(node,holder.firstChild);
+  else holder.appendChild(node);
+  updateDraft();
+  return node;
+}
+function addNewRfqItemAtTop(){
+  const node=addItem(undefined,"top");
+  requestAnimationFrame(()=>{
+    const first=node.querySelector('[data-k="part"]')||node.querySelector('input');
+    if(first)first.focus({preventScroll:true});
+    node.scrollIntoView({behavior:"smooth",block:"nearest"});
+  });
 }
 function getItems(){return [...document.querySelectorAll("#rfqItems .item")].map(n=>({part:n.querySelector('[data-k="part"]').value.trim(),product:n.querySelector('[data-k="product"]').value.trim(),qty:Number(n.querySelector('[data-k="qty"]').value)||0,price:Number(n.querySelector('[data-k="price"]').value)||0}))}
 function updateDraft(){
@@ -6600,7 +6612,7 @@ if($("accountingMonthSales")){
 }
 
 
-/* v5.2.12 Interaction Repair
+/* v5.2.13 Interaction Repair
    Restores direct bindings that were missing from recent builds. */
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
@@ -6611,6 +6623,7 @@ if($("cancelCustomer"))$("cancelCustomer").onclick=()=>showView("customersView",
 
 if($("quickAdd"))$("quickAdd").onclick=newRfq;
 if($("addRfqTop"))$("addRfqTop").onclick=newRfq;
+if($("addItem"))$("addItem").onclick=addNewRfqItemAtTop;
 if($("backFromRfq"))$("backFromRfq").onclick=()=>showView("rfqsView",true);
 if($("cancelRfq"))$("cancelRfq").onclick=()=>showView("rfqsView",true);
 if($("rfqCustomer"))$("rfqCustomer").onchange=()=>{

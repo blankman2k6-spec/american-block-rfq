@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-2-12-contact-followup-auto-log";
+const CACHE="ab-sales-os-v5-2-13-add-item-top-fix";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
