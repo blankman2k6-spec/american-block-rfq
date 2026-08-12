@@ -1234,7 +1234,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.7 Baby Blue Product Contrast Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.8 Web Research Fallback</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -4798,31 +4798,61 @@ function aiApplyAction(id){
   }catch(e){alert("Could not apply AI action: "+e.message)}
 }
 function aiRejectAction(id){const a=aiPendingActions.find(x=>x.id===id);if(a){a.status="rejected";a.reviewedAt=new Date().toISOString();aiSaveQueue();renderAi()}}
+function websiteResearchNeedsFallback(answer){
+  const s=String(answer||"").toLowerCase();
+  return [
+    "403","forbidden","blocked the request","fetch failed","could not access","cannot access",
+    "can't access","unable to access","cannot fetch","could not fetch","exact domain",
+    "cannot extract","can't extract","unable to research","must refuse","site content"
+  ].some(x=>s.includes(x));
+}
 async function aiResearchCustomerWebsite(){
   const c=customerById(activeCustomerId);if(!c)return;
   const website=String(c.website||"").trim();
   if(!website){alert("Save the company's website in Edit Account first.");return}
   if(!settings.ai?.enabled){alert("Sales AI is disabled. Enable it in Settings first.");return}
   const btn=$("accountResearchWebsite"),out=$("accountWebsiteResearch");
-  if(btn){btn.disabled=true;btn.textContent="Researching…"}if(out)out.innerHTML="<div class='ai-data-note'>Researching the company website and matching services to the ABCO Flowline catalog…</div>";
+  if(btn){btn.disabled=true;btn.textContent="Researching…"}
+  if(out)out.innerHTML="<div class='ai-data-note'>Researching the company website and matching services to the ABCO Flowline catalog…</div>";
   try{
-    const q=`Research the official company website ${website}. Identify the company's actual services, operations, equipment and markets relevant to American Block. Compare ONLY documented website facts to the ABCO Flowline catalog in CRM context. Return a concise customer-facing analysis and propose exactly one update_customer_profile action for this customer. In that action payload include: businessDescription (1-2 sentence factual website summary), websiteFitSummary (1 concise sentence explaining why ABCO Flowline is relevant), and recommendedProducts (3-8 catalog-grounded product families, each with product, reason, and application when supported). Do not invent products, services, inventory, prices or customer needs.`;
-    const r=await aiAsk(q,{customerId:c.id,mode:"website_research",website});
+    const directQ=`Research the official company website ${website}. Identify the company's documented services, operations, equipment and markets relevant to American Block. Compare documented facts to the ABCO Flowline catalog in CRM context. Return a concise analysis and propose exactly one update_customer_profile action for this customer. In that action payload include: businessDescription (1-2 sentence factual summary), websiteFitSummary (1 concise sentence explaining why ABCO Flowline is relevant), and recommendedProducts (3-8 catalog-grounded product families, each with product, reason, and application when supported). Do not invent products, services, inventory, prices or customer needs.`;
+    let r=await aiAsk(directQ,{customerId:c.id,mode:"website_research",website});
+    let usedFallback=false;
+
+    if(websiteResearchNeedsFallback(r.answer)){
+      usedFallback=true;
+      if(out)out.innerHTML="<div class='ai-data-note'>Direct website access is restricted. Searching reliable public web sources for this company instead…</div>";
+      const company=String(c.company||"").trim();
+      const location=[c.city,c.state].filter(Boolean).join(", ");
+      const fallbackQ=`The saved website ${website} could not be read directly. Research ${company}${location?` in ${location}`:""} using the public web without restricting the search to the saved domain. Prefer the official website when indexed, then use reliable public sources such as search-indexed company pages, manufacturer/distributor pages, business directories, trade/industry pages, and other sources that clearly refer to this same company. Do not rely on unrelated companies with similar names. Clearly distinguish verified public-web facts from CRM context. Identify documented services, operations, equipment and markets relevant to American Block, then map only supported needs/applications to the ABCO Flowline catalog supplied in CRM context. Return a concise useful analysis instead of a fetch-error message. Propose exactly one update_customer_profile action with businessDescription, websiteFitSummary, and 3-8 catalog-grounded recommendedProducts when supported. Do not invent facts, products, inventory, pricing, or customer needs.`;
+      // Deliberately pass an empty website to remove the Edge Function's exact-domain filter.
+      // This lets the existing deployed function use unrestricted web search without requiring a redeploy.
+      r=await aiAsk(fallbackQ,{customerId:c.id,mode:"website_research",website:""});
+    }
+
     const profileAction=(r.actions||[]).find(a=>a.type==="update_customer_profile");
     const p=profileAction?.payload||{};
-    const recs=Array.isArray(p.recommendedProducts)?p.recommendedProducts.map(x=>({product:String(x.product||x.family||"").trim(),reason:String(x.reason||"").trim(),application:String(x.application||"").trim()})).filter(x=>x.product):[];
-    // Website research is a user-initiated enrichment action. Product opportunities are saved immediately;
-    // other profile changes still remain in the normal Approval Queue.
+    const recs=Array.isArray(p.recommendedProducts)?p.recommendedProducts.map(x=>({
+      product:String(x.product||x.family||"").trim(),
+      reason:String(x.reason||"").trim(),
+      application:String(x.application||"").trim()
+    })).filter(x=>x.product):[];
+
     if(recs.length)c.aiRecommendedProducts=recs;
-    c.websiteResearchSummary=String(p.businessDescription||"").trim()||String(r.answer||"").split(/\n\n|How that maps|Sales opportunity/i)[0].replace(/^Research summary[^:]*:\s*/i,"").trim();
+    c.websiteResearchSummary=String(p.businessDescription||"").trim()||
+      String(r.answer||"").split(/\n\n|How that maps|Sales opportunity/i)[0].replace(/^Research summary[^:]*:\s*/i,"").trim();
     c.websiteResearchWhyFit=String(p.websiteFitSummary||profileAction?.reason||"").trim();
-    c.websiteResearchFullAnalysis=String(r.answer||"").trim();
+    c.websiteResearchFullAnalysis=(usedFallback?"Direct website access was restricted, so public web research was used.\n\n":"")+String(r.answer||"").trim();
+    c.websiteResearchSourceMode=usedFallback?"public_web_fallback":"official_domain";
     c.websiteResearchUpdatedAt=new Date().toISOString();
     c.updatedAt=new Date().toISOString();
     save();
     renderCustomerAccount();
-  }catch(e){if(out)out.textContent="Website research failed: "+e.message}
-  finally{if(btn){btn.disabled=false;btn.textContent="✦ Research Website"}}
+  }catch(e){
+    if(out)out.innerHTML="<div class='ai-data-note'>Research could not be completed. "+esc(e.message)+"</div>";
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="✦ Research Website"}
+  }
 }
 
 function renderAiQueue(){

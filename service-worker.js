@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-3-0-pipeline-forecast";
+const CACHE="ab-sales-os-v5-3-8-web-research-fallback";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
