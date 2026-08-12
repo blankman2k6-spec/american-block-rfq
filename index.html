@@ -1164,6 +1164,69 @@ body[data-skin="baby-blue"] .activity-card .activity-type *{
   color:#334155 !important;
 }
 
+
+/* v5.3.7 — Baby Blue Product Intelligence Contrast Fix
+   Match the clean Corporate skin's readable product surfaces while keeping Baby Blue accents. */
+body[data-skin="baby-blue"] .insight-card,
+body[data-skin="baby-blue"] .product-rank-card,
+body[data-skin="baby-blue"] .backorder-product-grid{
+  background:#ffffff !important;
+  color:#14233a !important;
+  border-color:#add3e8 !important;
+  box-shadow:0 4px 14px rgba(53,116,157,.07) !important;
+}
+body[data-skin="baby-blue"] .insight-card *,
+body[data-skin="baby-blue"] .product-rank-card *,
+body[data-skin="baby-blue"] .backorder-product-grid *{
+  color:inherit;
+}
+body[data-skin="baby-blue"] .insight-card .mini,
+body[data-skin="baby-blue"] .insight-card .reason,
+body[data-skin="baby-blue"] .product-rank-card .mini,
+body[data-skin="baby-blue"] .backorder-product-grid .mini{
+  color:#60768c !important;
+}
+body[data-skin="baby-blue"] .insight-score,
+body[data-skin="baby-blue"] .gap-score,
+body[data-skin="baby-blue"] .bo-dollar,
+body[data-skin="baby-blue"] .bo-units{
+  color:#14233a !important;
+}
+body[data-skin="baby-blue"] .rank-badge{
+  background:#eef7fd !important;
+  color:#29445f !important;
+  border-color:#b4d6e8 !important;
+  box-shadow:none !important;
+}
+body[data-skin="baby-blue"] .product-stat{
+  background:#f3faff !important;
+  color:#14233a !important;
+  border-color:#add3e8 !important;
+}
+body[data-skin="baby-blue"] .product-stat .mini,
+body[data-skin="baby-blue"] .product-stat span{
+  color:#60768c !important;
+}
+body[data-skin="baby-blue"] .product-stat strong{
+  color:#14233a !important;
+}
+/* Preserve soft urgency colors on the light product cards. */
+body[data-skin="baby-blue"] .insight-card .status.red{
+  background:#fdebed !important;
+  color:#963740 !important;
+  border-color:#e3a5ab !important;
+}
+body[data-skin="baby-blue"] .insight-card .status.yellow{
+  background:#fff5d9 !important;
+  color:#805a0b !important;
+  border-color:#dfc77e !important;
+}
+body[data-skin="baby-blue"] .insight-card .status.green{
+  background:#e4f6ed !important;
+  color:#176b49 !important;
+  border-color:#8bc9aa !important;
+}
+
 </style>
 </head>
 <body>
@@ -1171,7 +1234,7 @@ body[data-skin="baby-blue"] .activity-card .activity-type *{
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.6 Baby Blue Activity Badge Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.7 Baby Blue Product Contrast Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
