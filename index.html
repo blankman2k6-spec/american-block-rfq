@@ -1069,6 +1069,66 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
     body[data-skin="baby-blue"] [class*="product-stat"] *,
     body[data-skin="baby-blue"] .product-stat *{color:inherit !important}
 
+
+/* v5.3.3 — Baby Blue full contrast pass */
+body[data-skin="baby-blue"] .group-title{
+  background:#dff1fc !important;
+  color:#14233a !important;
+  border-color:#9fcce5 !important;
+}
+body[data-skin="baby-blue"] .group-title *,
+body[data-skin="baby-blue"] .activity-card *,
+body[data-skin="baby-blue"] .metric *{
+  color:inherit;
+}
+body[data-skin="baby-blue"] .activity-card{
+  background:#ffffff !important;
+  color:#14233a !important;
+  border-color:#add3e8 !important;
+}
+body[data-skin="baby-blue"] .activity-card .mini,
+body[data-skin="baby-blue"] .group-title .mini,
+body[data-skin="baby-blue"] .metric .mini{
+  color:#60768c !important;
+}
+body[data-skin="baby-blue"] .status:not(.green):not(.blue):not(.red):not(.yellow):not(.orange):not(.purple){
+  background:#fde8eb !important;
+  color:#9b3641 !important;
+  border-color:#e9a7ae !important;
+}
+body[data-skin="baby-blue"] .status.orange{
+  background:#fff0dc !important;
+  color:#9a5715 !important;
+  border-color:#e8b77c !important;
+}
+body[data-skin="baby-blue"] .status.purple{
+  background:#f0e9ff !important;
+  color:#6948a3 !important;
+  border-color:#c8b4ed !important;
+}
+body[data-skin="baby-blue"] .count-badge,
+body[data-skin="baby-blue"] .meta-badge,
+body[data-skin="baby-blue"] .pill{
+  background:#edf8ff !important;
+  color:#29445f !important;
+  border-color:#a9cfe5 !important;
+}
+body[data-skin="baby-blue"] .menu-btn{
+  background:#f8fcff !important;
+  color:#526d85 !important;
+  border-color:#a9cfe5 !important;
+}
+body[data-skin="baby-blue"] .quick-status-choice{
+  background:#f4fbff !important;
+  color:#14233a !important;
+  border-color:#a9cfe5 !important;
+}
+body[data-skin="baby-blue"] .quick-status-choice.current{
+  background:#e0f2ff !important;
+  color:#17679d !important;
+  border-color:#69b2df !important;
+}
+
 </style>
 </head>
 <body>
@@ -1076,7 +1136,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.2 Baby Blue Contrast Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.3 Baby Blue Full Contrast Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
