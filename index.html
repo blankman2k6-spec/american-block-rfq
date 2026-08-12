@@ -1005,6 +1005,70 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   .pipeline-stage-row{grid-template-columns:minmax(90px,1fr) 1.3fr auto}
 }
 
+
+    /* v5.3.2 — Baby Blue readability/contrast refinement */
+    body[data-skin="baby-blue"]{
+      --bg:#eaf6ff;--panel:#ffffff;--panel2:#e7f4fc;--line:#a9cfe5;
+      --text:#14233a;--muted:#60768c;--accent:#2789c7;--accent2:#1f73aa;
+      --green:#147a50;--red:#a53b45;--yellow:#986416;
+    }
+    body[data-skin="baby-blue"] .card,
+    body[data-skin="baby-blue"] .metric,
+    body[data-skin="baby-blue"] .list-card,
+    body[data-skin="baby-blue"] .activity-card,
+    body[data-skin="baby-blue"] .account-list-row{
+      background:#ffffff;color:#14233a;border-color:#b5d7e9;
+    }
+    body[data-skin="baby-blue"] input,
+    body[data-skin="baby-blue"] select,
+    body[data-skin="baby-blue"] textarea{
+      background:#ffffff !important;color:#14233a !important;border-color:#a9cfe5 !important;
+    }
+    body[data-skin="baby-blue"] input::placeholder,
+    body[data-skin="baby-blue"] textarea::placeholder{color:#8194a7 !important;opacity:1}
+    body[data-skin="baby-blue"] .primary{
+      background:#4aa9e3 !important;color:#ffffff !important;border-color:#3996ce !important;
+    }
+    body[data-skin="baby-blue"] .secondary,
+    body[data-skin="baby-blue"] .icon-btn,
+    body[data-skin="baby-blue"] .call-link{
+      background:#f8fcff !important;color:#14233a !important;border-color:#a9cfe5 !important;
+    }
+    body[data-skin="baby-blue"] .status.blue{
+      background:#e1f2ff !important;color:#17679d !important;border-color:#8fc4e7 !important;
+    }
+    body[data-skin="baby-blue"] .status.green{
+      background:#e4f6ed !important;color:#176b49 !important;border-color:#8bc9aa !important;
+    }
+    body[data-skin="baby-blue"] .status.yellow{
+      background:#fff5d9 !important;color:#805a0b !important;border-color:#dfc77e !important;
+    }
+    body[data-skin="baby-blue"] .status.red{
+      background:#fdebed !important;color:#963740 !important;border-color:#e3a5ab !important;
+    }
+    body[data-skin="baby-blue"] .tabs{background:rgba(250,253,255,.97) !important}
+    body[data-skin="baby-blue"] .tab{color:#60768c !important}
+    body[data-skin="baby-blue"] .tab.active{
+      background:#e4f3fd !important;color:#176fa8 !important;
+    }
+    body[data-skin="baby-blue"] .pipeline-stage-track,
+    body[data-skin="baby-blue"] .mix-track{background:#dbeaf4 !important}
+    body[data-skin="baby-blue"] .pipeline-stage-fill{background:#4aa9e3 !important}
+    body[data-skin="baby-blue"] .account-menu,
+    body[data-skin="baby-blue"] .order-menu{
+      background:#ffffff !important;color:#14233a !important;border-color:#a9cfe5 !important;
+    }
+    body[data-skin="baby-blue"] .account-menu button,
+    body[data-skin="baby-blue"] .order-menu button{color:#14233a !important;background:#ffffff !important}
+    /* Dark component defaults in the base skin were obscuring text/data. */
+    body[data-skin="baby-blue"] .product-stat,
+    body[data-skin="baby-blue"] .product-stat-box,
+    body[data-skin="baby-blue"] [class*="product-stat"]{
+      background:#eaf6fd !important;color:#14233a !important;border-color:#a9cfe5 !important;
+    }
+    body[data-skin="baby-blue"] [class*="product-stat"] *,
+    body[data-skin="baby-blue"] .product-stat *{color:inherit !important}
+
 </style>
 </head>
 <body>
@@ -1012,7 +1076,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.1 Pipeline Filter + Baby Blue</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.2 Baby Blue Contrast Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
