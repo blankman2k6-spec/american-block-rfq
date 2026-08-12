@@ -941,7 +941,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .accounting-dollar{
   position:absolute;left:10px;z-index:2;font-size:20px;font-weight:900;color:var(--muted);pointer-events:none
 }
-/* v5.2.14 Keep monthly goal currency values cleanly inside their metric cards on phones. */
+/* v5.3.0 Keep monthly goal currency values cleanly inside their metric cards on phones. */
 #importedMonthSales,#goalRemaining,#dailyNeeded{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:clamp(18px,5.2vw,25px);line-height:1.12
@@ -959,7 +959,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 #monthlySales.adjustment-zero{color:var(--text)!important}
 
 
-/* v5.2.14 collapsible customer-log days */
+/* v5.3.0 collapsible customer-log days */
 .day-log-collapsible{overflow:hidden}
 .day-log-summary{cursor:pointer;list-style:none;user-select:none}
 .day-log-summary::-webkit-details-marker{display:none}
@@ -968,6 +968,29 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
 .day-log-collapsible:not([open]) .day-log-chevron{transform:rotate(-90deg)}
 .day-log-content{padding-top:4px}
 
+
+/* v5.3.0 Pipeline + Forecast */
+.pipeline-metrics,.forecast-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pipeline-stage-bars{display:grid;gap:10px}
+.pipeline-stage-row{display:grid;grid-template-columns:minmax(110px,1.25fr) 2fr auto;gap:10px;align-items:center}
+.pipeline-stage-track{height:14px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.pipeline-stage-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:999px}
+.pipeline-stage-label strong{display:block}.pipeline-stage-label span{font-size:11px;color:var(--muted)}
+.pipeline-record{display:grid;gap:10px}
+.pipeline-record-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.pipeline-record-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.pipeline-record-grid label{margin-top:0}
+.pipeline-weight{font-size:12px;color:var(--muted)}
+.forecast-confidence-row{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.forecast-confidence-row:first-child{border-top:0}
+.forecast-confidence-track{height:12px;border-radius:999px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}
+.forecast-confidence-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#22c55e,#3b82f6)}
+@media(max-width:700px){
+  .pipeline-metrics,.forecast-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipeline-record-grid{grid-template-columns:1fr}
+  .pipeline-stage-row{grid-template-columns:minmax(90px,1fr) 1.3fr auto}
+}
+
 </style>
 </head>
 <body>
@@ -975,7 +998,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.2.14 RFQ Date + Collapsible Logs</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.0 Pipeline + Forecast</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1401,6 +1424,77 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
         <button id="cancelActivity" class="secondary">Cancel</button>
       </div>
       <div id="activityMessage" class="mini" style="margin-top:9px"></div>
+    </div>
+  </section>
+
+
+  <section id="pipelineView" class="view">
+    <div class="section-head">
+      <div><div class="kicker">Sales Pipeline</div><h2 style="margin-top:4px">Open Business Pipeline</h2><div class="mini">Open RFQs + pre-RFQ opportunities. Converted opportunities are not double counted.</div></div>
+      <span class="status blue">LIVE</span>
+    </div>
+
+    <div class="grid metrics pipeline-metrics">
+      <div class="metric"><small>Open RFQs</small><strong id="pipeRfqTotal">$0</strong><div id="pipeRfqCount" class="sub">0 RFQs</div></div>
+      <div class="metric"><small>Pre-RFQ Opportunities</small><strong id="pipeOppTotal">$0</strong><div id="pipeOppCount" class="sub">0 opportunities</div></div>
+      <div class="metric"><small>Total Open Pipeline</small><strong id="pipeGrandTotal">$0</strong><div class="sub">No double counting</div></div>
+      <div class="metric"><small>Weighted Pipeline</small><strong id="pipeWeightedTotal">$0</strong><div class="sub">Value × probability</div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin-top:0"><div><h2 style="margin:0">Pipeline by Stage</h2><div class="mini">Dollar value and deal count by current stage.</div></div></div>
+      <div id="pipelineStageBars" class="pipeline-stage-bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><label>Filter</label><select id="pipelineTypeFilter"><option value="all">All Open Business</option><option value="rfq">RFQs Only</option><option value="opportunity">Opportunities Only</option></select></div>
+        <div><label>Sort</label><select id="pipelineSort"><option value="value">Highest Value</option><option value="probability">Highest Probability</option><option value="close">Expected Close Date</option><option value="customer">Customer</option></select></div>
+      </div>
+      <label>Search</label><input id="pipelineSearch" placeholder="Customer, RFQ, opportunity, product...">
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin-top:0"><div><h2 style="margin:0">Pipeline Detail</h2><div class="mini">Set probability, confidence, and expected close date here. Changes save to the underlying RFQ/opportunity.</div></div></div>
+      <div id="pipelineDetailList" class="list"></div>
+    </div>
+  </section>
+
+  <section id="forecastView" class="view">
+    <div class="section-head">
+      <div><div class="kicker">Sales Forecasting</div><h2 style="margin-top:4px">Forecast</h2><div class="mini">Forecasted close value by month using probability and confidence.</div></div>
+      <span class="status green">FORECAST</span>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><label>Forecast Month</label><input id="forecastMonth" type="month"></div>
+        <div><label>Monthly Goal</label><div id="forecastGoalDisplay" class="sales-adjustment-period-pill">$0</div></div>
+      </div>
+    </div>
+
+    <div class="grid metrics forecast-metrics">
+      <div class="metric"><small>Committed</small><strong id="forecastCommit">$0</strong><div class="sub">Highest confidence</div></div>
+      <div class="metric"><small>Likely</small><strong id="forecastLikely">$0</strong><div class="sub">Good chance to close</div></div>
+      <div class="metric"><small>Upside</small><strong id="forecastUpside">$0</strong><div class="sub">Possible additional business</div></div>
+      <div class="metric"><small>Weighted Forecast</small><strong id="forecastWeighted">$0</strong><div class="sub">Probability-adjusted</div></div>
+    </div>
+
+    <div class="grid metrics">
+      <div class="metric"><small>True / Estimated Sales</small><strong id="forecastActual">$0</strong><div class="sub">Accounting actual when entered; otherwise CRM estimate</div></div>
+      <div class="metric"><small>Projected Month</small><strong id="forecastProjected">$0</strong><div class="sub">Current sales + weighted forecast</div></div>
+      <div class="metric"><small>Projected Gap</small><strong id="forecastGap">$0</strong><div class="sub">Amount still needed to goal</div></div>
+      <div class="metric"><small>Coverage</small><strong id="forecastCoverage">0%</strong><div class="sub">Projected month ÷ goal</div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin-top:0"><div><h2 style="margin:0">Forecast by Confidence</h2><div class="mini">Pipeline expected to close in the selected month.</div></div></div>
+      <div id="forecastConfidenceList"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head" style="margin-top:0"><div><h2 style="margin:0">What Would Close the Gap?</h2><div class="mini">Largest active deals in the selected forecast month that could help reach the monthly goal.</div></div></div>
+      <div id="forecastGapDeals" class="list"></div>
     </div>
   </section>
 
@@ -2155,6 +2249,8 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
     <button class="tab" data-view="activityLogView"><strong class="nav-icon">📝</strong>Log</button>
     <button class="tab" data-view="productsView"><strong class="nav-icon nav-hammer" aria-label="Hammer union">⬢</strong>Products</button>
     <button class="tab" data-view="communicationsView"><strong class="nav-icon">✉️</strong>Comms</button>
+    <button class="tab" data-view="pipelineView"><strong class="nav-icon">◫</strong>Pipeline</button>
+    <button class="tab" data-view="forecastView"><strong class="nav-icon">↗</strong>Forecast</button>
     <button class="tab" data-view="followupsView"><strong class="nav-icon">🎯</strong>Follow-ups</button>
     <button class="tab" data-view="intelligenceView"><strong class="nav-icon nav-emerald">♦</strong>Intel</button>
     <button class="tab" data-view="aiView"><strong class="nav-icon">✦</strong>AI</button>
@@ -4623,9 +4719,147 @@ const moneyInputObserver=new MutationObserver(muts=>{
   muts.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)enhanceMoneyInputs(n.matches?.('input[type="number"]')?n.parentElement:n)}));
 });
 
+
+const PIPELINE_DEFAULT_PROBABILITY={
+  "Prospecting":10,"Qualified":20,"Quote Needed":25,"RFQ Received":25,
+  "Pricing Review":40,"Waiting on Customer":50,"Verbal Yes":80,"Hold":20
+};
+const PIPELINE_CONFIDENCE=["Pipeline","Upside","Likely","Commit"];
+
+function pipelineProbability(record){
+  const p=Number(record.forecastProbability);
+  if(Number.isFinite(p)&&p>=0&&p<=100)return p;
+  return PIPELINE_DEFAULT_PROBABILITY[record.status||record.opportunityStage]??20;
+}
+function pipelineConfidence(record){
+  const saved=record.forecastConfidence;
+  if(PIPELINE_CONFIDENCE.includes(saved))return saved;
+  const p=pipelineProbability(record);
+  return p>=80?"Commit":p>=50?"Likely":p>=25?"Upside":"Pipeline";
+}
+function pipelineCloseDate(record){
+  return record.expectedCloseDate||record.followup||"";
+}
+function openPipelineRecords(){
+  const rows=[];
+  rfqs.filter(isOpen).forEach(r=>{
+    rows.push({
+      kind:"rfq",id:r.id,customerId:r.customerId,contactId:r.contactId,
+      customer:customerName(r),title:r.quoteNo||"RFQ",stage:r.status||"RFQ Received",
+      value:total(r),probability:pipelineProbability(r),confidence:pipelineConfidence(r),
+      closeDate:pipelineCloseDate(r),details:rfqItemDescriptionList(r.items),
+      source:r
+    });
+  });
+  activities.filter(a=>{
+    if(!(a.opportunityTitle||a.opportunityDetails))return false;
+    if(a.opportunityRfqId&&rfqs.some(r=>String(r.id)===String(a.opportunityRfqId)))return false;
+    return true;
+  }).forEach(a=>{
+    rows.push({
+      kind:"opportunity",id:a.id,customerId:a.customerId,contactId:a.contactId,
+      customer:customerById(a.customerId)?.company||"Unknown Customer",
+      title:a.opportunityTitle||"Opportunity",stage:a.opportunityStage||"Prospecting",
+      value:Number(a.opportunityValue)||0,probability:pipelineProbability(a),
+      confidence:pipelineConfidence(a),closeDate:pipelineCloseDate(a),
+      details:a.opportunityDetails||a.comments||"",source:a
+    });
+  });
+  return rows;
+}
+function pipelineWeightedValue(row){return (Number(row.value)||0)*(Number(row.probability)||0)/100}
+function updatePipelineRecord(kind,id,field,value){
+  let rec=null;
+  if(kind==="rfq"){
+    rec=rfqs.find(r=>String(r.id)===String(id));
+  }else{
+    rec=activities.find(a=>String(a.id)===String(id));
+  }
+  if(!rec)return;
+  if(field==="forecastProbability"){
+    rec[field]=Math.max(0,Math.min(100,Number(value)||0));
+  }else rec[field]=value;
+  rec.updatedAt=new Date().toISOString();
+  save();renderPipeline();renderForecast();
+}
+function renderPipeline(){
+  if(!$("pipelineDetailList"))return;
+  const all=openPipelineRecords();
+  const rfqRows=all.filter(x=>x.kind==="rfq"),oppRows=all.filter(x=>x.kind==="opportunity");
+  const rfqTotal=rfqRows.reduce((s,x)=>s+x.value,0),oppTotal=oppRows.reduce((s,x)=>s+x.value,0);
+  const grand=rfqTotal+oppTotal,weighted=all.reduce((s,x)=>s+pipelineWeightedValue(x),0);
+  $("pipeRfqTotal").textContent=money.format(rfqTotal);$("pipeRfqCount").textContent=`${rfqRows.length} RFQ${rfqRows.length===1?"":"s"}`;
+  $("pipeOppTotal").textContent=money.format(oppTotal);$("pipeOppCount").textContent=`${oppRows.length} opportunit${oppRows.length===1?"y":"ies"}`;
+  $("pipeGrandTotal").textContent=money.format(grand);$("pipeWeightedTotal").textContent=money.format(weighted);
+
+  const stageMap=new Map();
+  all.forEach(r=>{const k=r.stage||"Unspecified",v=stageMap.get(k)||{count:0,value:0};v.count++;v.value+=r.value;stageMap.set(k,v)});
+  const stages=[...stageMap.entries()].sort((a,b)=>b[1].value-a[1].value),max=Math.max(1,...stages.map(x=>x[1].value));
+  $("pipelineStageBars").innerHTML=stages.length?stages.map(([stage,v])=>`<div class="pipeline-stage-row"><div class="pipeline-stage-label"><strong>${esc(stage)}</strong><span>${v.count} deal${v.count===1?"":"s"}</span></div><div class="pipeline-stage-track"><div class="pipeline-stage-fill" style="width:${Math.max(3,v.value/max*100)}%"></div></div><strong>${money.format(v.value)}</strong></div>`).join(""):"<div class='empty'>No open pipeline yet.</div>";
+
+  const type=$("pipelineTypeFilter")?.value||"all",q=($("pipelineSearch")?.value||"").toLowerCase(),sort=$("pipelineSort")?.value||"value";
+  let rows=all.filter(r=>(type==="all"||r.kind===type)&&(!q||`${r.customer} ${r.title} ${r.stage} ${r.details}`.toLowerCase().includes(q)));
+  rows.sort((a,b)=>{
+    if(sort==="probability")return b.probability-a.probability||b.value-a.value;
+    if(sort==="close")return (a.closeDate||"9999").localeCompare(b.closeDate||"9999");
+    if(sort==="customer")return a.customer.localeCompare(b.customer);
+    return b.value-a.value;
+  });
+  $("pipelineDetailList").innerHTML=rows.length?rows.map(r=>`<div class="list-card pipeline-record">
+    <div class="pipeline-record-top">
+      <div><div class="list-title">${esc(r.customer)}</div><div class="mini">${r.kind==="rfq"?"RFQ":"Opportunity"} · ${esc(r.title)} · ${esc(r.stage)}</div></div>
+      <div style="text-align:right"><div class="money" style="margin:0">${money.format(r.value)}</div><div class="pipeline-weight">Weighted ${money.format(pipelineWeightedValue(r))}</div></div>
+    </div>
+    <div class="mini">${esc(r.details||"No details")}</div>
+    <div class="pipeline-record-grid">
+      <div><label>Win Probability</label><select data-pipeline-field="forecastProbability" data-pipeline-kind="${r.kind}" data-pipeline-id="${esc(r.id)}">${[0,10,20,25,30,40,50,60,70,80,90,100].map(n=>`<option value="${n}" ${n===r.probability?"selected":""}>${n}%</option>`).join("")}</select></div>
+      <div><label>Forecast Confidence</label><select data-pipeline-field="forecastConfidence" data-pipeline-kind="${r.kind}" data-pipeline-id="${esc(r.id)}">${PIPELINE_CONFIDENCE.map(x=>`<option ${x===r.confidence?"selected":""}>${x}</option>`).join("")}</select></div>
+      <div><label>Expected Close Date</label><input type="date" value="${esc(r.closeDate||"")}" data-pipeline-field="expectedCloseDate" data-pipeline-kind="${r.kind}" data-pipeline-id="${esc(r.id)}"></div>
+    </div>
+  </div>`).join(""):"<div class='empty'>No pipeline records match this filter.</div>";
+
+  document.querySelectorAll("[data-pipeline-field]").forEach(el=>el.onchange=()=>updatePipelineRecord(el.dataset.pipelineKind,el.dataset.pipelineId,el.dataset.pipelineField,el.value));
+}
+function renderForecast(){
+  if(!$("forecastMonth"))return;
+  if(!$("forecastMonth").value)$("forecastMonth").value=salesAdjustmentMonthKey();
+  const month=$("forecastMonth").value;
+  const goal=Number(settings.goal)||0;
+  $("forecastGoalDisplay").textContent=money.format(goal);
+
+  const all=openPipelineRecords().filter(r=>(r.closeDate||"").slice(0,7)===month);
+  const sumConfidence=name=>all.filter(r=>r.confidence===name).reduce((s,r)=>s+r.value,0);
+  const commit=sumConfidence("Commit"),likely=sumConfidence("Likely"),upside=sumConfidence("Upside");
+  const weighted=all.reduce((s,r)=>s+pipelineWeightedValue(r),0);
+  $("forecastCommit").textContent=money.format(commit);$("forecastLikely").textContent=money.format(likely);
+  $("forecastUpside").textContent=money.format(upside);$("forecastWeighted").textContent=money.format(weighted);
+
+  const actual=reconciledSalesForPeriod(month);
+  const projected=actual+weighted,gap=Math.max(0,goal-projected),coverage=goal?projected/goal*100:0;
+  $("forecastActual").textContent=money.format(actual);$("forecastProjected").textContent=money.format(projected);
+  $("forecastGap").textContent=money.format(gap);$("forecastGap").className=gap>0?"trend-down":"trend-up";
+  $("forecastCoverage").textContent=`${coverage.toFixed(0)}%`;
+
+  const confRows=PIPELINE_CONFIDENCE.slice().reverse().map(name=>{
+    const value=all.filter(r=>r.confidence===name).reduce((s,r)=>s+r.value,0);
+    return [name,value,all.filter(r=>r.confidence===name).length];
+  });
+  const max=Math.max(1,...confRows.map(x=>x[1]));
+  $("forecastConfidenceList").innerHTML=confRows.map(([name,value,count])=>`<div class="forecast-confidence-row"><strong>${name}</strong><div class="forecast-confidence-track"><div class="forecast-confidence-fill" style="width:${value?Math.max(4,value/max*100):0}%"></div></div><div style="text-align:right"><strong>${money.format(value)}</strong><div class="mini">${count} deal${count===1?"":"s"}</div></div></div>`).join("");
+
+  const candidates=all.slice().sort((a,b)=>b.value-a.value);
+  let running=0;
+  const gapDeals=[];
+  for(const r of candidates){
+    if(running>=gap)break;
+    gapDeals.push(r);running+=r.value;
+  }
+  $("forecastGapDeals").innerHTML=gap<=0?"<div class='empty'>Projected sales meet or exceed the monthly goal.</div>":gapDeals.length?gapDeals.map(r=>`<div class="list-card"><div class="list-head"><div><div class="list-title">${esc(r.customer)}</div><div class="mini">${esc(r.title)} · ${esc(r.confidence)} · ${r.probability}%</div></div><strong>${money.format(r.value)}</strong></div><div class="mini" style="margin-top:7px">${r.closeDate?`Expected ${formatDate(r.closeDate)}`:"No expected close date"}</div></div>`).join(""):"<div class='empty'>No deals are forecasted to close in this month yet.</div>";
+}
+
 function renderAll(){ensureYearSettings();refreshLinkedOpportunityValues();
   renderBackorders();
-renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
+renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderPipeline();renderForecast();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
 let editingOrderId=null;
@@ -6642,7 +6876,7 @@ if($("accountingMonthSales")){
 }
 
 
-/* v5.2.14 Interaction Repair
+/* v5.3.0 Interaction Repair
    Restores direct bindings that were missing from recent builds. */
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
@@ -6673,6 +6907,12 @@ if($("followupFilter"))$("followupFilter").onchange=renderFollowups;
 if($("productSearch"))$("productSearch").oninput=renderProducts;
 if($("productPeriod"))$("productPeriod").onchange=renderProducts;
 if($("productMetric"))$("productMetric").onchange=renderProducts;
+
+
+if($("pipelineTypeFilter"))$("pipelineTypeFilter").onchange=renderPipeline;
+if($("pipelineSort"))$("pipelineSort").onchange=renderPipeline;
+if($("pipelineSearch"))$("pipelineSearch").oninput=renderPipeline;
+if($("forecastMonth"))$("forecastMonth").onchange=renderForecast;
 
 renderAll();
 initializeCloudSync();
