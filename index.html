@@ -235,6 +235,20 @@
     .skin-office{background:#d4d0c8}.skin-office i:nth-child(1){height:100%;background:#f7f7f7}.skin-office i:nth-child(2){height:75%;background:#316ac5}.skin-office i:nth-child(3){height:55%;background:#808080}.skin-office i:nth-child(4){height:85%;background:#ece9d8}
     .skin-oilfield{background:#101112}.skin-oilfield i:nth-child(1){height:100%;background:#1c1d1f}.skin-oilfield i:nth-child(2){height:75%;background:#d39a2c}.skin-oilfield i:nth-child(3){height:55%;background:#65717d}.skin-oilfield i:nth-child(4){height:85%;background:#292b2e}
     .skin-corporate{background:#eef2f6}.skin-corporate i:nth-child(1){height:100%;background:#fff}.skin-corporate i:nth-child(2){height:75%;background:#2563eb}.skin-corporate i:nth-child(3){height:55%;background:#16a34a}.skin-corporate i:nth-child(4){height:85%;background:#dbe4ef}
+    .skin-babyblue{background:#dff2ff}.skin-babyblue i:nth-child(1){height:100%;background:#f8fcff}.skin-babyblue i:nth-child(2){height:75%;background:#78bff2}.skin-babyblue i:nth-child(3){height:55%;background:#a8d8f5}.skin-babyblue i:nth-child(4){height:85%;background:#cfeafb}
+
+    body[data-skin="baby-blue"]{
+      --bg:#eaf6ff;--panel:#fafdff;--panel2:#dff1fc;--line:#b8d6e8;--text:#142033;--muted:#60758a;
+      --accent:#5aaee6;--accent2:#3d91cb;--green:#25845b;--red:#b9434b;--yellow:#a66b14;--shadow:0 6px 18px rgba(73,132,168,.12);
+      background:linear-gradient(180deg,#d9effd,#eef8ff 190px,#e5f3fc);
+    }
+    body[data-skin="baby-blue"] .topbar,body[data-skin="baby-blue"] .tabs{background:rgba(247,252,255,.94);border-color:#b8d6e8}
+    body[data-skin="baby-blue"] .metric,body[data-skin="baby-blue"] .card,body[data-skin="baby-blue"] .list-card,body[data-skin="baby-blue"] .activity-card,body[data-skin="baby-blue"] .account-list-row{background:#fbfdff;border-color:#bfdbea}
+    body[data-skin="baby-blue"] input,body[data-skin="baby-blue"] select,body[data-skin="baby-blue"] textarea{background:#fff;color:#142033;border-color:#b8d6e8}
+    body[data-skin="baby-blue"] .primary{background:linear-gradient(#78bff2,#55a9e2);border-color:#4798ce;color:#fff}
+    body[data-skin="baby-blue"] .secondary,body[data-skin="baby-blue"] .icon-btn{background:#f7fcff;border-color:#b8d6e8;color:#142033}
+    body[data-skin="baby-blue"] .tab{color:#60758a}body[data-skin="baby-blue"] .tab.active,body[data-skin="baby-blue"] .kicker{color:#2d7fb8}
+
 
     body[data-skin="classic-office"]{
       --bg:#c8c8c8;--panel:#ececec;--panel2:#dcdcdc;--line:#a5a5a5;--text:#171717;--muted:#555;
@@ -998,7 +1012,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.0 Pipeline + Forecast</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.1 Pipeline Filter + Baby Blue</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1755,6 +1769,7 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
         <button class="skin-option" data-skin-choice="classic-office"><span class="skin-swatch skin-office"><i></i><i></i><i></i><i></i></span><strong>Classic Office Gray</strong><small>Old Microsoft Word-inspired gray business UI.</small></button>
         <button class="skin-option" data-skin-choice="oilfield-black"><span class="skin-swatch skin-oilfield"><i></i><i></i><i></i><i></i></span><strong>Oilfield Black</strong><small>Charcoal steel with amber industrial accents.</small></button>
         <button class="skin-option" data-skin-choice="clean-corporate"><span class="skin-swatch skin-corporate"><i></i><i></i><i></i><i></i></span><strong>Clean Corporate</strong><small>Bright, polished executive reporting look.</small></button>
+        <button class="skin-option" data-skin-choice="baby-blue"><span class="skin-swatch skin-babyblue"><i></i><i></i><i></i><i></i></span><strong>Baby Blue</strong><small>Soft light-blue professional sales workspace.</small></button>
       </div>
       <div id="skinStatus" class="mini" style="margin-top:10px"></div>
     </div>
@@ -2367,13 +2382,13 @@ async function refreshCrmView(){
 }
 
 function applySkin(name,announce=false){
-  const allowed=["midnight-executive","classic-office","oilfield-black","clean-corporate"];
+  const allowed=["midnight-executive","classic-office","oilfield-black","clean-corporate","baby-blue"];
   const skin=allowed.includes(name)?name:"midnight-executive";
   settings.skin=skin;
   if(skin==="midnight-executive")document.body.removeAttribute("data-skin");
   else document.body.dataset.skin=skin;
   document.querySelectorAll("[data-skin-choice]").forEach(b=>b.classList.toggle("active",b.dataset.skinChoice===skin));
-  const names={"midnight-executive":"Midnight Executive","classic-office":"Classic Office Gray","oilfield-black":"Oilfield Black","clean-corporate":"Clean Corporate"};
+  const names={"midnight-executive":"Midnight Executive","classic-office":"Classic Office Gray","oilfield-black":"Oilfield Black","clean-corporate":"Clean Corporate","baby-blue":"Baby Blue"};
   if($("skinStatus"))$("skinStatus").textContent=`Current skin: ${names[skin]}`;
   if(announce){localStorage.setItem(KEYS.settings,JSON.stringify(settings));}
 }
@@ -4754,6 +4769,8 @@ function openPipelineRecords(){
   activities.filter(a=>{
     if(!(a.opportunityTitle||a.opportunityDetails))return false;
     if(a.opportunityRfqId&&rfqs.some(r=>String(r.id)===String(a.opportunityRfqId)))return false;
+    const closedStage=String(a.opportunityStage||"").trim().toLowerCase();
+    if(["closed won","won","closed lost","lost","closed"].includes(closedStage))return false;
     return true;
   }).forEach(a=>{
     rows.push({
