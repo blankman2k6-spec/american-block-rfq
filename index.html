@@ -1150,6 +1150,20 @@ body[data-skin="baby-blue"] .mini-metric{background:#f8fcff !important;color:#14
 body[data-skin="baby-blue"] .mini-metric span{color:#60768c !important;}
 body[data-skin="baby-blue"] .mini-metric strong{color:#14233a !important;}
 
+
+/* v5.3.6 — Baby Blue activity badge readability fix
+   Match the clean Corporate skin's readable activity labels. */
+body[data-skin="baby-blue"] .activity-card .activity-type,
+body[data-skin="baby-blue"] .activity-type{
+  background:#eef4fb !important;
+  color:#334155 !important;
+  border-color:#cbd8e8 !important;
+  box-shadow:none !important;
+}
+body[data-skin="baby-blue"] .activity-card .activity-type *{
+  color:#334155 !important;
+}
+
 </style>
 </head>
 <body>
@@ -1157,7 +1171,7 @@ body[data-skin="baby-blue"] .mini-metric strong{color:#14233a !important;}
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.5 Baby Blue Daily Tracker Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.6 Baby Blue Activity Badge Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
