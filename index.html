@@ -1228,7 +1228,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
 }
 
 
-/* v5.5.0 Private Multi-User */
+/* v5.5.1 Private Multi-User */
 .private-user-card{display:grid;gap:10px}
 .private-user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .private-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -1653,6 +1653,20 @@ body[data-skin="baby-blue"] .insight-card .status.green{
       <div class="row" style="grid-template-columns:1fr auto;align-items:end">
         <div><select id="activityContact"></select></div>
         <div><a id="activityCallContact" class="call-link hidden" href="#">☎ Call</a></div>
+      </div>
+
+      <div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)">
+        <div class="kicker">Activity Location</div>
+        <div class="mini" style="margin-bottom:8px">Auto-filled from the selected contact. You can override it for this specific visit/call/email; the saved activity keeps its own historical snapshot.</div>
+        <div class="row">
+          <div><label>Street Address</label><input id="activityLocationAddress" placeholder="Street address"></div>
+          <div><label>City</label><input id="activityLocationCity" placeholder="City"></div>
+        </div>
+        <div class="row">
+          <div><label>State</label><input id="activityLocationState" placeholder="OK, TX, CO..."></div>
+          <div><label>ZIP</label><input id="activityLocationZip" inputmode="numeric" placeholder="ZIP code"></div>
+        </div>
+        <label>Branch / Location Name</label><input id="activityLocationName" placeholder="Optional branch / yard name">
       </div>
 
       <label>Opportunity</label>
@@ -2491,7 +2505,15 @@ body[data-skin="baby-blue"] .insight-card .status.green{
         <div><label>Email</label><input data-c="email" type="email" placeholder="Email address"></div>
       </div>
       <div class="row">
-        <div><label>Location</label><input data-c="location" placeholder="City, branch, yard..."></div>
+        <div><label>Branch / Location Name</label><input data-c="location" placeholder="Chickasha Branch, Denver Office..."></div>
+        <div><label>Street Address</label><input data-c="address" placeholder="Street address"></div>
+      </div>
+      <div class="row">
+        <div><label>City</label><input data-c="city" placeholder="City"></div>
+        <div><label>State</label><input data-c="state" placeholder="OK, TX, CO..."></div>
+      </div>
+      <div class="row">
+        <div><label>ZIP</label><input data-c="zip" inputmode="numeric" placeholder="ZIP code"></div>
         <div><label>Primary Contact</label>
           <select data-c="primary">
             <option value="no">No</option>
@@ -4160,7 +4182,7 @@ function saveInlineActivityCustomer(){
   const contactPhone=$("activityNewContactPhone").value.trim();
   const contactEmail=$("activityNewContactEmail").value.trim();
   const contacts=(contactName||contactPhone||contactEmail)?[{
-    id:uid(),name:contactName,role:"",phone:contactPhone,email:contactEmail,location:"",primary:true
+    id:uid(),name:contactName,role:"",phone:contactPhone,email:contactEmail,location:"",address:$("activityNewAddress").value.trim(),city:$("activityNewCity").value.trim(),state:"",zip:$("activityNewZip").value.trim(),primary:true
   }]:[];
 
   const rec={
@@ -4192,6 +4214,27 @@ function fillActivityCustomers(){
   if(!$("activityCustomer"))return;
   $("activityCustomer").innerHTML=`<option value="">Select customer</option>`+customers.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
 }
+function contactLocationSnapshot(customerId,contactId){
+  const c=customerById(customerId)||{},ct=contactById(customerId,contactId)||{};
+  return {
+    locationName:ct.location||"",
+    address:ct.address||c.address||"",
+    city:ct.city||c.city||"",
+    state:ct.state||c.state||"",
+    zip:ct.zip||c.zip||""
+  };
+}
+function setActivityLocationFields(loc={}){
+  if($("activityLocationName"))$("activityLocationName").value=loc.locationName||"";
+  if($("activityLocationAddress"))$("activityLocationAddress").value=loc.address||"";
+  if($("activityLocationCity"))$("activityLocationCity").value=loc.city||"";
+  if($("activityLocationState"))$("activityLocationState").value=loc.state||"";
+  if($("activityLocationZip"))$("activityLocationZip").value=loc.zip||"";
+}
+function refreshActivityLocationFromContact(){
+  if(!$("activityCustomer"))return;
+  setActivityLocationFields(contactLocationSnapshot($("activityCustomer").value,$("activityContact")?.value||""));
+}
 function fillActivityContacts(selected=""){
   const c=customerById($("activityCustomer").value);
   $("activityContact").innerHTML=`<option value="">No contact selected</option>`+(c?.contacts||[]).map(ct=>`<option value="${ct.id}" ${ct.id===selected?"selected":""}>${esc(ct.name||"Unnamed Contact")}${ct.phone?` · ${esc(ct.phone)}`:""}</option>`).join("");
@@ -4205,6 +4248,7 @@ function openNewActivity(customerId="",contactId=""){
   $("activityType").value="Visit";
   $("activityCustomer").value=customerId||"";
   fillActivityContacts(contactId);
+  setActivityLocationFields(contactLocationSnapshot(customerId,contactId));
   fillActivityOpportunities("");
   toggleInlineActivityCustomer(false);resetInlineActivityCustomerForm();
   $("activityOpportunityTitle").value="";$("activityOpportunityValue").value="";$("activityOpportunityStage").value="Prospecting";$("activityOpportunityDetails").value="";
@@ -4217,6 +4261,7 @@ function editActivity(id){
   editingActivityId=id;$("activityFormTitle").textContent="Edit Activity";
   fillActivityCustomers();$("activityCustomer").value=a.customerId||"";fillActivityContacts(a.contactId||"");
   $("activityDate").value=a.date||localIsoDate();$("activityType").value=a.type||"Visit";$("activityComments").value=a.comments||"";
+  setActivityLocationFields(a.locationSnapshot||contactLocationSnapshot(a.customerId,a.contactId));
   fillActivityOpportunities(a.opportunityRfqId?`rfq:${a.opportunityRfqId}`:(a.opportunityTitle?"new":""));
   $("activityOpportunityTitle").value=a.opportunityTitle||"";$("activityOpportunityValue").value=a.opportunityValue||"";$("activityOpportunityStage").value=a.opportunityStage||"Prospecting";$("activityOpportunityDetails").value=a.opportunityDetails||"";
   toggleActivityOpportunityFields();
@@ -4334,12 +4379,13 @@ function bossLogRowData(a){
   const contactInfo=[ct.email,ct.phone].filter(Boolean).join(" | ");
   const safeDate=safeActivityDate(a.date)||safeActivityDate(a.createdAt);
   const dateDisplay=safeDate?safeDate.toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"2-digit"}):(a.date||"");
+  const loc=a.locationSnapshot||contactLocationSnapshot(a.customerId,a.contactId);
   return {
     date:dateDisplay,
     customer:c.company||"",
-    city:c.city||"",
-    address:c.address||"",
-    zip:c.zip||"",
+    city:[loc.city,loc.state].filter(Boolean).join(", "),
+    address:loc.address||"",
+    zip:loc.zip||"",
     accountType:c.accountType||"",
     contact:ct.name||"",
     contactInfo,
@@ -4811,7 +4857,7 @@ function aiCustomerSummary(c){
   return {
     id:cid,company:c.company,city:c.city||"",accountType:c.accountType||"",marketRegion:c.marketRegion||"",
     notes:c.notes||"",website:c.website||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",isNewAccount:!!c.isNewAccount,wishlist:Array.isArray(c.wishlist)?c.wishlist:[],aiRecommendedProducts:Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[],
-    contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,primary:!!x.primary})),
+    contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,location:x.location||"",address:x.address||"",city:x.city||"",state:x.state||"",zip:x.zip||"",primary:!!x.primary})),
     orderCount:acctOrders.length,totalSales:acctOrders.reduce((s,o)=>s+boRecognizedValue(o),0),
     lastOrderDate:acctOrders.map(o=>o.orderDate).filter(Boolean).sort().pop()||"",
     openRfqs:acctRfqs.filter(isOpen).map(r=>({id:r.id,quoteNo:r.quoteNo,status:r.status,total:total(r),followup:r.followup,nextAction:r.nextAction,items:r.items||[]})),
@@ -6100,10 +6146,10 @@ function editRfq(id){
   $("rfqShipping").value=Number(r.shipping||0).toFixed(2);$("rfqTax").value=Number(r.tax||0).toFixed(2);
   $("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();updateDraft();lockInitialRfqStatus(false);rfqEditBaseline=rfqComparableFromForm();showView("rfqFormView",false)
 }
-function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",primary:false},placement="bottom"){
+function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",address:"",city:"",state:"",zip:"",primary:false},placement="bottom"){
   const row=$("contactTemplate").content.firstElementChild.cloneNode(true);
   row.dataset.id=data.id||uid();
-  ["name","role","phone","email","location"].forEach(k=>row.querySelector(`[data-c="${k}"]`).value=data[k]||"");
+  ["name","role","phone","email","location","address","city","state","zip"].forEach(k=>row.querySelector(`[data-c="${k}"]`).value=data[k]||"");
   row.querySelector('[data-c="primary"]').value=data.primary?"yes":"no";
   row.querySelector('[data-contact-remove]').onclick=()=>row.remove();
   row.querySelector('[data-c="primary"]').onchange=e=>{
@@ -6133,6 +6179,10 @@ function getContactRows(){
     phone:row.querySelector('[data-c="phone"]').value.trim(),
     email:row.querySelector('[data-c="email"]').value.trim(),
     location:row.querySelector('[data-c="location"]').value.trim(),
+    address:row.querySelector('[data-c="address"]').value.trim(),
+    city:row.querySelector('[data-c="city"]').value.trim(),
+    state:row.querySelector('[data-c="state"]').value.trim(),
+    zip:row.querySelector('[data-c="zip"]').value.trim(),
     primary:row.querySelector('[data-c="primary"]').value==="yes"
   })).filter(c=>c.name||c.phone||c.email);
 }
@@ -7216,8 +7266,8 @@ document.addEventListener("click",e=>{
 });
 $("todayLabel").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
-if($("activityCustomer"))$("activityCustomer").onchange=()=>{fillActivityContacts();fillActivityOpportunities();updateActivityCallButton()};
-if($("activityContact"))$("activityContact").onchange=updateActivityCallButton;
+if($("activityCustomer"))$("activityCustomer").onchange=()=>{fillActivityContacts();fillActivityOpportunities();updateActivityCallButton();refreshActivityLocationFromContact()};
+if($("activityContact"))$("activityContact").onchange=()=>{updateActivityCallButton();refreshActivityLocationFromContact()};
 if($("activityAddCustomerBtn"))$("activityAddCustomerBtn").onclick=()=>{
   const showing=!$("activityNewCustomerPanel").classList.contains("hidden");
   if(showing){toggleInlineActivityCustomer(false);return}
@@ -7263,7 +7313,8 @@ if($("saveActivity"))$("saveActivity").onclick=()=>{
   const opportunityValue=oppChoice==="new"?(Number($("activityOpportunityValue").value)||0):(linkedOpp?total(linkedOpp):0);
   const opportunityStage=oppChoice==="new"?$("activityOpportunityStage").value:(linkedOpp?.status||"");
   const opportunityDetails=$("activityOpportunityDetails").value.trim();
-  const rec={id:editingActivityId||uid(),date,type:$("activityType").value,customerId,contactId:$("activityContact").value||null,comments,
+  const locationSnapshot={locationName:$("activityLocationName")?.value.trim()||"",address:$("activityLocationAddress")?.value.trim()||"",city:$("activityLocationCity")?.value.trim()||"",state:$("activityLocationState")?.value.trim()||"",zip:$("activityLocationZip")?.value.trim()||""};
+  const rec={id:editingActivityId||uid(),date,type:$("activityType").value,customerId,contactId:$("activityContact").value||null,comments,locationSnapshot,
     opportunityRfqId,opportunityTitle,opportunityValue,opportunityStage,opportunityDetails,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
   if(editingActivityId)activities=activities.map(a=>a.id===editingActivityId?rec:a);else activities.push(rec);
