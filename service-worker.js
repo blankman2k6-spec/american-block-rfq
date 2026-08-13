@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-4-2-backup-export-fix";
+const CACHE="ab-sales-os-v5-5-0-private-multi-user";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{

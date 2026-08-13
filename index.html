@@ -1227,6 +1227,22 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   border-color:#8bc9aa !important;
 }
 
+
+/* v5.5.0 Private Multi-User */
+.private-user-card{display:grid;gap:10px}
+.private-user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.private-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.private-user-actions{display:flex;flex-wrap:wrap;gap:8px}
+.private-user-card .ai-key-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.private-role-admin{background:#e8f2ff!important;color:#175e9d!important;border-color:#9bc4e7!important}
+.private-role-user{background:#eef4f8!important;color:#415466!important;border-color:#c7d5df!important}
+.private-ai-on{background:#e5f7ed!important;color:#176b49!important;border-color:#90caaa!important}
+.private-ai-off{background:#f2f4f6!important;color:#5b6773!important;border-color:#ccd4db!important}
+@media(max-width:700px){
+  .private-user-grid{grid-template-columns:1fr}
+  .private-user-card .ai-key-row{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -2090,16 +2106,19 @@ body[data-skin="baby-blue"] .insight-card .status.green{
       <div class="kicker">Data Layer</div>
       <h2 style="margin-top:4px">Cloud Sync</h2>
       <p class="muted">The app works locally now. Use this section to verify the Supabase project and public key; authenticated database synchronization is handled separately.</p>
-      <label>Supabase Project URL</label>
-      <input id="supabaseUrl" placeholder="https://YOUR-PROJECT.supabase.co">
-      <label>Supabase Public API Key</label>
-      <textarea id="supabaseAnonKey" rows="3" placeholder="Paste sb_publishable_... (recommended) or legacy anon JWT"></textarea>
-      <div class="mini" style="margin-top:5px">Use the Publishable key from Supabase. Do not use a Secret or service_role key here.</div>
-      <div class="toolbar" style="margin-top:12px">
-        <button id="saveCloudSettings" class="primary">Save Cloud Settings</button>
-        <button id="testCloudConnection" class="secondary">Test Connection</button>
+      <div id="adminCloudConfig" class="hidden">
+        <label>Supabase Project URL</label>
+        <input id="supabaseUrl" placeholder="https://YOUR-PROJECT.supabase.co">
+        <label>Supabase Public API Key</label>
+        <textarea id="supabaseAnonKey" rows="3" placeholder="Paste sb_publishable_... (recommended) or legacy anon JWT"></textarea>
+        <div class="mini" style="margin-top:5px">Administrator only. Use the Publishable key from Supabase. Never use a Secret or service_role key here.</div>
+        <div class="toolbar" style="margin-top:12px">
+          <button id="saveCloudSettings" class="primary">Save Cloud Settings</button>
+          <button id="testCloudConnection" class="secondary">Test Connection</button>
+        </div>
+        <div id="cloudStatus" class="mini" style="margin-top:10px">Cloud configuration</div>
+        <div style="height:1px;background:var(--line);margin:18px 0"></div>
       </div>
-      <div id="cloudStatus" class="mini" style="margin-top:10px">Local-only mode</div>
 
       <div style="height:1px;background:var(--line);margin:18px 0"></div>
       <div class="kicker">Cloud Account</div>
@@ -2111,8 +2130,8 @@ body[data-skin="baby-blue"] .insight-card .status.green{
         <label>Password</label><input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Password">
         <div class="toolbar" style="margin-top:10px">
           <button id="cloudSignIn" class="primary" type="button">Sign In</button>
-          <button id="cloudCreateAccount" class="secondary" type="button">Create Account</button>
         </div>
+        <div class="mini" style="margin-top:8px">Accounts are created by the administrator. Public account creation is disabled.</div>
         <div style="margin-top:10px;text-align:center">
           <button id="cloudForgotPassword" class="secondary" type="button" style="width:100%">Forgot Password?</button>
         </div>
@@ -2123,6 +2142,8 @@ body[data-skin="baby-blue"] .insight-card .status.green{
         <div class="verify-banner good">
           <div class="verify-title">✓ Signed In</div>
           <div id="cloudUserEmail" class="mini" style="margin-top:4px"></div>
+          <div id="cloudUserIdentity" class="mini" style="margin-top:3px">Private Territory Workspace</div>
+          <div id="cloudAiEntitlement" class="mini" style="margin-top:3px">AI access: checking…</div>
           <div id="cloudLastSync" class="mini" style="margin-top:3px">Not synced yet</div>
         </div>
         <div class="toolbar">
@@ -2144,6 +2165,37 @@ body[data-skin="baby-blue"] .insight-card .status.green{
       </div>
       <div id="cloudSyncStatus" class="mini" style="margin-top:10px"></div>
     </div>
+
+    <div id="adminUserManagement" class="card hidden">
+      <div class="kicker">Administrator</div>
+      <h2 style="margin-top:4px">Private User Management</h2>
+      <p class="muted">Only the administrator can create or manage users. Each user receives an isolated Private Territory workspace. AI is OFF for new users by default.</p>
+
+      <div class="verify-banner good">
+        <div class="verify-title">Private Multi-User Mode</div>
+        <div class="mini">No shared customer accounts · No shared RFQs · No shared orders · No shared activity logs</div>
+      </div>
+
+      <div style="height:1px;background:var(--line);margin:16px 0"></div>
+      <h3 style="margin:0 0 8px">Create Coworker Login</h3>
+      <div class="row">
+        <div><label>Display Name</label><input id="adminNewUserName" placeholder="Coworker's name"></div>
+        <div><label>Email</label><input id="adminNewUserEmail" type="email" autocomplete="off" placeholder="coworker@email.com"></div>
+      </div>
+      <label>Temporary Password</label>
+      <input id="adminNewUserPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters">
+      <div class="toolbar" style="margin-top:10px">
+        <button id="adminCreateUser" class="primary" type="button">＋ Create Private User</button>
+        <button id="adminRefreshUsers" class="secondary" type="button">Refresh Users</button>
+      </div>
+      <div id="adminUserStatus" class="mini" style="margin-top:8px"></div>
+
+      <div style="height:1px;background:var(--line);margin:16px 0"></div>
+      <h3 style="margin:0 0 8px">Approved Users</h3>
+      <div id="adminUserList" class="list"></div>
+      <div class="mini" style="margin-top:10px">AI keys are never returned to the browser. A coworker's personal OpenAI key can be entered once by the administrator and is encrypted before storage.</div>
+    </div>
+
     <div class="card">
       <div class="kicker">V3 Architecture</div>
       <h2 style="margin-top:4px">Modules</h2>
@@ -2578,7 +2630,7 @@ ensureAiSettings();
 let aiPendingActions=JSON.parse(localStorage.getItem("abSalesOS_aiPending_v1")||"[]");
 let aiChatHistory=[];
 
-let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null,customerListScrollY=0;
+let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null,customerListScrollY=0,currentUserProfile=null;
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
@@ -6480,6 +6532,136 @@ if($("logCommunication"))$("logCommunication").onclick=()=>logComm("Manual Log")
 if($("supabaseUrl"))$("supabaseUrl").value=cloud.url||"";
 if($("supabaseAnonKey"))$("supabaseAnonKey").value=cloud.anonKey||"";
 
+
+function clearLocalCrmWorkspace({preserveSettings=false}={}){
+  applyingCloudState=true;
+  try{
+    rfqs=[];customers=[];orders=[];communications=[];activities=[];intelligence=[];
+    if(!preserveSettings){
+      settings={goal:100000,sales:0,skin:settings?.skin||"midnight-executive"};
+      ensureYearSettings();ensureAiSettings();
+    }
+    localStorage.setItem(KEYS.rfqs,JSON.stringify(rfqs));
+    localStorage.setItem(KEYS.customers,JSON.stringify(customers));
+    localStorage.setItem(KEYS.orders,JSON.stringify(orders));
+    localStorage.setItem(KEYS.communications,JSON.stringify(communications));
+    localStorage.setItem(KEYS.activities,JSON.stringify(activities));
+    localStorage.setItem("abSalesOS_intelligence_v1",JSON.stringify(intelligence));
+    if(!preserveSettings)localStorage.setItem(KEYS.settings,JSON.stringify(settings));
+  }finally{applyingCloudState=false}
+  renderAll();
+}
+async function loadCurrentUserProfile(){
+  currentUserProfile=null;
+  if(!cloud.session?.user?.id)return null;
+  try{
+    const uid=cloud.session.user.id;
+    const rows=await cloudRest(`/rest/v1/app_users?select=user_id,display_name,role,active,ai_enabled,workspace_mode&user_id=eq.${encodeURIComponent(uid)}&limit=1`);
+    currentUserProfile=Array.isArray(rows)&&rows.length?rows[0]:null;
+  }catch(e){
+    console.warn("Could not load private user profile",e);
+    currentUserProfile=null;
+  }
+  updatePrivateUserUI();
+  return currentUserProfile;
+}
+function updatePrivateUserUI(){
+  const p=currentUserProfile;
+  const isAdmin=!!(p&&p.active&&p.role==="admin");
+  $("adminUserManagement")?.classList.toggle("hidden",!isAdmin);
+  $("adminCloudConfig")?.classList.toggle("hidden",!isAdmin);
+  if($("cloudUserIdentity")){
+    const name=p?.display_name||cloud.session?.user?.email||"User";
+    const role=isAdmin?"Administrator":"Standard User";
+    $("cloudUserIdentity").textContent=`${name} · ${role} · Private Territory Workspace`;
+  }
+  if($("cloudAiEntitlement")){
+    const enabled=!!p?.ai_enabled || isAdmin;
+    $("cloudAiEntitlement").textContent=`AI access: ${enabled?"Enabled":"Disabled"}`;
+  }
+  if(isAdmin)renderAdminUsers();
+}
+async function privateAdminApi(action,payload={}){
+  const token=await ensureCloudToken();
+  const r=await fetch(`${cloudBase()}/functions/v1/admin-users`,{
+    method:"POST",
+    headers:{apikey:cloudKey(),Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
+    body:JSON.stringify({action,...payload})
+  });
+  const raw=await r.text();let data={};
+  try{data=raw?JSON.parse(raw):{}}catch{data={error:raw}}
+  if(!r.ok)throw new Error(data.error||data.message||`Admin service HTTP ${r.status}`);
+  return data;
+}
+async function renderAdminUsers(){
+  if(!currentUserProfile||currentUserProfile.role!=="admin"||!currentUserProfile.active)return;
+  const holder=$("adminUserList");if(!holder)return;
+  holder.innerHTML="<div class='empty'>Loading approved users…</div>";
+  try{
+    const data=await privateAdminApi("list");
+    const users=Array.isArray(data.users)?data.users:[];
+    holder.innerHTML=users.length?users.map(u=>`<div class="list-card private-user-card">
+      <div class="private-user-head">
+        <div><div class="list-title">${esc(u.display_name||u.email||"User")}</div><div class="mini">${esc(u.email||"")} · ${u.active?"Active":"Disabled"}</div></div>
+        <div class="toolbar" style="margin:0">
+          <span class="status ${u.role==="admin"?"blue":""} ${u.role==="admin"?"private-role-admin":"private-role-user"}">${u.role==="admin"?"ADMIN":"USER"}</span>
+          <span class="status ${u.ai_enabled?"private-ai-on":"private-ai-off"}">${u.ai_enabled?"AI ON":"AI OFF"}</span>
+        </div>
+      </div>
+      <div class="private-user-grid">
+        <div><label>Display Name</label><input data-admin-name="${esc(u.user_id)}" value="${esc(u.display_name||"")}"></div>
+        <div><label>Status</label><select data-admin-active="${esc(u.user_id)}"><option value="true" ${u.active?"selected":""}>Active</option><option value="false" ${!u.active?"selected":""}>Disabled</option></select></div>
+      </div>
+      ${u.role==="admin"?"":`<div class="ai-key-row"><div><label>Personal OpenAI API Key <span class="mini">(enter once; never displayed again)</span></label><input type="password" autocomplete="off" data-admin-ai-key="${esc(u.user_id)}" placeholder="${u.has_personal_ai_key?"Personal key securely stored":"Paste coworker's API key"}"></div><button class="secondary" data-admin-save-key="${esc(u.user_id)}">${u.has_personal_ai_key?"Replace AI Key":"Save AI Key"}</button></div>`}
+      <div class="private-user-actions">
+        <button class="secondary" data-admin-save-user="${esc(u.user_id)}">Save User</button>
+        ${u.role==="admin"?"":`<button class="secondary" data-admin-toggle-ai="${esc(u.user_id)}" data-ai-enabled="${u.ai_enabled?"true":"false"}">${u.ai_enabled?"Disable AI":"Enable AI"}</button>`}
+        ${u.role==="admin"||!u.has_personal_ai_key?"":`<button class="secondary" data-admin-clear-key="${esc(u.user_id)}">Remove AI Key</button>`}
+      </div>
+    </div>`).join(""):"<div class='empty'>No approved users found.</div>";
+
+    holder.querySelectorAll("[data-admin-save-user]").forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.adminSaveUser;
+      const display_name=holder.querySelector(`[data-admin-name="${CSS.escape(id)}"]`)?.value.trim()||"";
+      const active=holder.querySelector(`[data-admin-active="${CSS.escape(id)}"]`)?.value==="true";
+      try{
+        await privateAdminApi("update_user",{targetUserId:id,display_name,active});
+        $("adminUserStatus").textContent="✓ User updated.";
+        await renderAdminUsers();
+      }catch(e){$("adminUserStatus").textContent="User update failed: "+e.message}
+    });
+    holder.querySelectorAll("[data-admin-toggle-ai]").forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.adminToggleAi,enable=b.dataset.aiEnabled!=="true";
+      try{
+        await privateAdminApi("set_ai_enabled",{targetUserId:id,ai_enabled:enable});
+        $("adminUserStatus").textContent=`✓ AI ${enable?"enabled":"disabled"} for user.`;
+        await renderAdminUsers();
+      }catch(e){$("adminUserStatus").textContent="AI permission change failed: "+e.message}
+    });
+    holder.querySelectorAll("[data-admin-save-key]").forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.adminSaveKey;
+      const input=holder.querySelector(`[data-admin-ai-key="${CSS.escape(id)}"]`);
+      const apiKey=input?.value.trim()||"";
+      if(!apiKey){$("adminUserStatus").textContent="Paste the coworker's OpenAI API key first.";return}
+      try{
+        await privateAdminApi("set_ai_key",{targetUserId:id,apiKey});
+        if(input)input.value="";
+        $("adminUserStatus").textContent="✓ Personal AI key encrypted and saved server-side.";
+        await renderAdminUsers();
+      }catch(e){$("adminUserStatus").textContent="AI key setup failed: "+e.message}
+    });
+    holder.querySelectorAll("[data-admin-clear-key]").forEach(b=>b.onclick=async()=>{
+      try{
+        await privateAdminApi("clear_ai_key",{targetUserId:b.dataset.adminClearKey});
+        $("adminUserStatus").textContent="✓ Personal AI key removed and AI disabled.";
+        await renderAdminUsers();
+      }catch(e){$("adminUserStatus").textContent="Could not remove AI key: "+e.message}
+    });
+  }catch(e){
+    holder.innerHTML=`<div class="empty">Admin service unavailable: ${esc(e.message)}</div>`;
+  }
+}
+
 function cloudBase(){
   const base=String(cloud.url||BUILTIN_CLOUD.url||"").trim().replace(/\/$/,"");
   if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(base)) throw new Error("Supabase Project URL is missing or invalid.");
@@ -6505,7 +6687,12 @@ function updateCloudAccountUI(){
     $("cloudLastSync").textContent=cloud.lastSyncedAt
       ?`Last sync: ${new Date(cloud.lastSyncedAt).toLocaleString()} · revision ${cloud.lastRevision||0}`
       :"Not synced yet";
+  }else{
+    currentUserProfile=null;
+    $("adminUserManagement")?.classList.add("hidden");
+    $("adminCloudConfig")?.classList.add("hidden");
   }
+  updatePrivateUserUI();
 }
 function cloudSnapshot(){
   return {
@@ -6518,52 +6705,6 @@ function cloudSnapshot(){
     savedAt:new Date().toISOString()
   };
 }
-
-async function exportFullBackup(){
-  try{
-    const payload={
-      version:6,
-      appVersion:"5.4.2",
-      exportedAt:new Date().toISOString(),
-      ...cloudSnapshot()
-    };
-    const jsonText=JSON.stringify(payload,null,2);
-    const blob=new Blob([jsonText],{type:"application/json"});
-    const stamp=new Date().toISOString().slice(0,10);
-    const fileName=`american-block-sales-os-backup-${stamp}.json`;
-
-    // iPhone/iPad installed PWA: native share sheet is the most reliable way
-    // to save a generated file without navigating away from the CRM.
-    try{
-      if(typeof File!=="undefined" && navigator.share && navigator.canShare){
-        const file=new File([blob],fileName,{type:"application/json"});
-        if(navigator.canShare({files:[file]})){
-          await navigator.share({files:[file],title:"American Block Sales OS Backup"});
-          return;
-        }
-      }
-    }catch(shareErr){
-      if(shareErr?.name==="AbortError")return;
-      console.warn("Backup share unavailable; using download fallback.",shareErr);
-    }
-
-    // Desktop / Safari fallback.
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;
-    a.download=fileName;
-    a.target="_blank";
-    a.rel="noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),10000);
-  }catch(err){
-    console.error("Backup export failed",err);
-    alert("Backup export failed: "+(err?.message||"Unknown error"));
-  }
-}
-
 function applyCloudSnapshot(state){
   if(!state||typeof state!=="object")throw new Error("Cloud state is empty or invalid.");
   applyingCloudState=true;
@@ -6602,12 +6743,20 @@ async function cloudAuthRequest(path,body){
 }
 function storeCloudSession(data){
   if(!data?.access_token)return false;
+  const incomingUser=data.user||cloud.session?.user||null;
+  const incomingId=incomingUser?.id||"";
+  const priorOwner=String(cloud.localOwnerId||"");
+  if(priorOwner&&incomingId&&priorOwner!==incomingId){
+    clearLocalCrmWorkspace({preserveSettings:false});
+    cloud.lastRevision=0;cloud.lastSyncedAt="";cloud.localDirtyAt="";cloud.firstSyncComplete=false;
+  }
   cloud.session={
     access_token:data.access_token,
     refresh_token:data.refresh_token,
     expires_at:Date.now()+((Number(data.expires_in)||3600)*1000),
-    user:data.user||cloud.session?.user||null
+    user:incomingUser
   };
+  if(incomingId)cloud.localOwnerId=incomingId;
   cloud.userEmail=data.user?.email||cloud.userEmail||"";
   saveCloudMeta();
   return true;
@@ -6799,7 +6948,12 @@ function captureCloudRecoverySession(){
 async function hydrateCloudUser(){
   if(!cloud.session?.access_token||cloud.session.user)return;
   const r=await fetch(`${cloudBase()}/auth/v1/user`,{headers:{apikey:cloudKey(),Authorization:`Bearer ${cloud.session.access_token}`}});
-  if(r.ok){cloud.session.user=await r.json();cloud.userEmail=cloud.session.user?.email||cloud.userEmail||"";saveCloudMeta();}
+  if(r.ok){
+    cloud.session.user=await r.json();
+    cloud.userEmail=cloud.session.user?.email||cloud.userEmail||"";
+    if(cloud.session.user?.id&&!cloud.localOwnerId)cloud.localOwnerId=cloud.session.user.id;
+    saveCloudMeta();
+  }
 }
 async function initializeCloudSync(){
   const recovering=captureCloudRecoverySession();
@@ -6819,6 +6973,12 @@ async function initializeCloudSync(){
   cloudSyncReady=true;
   try{
     await ensureCloudToken();
+    await hydrateCloudUser();
+    await loadCurrentUserProfile();
+    if(!currentUserProfile||!currentUserProfile.active){
+      setCloudSyncStatus("Private user profile is missing or disabled. Contact the administrator.","bad");
+      return;
+    }
     updateCloudAccountUI();
     await syncCloudNow();
   }catch(e){
@@ -6849,7 +7009,10 @@ if($("cloudSignIn"))$("cloudSignIn").onclick=async()=>{
   try{
     const data=await cloudAuthRequest("/auth/v1/token?grant_type=password",{email,password});
     storeCloudSession(data);
-    setCloudSyncStatus("✓ Signed in. Checking cloud CRM…","good");
+    await loadCurrentUserProfile();
+    if(!currentUserProfile)throw new Error("This login is not approved for Private Multi-User access. Ask the administrator.");
+    if(!currentUserProfile.active)throw new Error("This user has been disabled by the administrator.");
+    setCloudSyncStatus("✓ Signed in to private territory. Checking cloud CRM…","good");
     await syncCloudNow();
   }catch(e){setCloudSyncStatus(`Sign in failed — ${e.message}`,"bad")}
 };
@@ -6880,21 +7043,7 @@ if($("cloudForgotPassword"))$("cloudForgotPassword").onclick=async()=>{
     setCloudSyncStatus(`Password recovery failed — ${e.message}`,"bad");
   }
 };
-if($("cloudCreateAccount"))$("cloudCreateAccount").onclick=async()=>{
-  const email=$("cloudEmail").value.trim(),password=$("cloudPassword").value;
-  if(!email||password.length<6){setCloudSyncStatus("Enter an email and a password of at least 6 characters.","warn");return}
-  setCloudSyncStatus("Creating cloud account…");
-  try{
-    const data=await cloudAuthRequest("/auth/v1/signup",{email,password});
-    if(data.access_token){
-      storeCloudSession(data);
-      setCloudSyncStatus("✓ Cloud account created and signed in.","good");
-      await syncCloudNow();
-    }else{
-      setCloudSyncStatus("Account created. If email confirmation is enabled, confirm it and then sign in.","good");
-    }
-  }catch(e){setCloudSyncStatus(`Account creation failed — ${e.message}`,"bad")}
-};
+
 if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
   const password=$("cloudNewPassword").value;
   const confirm=$("cloudConfirmPassword").value;
@@ -6950,10 +7099,15 @@ if($("cloudSignOut"))$("cloudSignOut").onclick=async()=>{
     });
   }catch(_){}
   delete cloud.session;
+  currentUserProfile=null;
   cloud.firstSyncComplete=false;
   cloud.lastRevision=0;
+  cloud.lastSyncedAt="";
+  cloud.localDirtyAt="";
+  delete cloud.localOwnerId;
+  clearLocalCrmWorkspace({preserveSettings:false});
   saveCloudMeta();
-  setCloudSyncStatus("Signed out.");
+  setCloudSyncStatus("Signed out. Private CRM data was removed from this device.");
 };
 if($("cloudSyncNow"))$("cloudSyncNow").onclick=async()=>{
   const btn=$("cloudSyncNow");
@@ -7308,8 +7462,23 @@ if($("pipelineSearch"))$("pipelineSearch").oninput=renderPipeline;
 if($("forecastMonth"))$("forecastMonth").onchange=renderForecast;
 
 
-if($("exportBackup"))$("exportBackup").onclick=exportFullBackup;
-if($("settingsExport"))$("settingsExport").onclick=exportFullBackup;
+if($("adminCreateUser"))$("adminCreateUser").onclick=async()=>{
+  const display_name=$("adminNewUserName").value.trim();
+  const email=$("adminNewUserEmail").value.trim();
+  const password=$("adminNewUserPassword").value;
+  if(!display_name||!email||password.length<8){
+    $("adminUserStatus").textContent="Enter a name, valid email, and temporary password of at least 8 characters.";
+    return;
+  }
+  $("adminUserStatus").textContent="Creating private user…";
+  try{
+    await privateAdminApi("create",{display_name,email,password});
+    $("adminNewUserName").value="";$("adminNewUserEmail").value="";$("adminNewUserPassword").value="";
+    $("adminUserStatus").textContent="✓ Private user created. AI is OFF by default.";
+    await renderAdminUsers();
+  }catch(e){$("adminUserStatus").textContent="User creation failed: "+e.message}
+};
+if($("adminRefreshUsers"))$("adminRefreshUsers").onclick=renderAdminUsers;
 
 renderAll();
 initializeCloudSync();
