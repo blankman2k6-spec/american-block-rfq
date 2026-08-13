@@ -1228,7 +1228,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
 }
 
 
-/* v5.5.1 Private Multi-User */
+/* v5.5.2 Contact Location Sync + Reporting */
 .private-user-card{display:grid;gap:10px}
 .private-user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .private-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -1250,7 +1250,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.9 Web Research Fallback</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.5.2 Contact Location Sync</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2430,10 +2430,13 @@ body[data-skin="baby-blue"] .insight-card .status.green{
       <label>Company Name</label><input id="cCompany" placeholder="Company / account">
       <div class="row">
         <div><label>City</label><input id="cCity" placeholder="City"></div>
-        <div><label>Address</label><input id="cAddress" placeholder="Street address"></div>
+        <div><label>State</label><input id="cState" placeholder="OK, TX, CO..."></div>
       </div>
       <div class="row">
+        <div><label>Address</label><input id="cAddress" placeholder="Street address"></div>
         <div><label>ZIP</label><input id="cZip" inputmode="numeric" placeholder="ZIP code"></div>
+      </div>
+      <div class="row">
         <div><label>End User or Distributor</label>
           <select id="cAccountType">
             <option value="">Not set</option>
@@ -2506,20 +2509,26 @@ body[data-skin="baby-blue"] .insight-card .status.green{
       </div>
       <div class="row">
         <div><label>Branch / Location Name</label><input data-c="location" placeholder="Chickasha Branch, Denver Office..."></div>
+        <div><label>Same Location as Company Address?</label>
+          <select data-c="sameAsCompany"><option value="no">No</option><option value="yes">Yes</option></select>
+        </div>
+      </div>
+      <div class="row">
         <div><label>Street Address</label><input data-c="address" placeholder="Street address"></div>
-      </div>
-      <div class="row">
         <div><label>City</label><input data-c="city" placeholder="City"></div>
-        <div><label>State</label><input data-c="state" placeholder="OK, TX, CO..."></div>
       </div>
       <div class="row">
+        <div><label>State</label><input data-c="state" placeholder="OK, TX, CO..."></div>
         <div><label>ZIP</label><input data-c="zip" inputmode="numeric" placeholder="ZIP code"></div>
-        <div><label>Primary Contact</label>
+      </div>
+      <div class="row">
+        <div><label>Primary Contact for This Location?</label>
           <select data-c="primary">
             <option value="no">No</option>
             <option value="yes">Yes</option>
           </select>
         </div>
+        <div><label>Location Rule</label><div class="mini" data-c-location-note style="padding:12px 2px">Contact address is used for activity reporting.</div></div>
       </div>
       <div class="item-actions">
         <span class="mini">One account can have multiple contacts.</span>
@@ -2832,12 +2841,16 @@ function migrate(){
     if(r.status==="Closed Won"&&!r.closedWonAt)r.closedWonAt=r.updatedAt||r.createdAt||new Date().toISOString();
   });
 
-  // Ensure only one primary contact per account.
+  // v5.5.2: contacts may each represent a different branch/location.
+  // Multiple location-primary contacts are allowed on the same account.
   customers.forEach(c=>{
-    let seen=false;
+    if(c.state===undefined)c.state="";
     (c.contacts||[]).forEach(ct=>{
-      if(ct.primary&&!seen)seen=true;
-      else if(ct.primary)ct.primary=false;
+      if(ct.sameAsCompany===undefined)ct.sameAsCompany=false;
+      if(ct.state===undefined)ct.state="";
+      if(ct.address===undefined)ct.address="";
+      if(ct.city===undefined)ct.city="";
+      if(ct.zip===undefined)ct.zip="";
     });
   });
   save();
@@ -3402,7 +3415,7 @@ function renderContactOptions(selectedContact=""){
   const customer=customerById($("rfqCustomer").value);
   const contacts=customer?.contacts||[];
   const placeholder=contacts.length?"No specific contact":"No saved contacts for this account";
-  $("rfqContact").innerHTML=`<option value="">${placeholder}</option>`+contacts.map(c=>`<option value="${c.id}">${esc(c.name||"Unnamed Contact")}${c.role?" — "+esc(c.role):""}${c.primary?" (Primary)":""}</option>`).join("");
+  $("rfqContact").innerHTML=`<option value="">${placeholder}</option>`+contacts.map(c=>`<option value="${c.id}">${esc(c.name||"Unnamed Contact")}${c.role?" — "+esc(c.role):""}${c.primary?" (Location Primary)":""}</option>`).join("");
   if(selectedContact)$("rfqContact").value=selectedContact;
 }
 function renderCustomerOptions(){
@@ -4216,12 +4229,13 @@ function fillActivityCustomers(){
 }
 function contactLocationSnapshot(customerId,contactId){
   const c=customerById(customerId)||{},ct=contactById(customerId,contactId)||{};
+  const same=ct.sameAsCompany===true;
   return {
     locationName:ct.location||"",
-    address:ct.address||c.address||"",
-    city:ct.city||c.city||"",
-    state:ct.state||c.state||"",
-    zip:ct.zip||c.zip||""
+    address:same?(c.address||""):(ct.address||c.address||""),
+    city:same?(c.city||""):(ct.city||c.city||""),
+    state:same?(c.state||""):(ct.state||c.state||""),
+    zip:same?(c.zip||""):(ct.zip||c.zip||"")
   };
 }
 function setActivityLocationFields(loc={}){
@@ -4379,7 +4393,9 @@ function bossLogRowData(a){
   const contactInfo=[ct.email,ct.phone].filter(Boolean).join(" | ");
   const safeDate=safeActivityDate(a.date)||safeActivityDate(a.createdAt);
   const dateDisplay=safeDate?safeDate.toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"2-digit"}):(a.date||"");
-  const loc=a.locationSnapshot||contactLocationSnapshot(a.customerId,a.contactId);
+  // Reports follow the CURRENT contact/company address so corrections flow through immediately.
+  // A deliberate manual visit-location override remains fixed to the activity itself.
+  const loc=(a.locationSource==="manual")?(a.locationSnapshot||contactLocationSnapshot(a.customerId,a.contactId)):contactLocationSnapshot(a.customerId,a.contactId);
   return {
     date:dateDisplay,
     customer:c.company||"",
@@ -4857,7 +4873,7 @@ function aiCustomerSummary(c){
   return {
     id:cid,company:c.company,city:c.city||"",accountType:c.accountType||"",marketRegion:c.marketRegion||"",
     notes:c.notes||"",website:c.website||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",isNewAccount:!!c.isNewAccount,wishlist:Array.isArray(c.wishlist)?c.wishlist:[],aiRecommendedProducts:Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[],
-    contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,location:x.location||"",address:x.address||"",city:x.city||"",state:x.state||"",zip:x.zip||"",primary:!!x.primary})),
+    contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,location:x.location||"",address:x.address||"",city:x.city||"",state:x.state||"",zip:x.zip||"",sameAsCompany:!!x.sameAsCompany,primary:!!x.primary})),
     orderCount:acctOrders.length,totalSales:acctOrders.reduce((s,o)=>s+boRecognizedValue(o),0),
     lastOrderDate:acctOrders.map(o=>o.orderDate).filter(Boolean).sort().pop()||"",
     openRfqs:acctRfqs.filter(isOpen).map(r=>({id:r.id,quoteNo:r.quoteNo,status:r.status,total:total(r),followup:r.followup,nextAction:r.nextAction,items:r.items||[]})),
@@ -5641,7 +5657,7 @@ function editImportedOrder(id){
 }
 function fillAckContactOptions(selected=""){
   const c=$("ackCustomer").value==="__new__"?null:customerById($("ackCustomer").value);
-  $("ackContact").innerHTML='<option value="">No specific contact</option>'+((c?.contacts)||[]).map(x=>`<option value="${x.id}">${esc(x.name)}${x.role?" — "+esc(x.role):""}${x.primary?" (Primary)":""}</option>`).join("");
+  $("ackContact").innerHTML='<option value="">No specific contact</option>'+((c?.contacts)||[]).map(x=>`<option value="${x.id}">${esc(x.name)}${x.role?" — "+esc(x.role):""}${x.primary?" (Location Primary)":""}</option>`).join("");
   if(selected)$("ackContact").value=selected;
 }
 function fillAckRfqMatches(){
@@ -6146,20 +6162,48 @@ function editRfq(id){
   $("rfqShipping").value=Number(r.shipping||0).toFixed(2);$("rfqTax").value=Number(r.tax||0).toFixed(2);
   $("rfqItems").innerHTML="";(r.items||[]).forEach(addItem);if(!r.items?.length)addItem();updateDraft();lockInitialRfqStatus(false);rfqEditBaseline=rfqComparableFromForm();showView("rfqFormView",false)
 }
-function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",address:"",city:"",state:"",zip:"",primary:false},placement="bottom"){
+function contactLocationKeyFromRow(row){
+  const same=row.querySelector('[data-c="sameAsCompany"]')?.value==="yes";
+  if(same)return "__company__";
+  const vals=["location","address","city","state","zip"].map(k=>row.querySelector(`[data-c="${k}"]`)?.value.trim().toLowerCase()||"");
+  return vals.join("|");
+}
+function companyAddressFromForm(){
+  return {address:$("cAddress")?.value.trim()||"",city:$("cCity")?.value.trim()||"",state:$("cState")?.value.trim()||"",zip:$("cZip")?.value.trim()||""};
+}
+function syncContactSameAsCompanyRow(row){
+  const same=row.querySelector('[data-c="sameAsCompany"]')?.value==="yes";
+  const company=companyAddressFromForm();
+  ["address","city","state","zip"].forEach(k=>{
+    const el=row.querySelector(`[data-c="${k}"]`);if(!el)return;
+    if(same)el.value=company[k]||"";
+    el.disabled=same;
+  });
+  const note=row.querySelector('[data-c-location-note]');
+  if(note)note.textContent=same?"Uses the company address automatically. Company address changes flow through to reports.":"This contact's current address is used for activity reports unless the activity has a manual location override.";
+}
+function addContactRow(data={id:uid(),name:"",role:"",phone:"",email:"",location:"",address:"",city:"",state:"",zip:"",sameAsCompany:false,primary:false},placement="bottom"){
   const row=$("contactTemplate").content.firstElementChild.cloneNode(true);
   row.dataset.id=data.id||uid();
   ["name","role","phone","email","location","address","city","state","zip"].forEach(k=>row.querySelector(`[data-c="${k}"]`).value=data[k]||"");
+  row.querySelector('[data-c="sameAsCompany"]').value=data.sameAsCompany?"yes":"no";
   row.querySelector('[data-c="primary"]').value=data.primary?"yes":"no";
   row.querySelector('[data-contact-remove]').onclick=()=>row.remove();
+  row.querySelector('[data-c="sameAsCompany"]').onchange=()=>syncContactSameAsCompanyRow(row);
   row.querySelector('[data-c="primary"]').onchange=e=>{
-    if(e.target.value==="yes"){
-      document.querySelectorAll('#contactRows [data-c="primary"]').forEach(s=>{if(s!==e.target)s.value="no"});
-    }
+    if(e.target.value!=="yes")return;
+    const key=contactLocationKeyFromRow(row);
+    // Only one primary per location, while allowing different branches to each have a primary.
+    document.querySelectorAll('#contactRows .contact-row').forEach(other=>{
+      if(other!==row&&contactLocationKeyFromRow(other)===key){
+        const select=other.querySelector('[data-c="primary"]');if(select)select.value="no";
+      }
+    });
   };
   const holder=$("contactRows");
   if(placement==="top"&&holder.firstChild)holder.insertBefore(row,holder.firstChild);
   else holder.appendChild(row);
+  syncContactSameAsCompanyRow(row);
   return row;
 }
 
@@ -6172,22 +6216,32 @@ function addNewContactAtTop(){
   });
 }
 function getContactRows(){
-  return [...document.querySelectorAll("#contactRows .contact-row")].map(row=>({
-    id:row.dataset.id||uid(),
-    name:row.querySelector('[data-c="name"]').value.trim(),
-    role:row.querySelector('[data-c="role"]').value.trim(),
-    phone:row.querySelector('[data-c="phone"]').value.trim(),
-    email:row.querySelector('[data-c="email"]').value.trim(),
-    location:row.querySelector('[data-c="location"]').value.trim(),
-    address:row.querySelector('[data-c="address"]').value.trim(),
-    city:row.querySelector('[data-c="city"]').value.trim(),
-    state:row.querySelector('[data-c="state"]').value.trim(),
-    zip:row.querySelector('[data-c="zip"]').value.trim(),
-    primary:row.querySelector('[data-c="primary"]').value==="yes"
-  })).filter(c=>c.name||c.phone||c.email);
+  const company=companyAddressFromForm();
+  return [...document.querySelectorAll("#contactRows .contact-row")].map(row=>{
+    const sameAsCompany=row.querySelector('[data-c="sameAsCompany"]').value==="yes";
+    return {
+      id:row.dataset.id||uid(),
+      name:row.querySelector('[data-c="name"]').value.trim(),
+      role:row.querySelector('[data-c="role"]').value.trim(),
+      phone:row.querySelector('[data-c="phone"]').value.trim(),
+      email:row.querySelector('[data-c="email"]').value.trim(),
+      location:row.querySelector('[data-c="location"]').value.trim(),
+      address:sameAsCompany?company.address:row.querySelector('[data-c="address"]').value.trim(),
+      city:sameAsCompany?company.city:row.querySelector('[data-c="city"]').value.trim(),
+      state:sameAsCompany?company.state:row.querySelector('[data-c="state"]').value.trim(),
+      zip:sameAsCompany?company.zip:row.querySelector('[data-c="zip"]').value.trim(),
+      sameAsCompany,
+      primary:row.querySelector('[data-c="primary"]').value==="yes"
+    };
+  }).filter(c=>c.name||c.phone||c.email);
 }
-function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes","cWishlist"].forEach(id=>$(id).value="");$("cIsNewAccount").checked=false;$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
-function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cIsNewAccount").checked=!!c.isNewAccount;$("cWishlist").value=Array.isArray(c.wishlist)?c.wishlist.join("\n"):(c.wishlist||"");$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
+function syncCompanyAddressToSameLocationContacts(){
+  document.querySelectorAll('#contactRows .contact-row').forEach(row=>{
+    if(row.querySelector('[data-c="sameAsCompany"]')?.value==="yes")syncContactSameAsCompanyRow(row);
+  });
+}
+function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cState","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes","cWishlist"].forEach(id=>$(id).value="");$("cIsNewAccount").checked=false;$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
+function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cState").value=c.state||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cIsNewAccount").checked=!!c.isNewAccount;$("cWishlist").value=Array.isArray(c.wishlist)?c.wishlist.join("\n"):(c.wishlist||"");$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
 
 
@@ -6348,7 +6402,8 @@ $("saveRfq").onclick=()=>{
   convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
 }
-$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:!!$("cIsNewAccount").checked,wishlist:$("cWishlist").value.split(/\n+/).map(x=>x.trim()).filter(Boolean),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
+["cAddress","cCity","cState","cZip"].forEach(id=>{if($(id))$(id).addEventListener("input",syncCompanyAddressToSameLocationContacts)});
+$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),state:$("cState").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:!!$("cIsNewAccount").checked,wishlist:$("cWishlist").value.split(/\n+/).map(x=>x.trim()).filter(Boolean),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{
   ensureMonthlySalesAdjustments();
   settings.goal=Number($("monthlyGoal").value)||0;
@@ -7313,8 +7368,12 @@ if($("saveActivity"))$("saveActivity").onclick=()=>{
   const opportunityValue=oppChoice==="new"?(Number($("activityOpportunityValue").value)||0):(linkedOpp?total(linkedOpp):0);
   const opportunityStage=oppChoice==="new"?$("activityOpportunityStage").value:(linkedOpp?.status||"");
   const opportunityDetails=$("activityOpportunityDetails").value.trim();
+  const contactId=$("activityContact").value||null;
   const locationSnapshot={locationName:$("activityLocationName")?.value.trim()||"",address:$("activityLocationAddress")?.value.trim()||"",city:$("activityLocationCity")?.value.trim()||"",state:$("activityLocationState")?.value.trim()||"",zip:$("activityLocationZip")?.value.trim()||""};
-  const rec={id:editingActivityId||uid(),date,type:$("activityType").value,customerId,contactId:$("activityContact").value||null,comments,locationSnapshot,
+  const currentContactLoc=contactLocationSnapshot(customerId,contactId);
+  const normLoc=x=>[x.locationName,x.address,x.city,x.state,x.zip].map(v=>String(v||"").trim().toLowerCase()).join("|");
+  const locationSource=contactId&&normLoc(locationSnapshot)===normLoc(currentContactLoc)?"contact":"manual";
+  const rec={id:editingActivityId||uid(),date,type:$("activityType").value,customerId,contactId,comments,locationSnapshot,locationSource,
     opportunityRfqId,opportunityTitle,opportunityValue,opportunityStage,opportunityDetails,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
   if(editingActivityId)activities=activities.map(a=>a.id===editingActivityId?rec:a);else activities.push(rec);
