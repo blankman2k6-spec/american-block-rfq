@@ -1234,7 +1234,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.4.0 Reports Center</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.9 Web Research Fallback</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1922,29 +1922,13 @@ body[data-skin="baby-blue"] .insight-card .status.green{
 
   
   <section id="reportsView" class="view">
-    <div class="kicker">Reports Center</div><h2 style="margin-top:4px">Sales & Management Reports</h2>
-    <div class="card"><h2>Owner / Sales Manager</h2><p class="muted">Executive reports designed to show results, field effort, pipeline, obstacles, and what is needed to win — without dumping raw CRM notes.</p><div class="intel-actions">
-      <button class="primary" data-report-center="management">Monthly Territory & Account Review</button>
-      <button class="secondary" data-report-center="goal">Monthly Goal & Pipeline</button>
-      <button class="secondary" data-report-center="forecast">Pipeline & Forecast</button>
-      <button class="secondary" data-report-center="newaccounts">New / Developing Accounts</button>
-      <button class="secondary" data-report-center="businesscase">Business Case / Support Needed</button>
-      <button class="secondary" data-report-center="lost">Lost Sales / No Stock</button>
+    <div class="kicker">Report Center</div><h2 style="margin-top:4px">Sales & Management Reports</h2>
+    <div class="card"><h2>Executive / Management</h2><p class="muted">Concise decision-ready reports for monthly meetings and leadership review.</p><div class="intel-actions">
+      <button class="primary" data-report-center="monthly">Monthly Territory & Account Review</button><button class="secondary" data-report-center="pipeline">Pipeline Summary</button><button class="secondary" data-report-center="forecast">Forecast Summary</button><button class="secondary" data-report-center="business">Business Case / Support Needs</button>
     </div></div>
-    <div class="card"><h2>Customer-Facing</h2><p class="muted">Clean reports you can use during account reviews and customer conversations.</p><div class="intel-actions">
-      <button class="primary" data-report-center="qbr">Customer QBR</button>
-      <button class="secondary" data-report-center="account">Selected Customer Account Report</button>
-      <button class="secondary" data-report-center="products">Product Mix & Purchase History</button>
-      <button class="secondary" data-report-center="openrfq">Open RFQ Summary</button>
-    </div><div style="margin-top:10px"><label>Customer for customer-specific reports</label><select id="reportsCustomer"><option value="">Select customer…</option></select></div></div>
-    <div class="card"><h2>Field Sales / Personal Management</h2><p class="muted">Reports for planning your territory, follow-ups, and measurable sales activity.</p><div class="intel-actions">
-      <button class="secondary" data-report-center="followup">Follow-up Action List</button>
-      <button class="secondary" data-report-center="activity">Monthly Activity Summary</button>
-      <button class="secondary" data-report-center="inventory">Inventory / Demand Gaps</button>
-      <button class="secondary" data-report-center="geo">Geographic Opportunity</button>
-      <button class="secondary" data-report-center="productintel">Product Intelligence</button>
-    </div></div>
-    <div class="card"><div class="kicker">Report Philosophy</div><h2>Management Summary, Not Activity Dump</h2><p class="muted">Detailed customer logs remain intact in the CRM. Reports condense them into products won, prospecting progress, customer feedback/issues, backorders, open business, and actions needed.</p></div>
+    <div class="card"><h2>Sales Performance</h2><div class="intel-actions"><button class="secondary" data-report-center="product">Product Mix & Ranking</button><button class="secondary" data-report-center="lost">Lost RFQs</button><button class="secondary" data-report-center="inventory">Inventory / Stock Opportunity</button><button class="secondary" data-report-center="geo">Territory / Geography</button><button class="secondary" data-report-center="activity">Activity & Effort</button><button class="secondary" data-report-center="newaccounts">New Account Development</button></div></div>
+    <div class="card"><h2>Customer-Facing</h2><p class="muted">Reports designed to help review value, purchases, open business, and next steps with an account.</p><label>Customer</label><select id="reportsCustomer"></select><div class="intel-actions" style="margin-top:10px"><button class="secondary" data-report-center="qbr">Customer QBR / Value Review</button><button class="secondary" data-report-center="customer">Customer Account Summary</button></div></div>
+    <div class="card"><h2>Report Preview</h2><div id="reportsOutput" class="muted">Choose a report above.</div></div>
   </section>
 
   <section id="aiView" class="view">
@@ -2519,8 +2503,8 @@ body[data-skin="baby-blue"] .insight-card .status.green{
     <button class="tab" data-view="pipelineView"><strong class="nav-icon">◫</strong>Pipeline</button>
     <button class="tab" data-view="forecastView"><strong class="nav-icon">↗</strong>Forecast</button>
     <button class="tab" data-view="followupsView"><strong class="nav-icon">🎯</strong>Follow-ups</button>
-    <button class="tab" data-view="reportsView"><strong class="nav-icon">▤</strong>Reports</button>
     <button class="tab" data-view="intelligenceView"><strong class="nav-icon nav-emerald">♦</strong>Intel</button>
+    <button class="tab" data-view="reportsView"><strong class="nav-icon">▤</strong>Reports</button>
     <button class="tab" data-view="aiView"><strong class="nav-icon">✦</strong>AI</button>
     <button class="tab" data-view="settingsView"><strong class="nav-icon">⚙️</strong>Settings</button>
   </div>
@@ -2594,7 +2578,7 @@ ensureAiSettings();
 let aiPendingActions=JSON.parse(localStorage.getItem("abSalesOS_aiPending_v1")||"[]");
 let aiChatHistory=[];
 
-let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null;
+let editingRfqId=null,editingCustomerId=null,editingActivityId=null,lastMainView="dashboardView",currentViewId="dashboardView",activeCustomerId=null,customerListScrollY=0;
 
 function uid(){return crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
@@ -2797,7 +2781,13 @@ function showView(id,main=true){
   window.scrollTo({top:0,behavior:"smooth"});
   renderAll();
 }
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showView(t.dataset.view,true));
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  if(currentViewId==="customerAccountView"&&t.dataset.view==="customersView"){
+    returnToCustomerList();
+    return;
+  }
+  showView(t.dataset.view,true);
+});
 
 function businessDaysLeft(){
   const now=new Date(),y=now.getFullYear(),m=now.getMonth();
@@ -3159,9 +3149,20 @@ function customerProductStats(customerId){
   return {products:[...map.values()].sort((a,b)=>b.revenue-a.revenue),families:[...family.entries()].sort((a,b)=>b[1]-a[1])};
 }
 function openCustomerAccount(id){
+  customerListScrollY=window.scrollY||window.pageYOffset||0;
   activeCustomerId=id;
   renderCustomerAccount();
   showView("customerAccountView",false);
+}
+function returnToCustomerList(){
+  const restoreY=Math.max(0,Number(customerListScrollY)||0);
+  showView("customersView",true);
+  // showView/renderAll rebuilds the list and intentionally moves views to top.
+  // Restore only after the customer list has been painted so the user lands
+  // exactly where they were before opening the account.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    window.scrollTo({top:restoreY,left:0,behavior:"auto"});
+  }));
 }
 function renderCustomerAccount(){
   const c=customerById(activeCustomerId);if(!c)return;
@@ -4535,26 +4536,6 @@ function trTerritoryOverviewHtml(){
  const sections=[["Texas Panhandle",o.texasPanhandle],["Western Oklahoma",o.westernOklahoma],["Southern Oklahoma",o.southernOklahoma]];
  return `<div class="tr-section"><h2>Territory Overview</h2>${sections.map(([name,text])=>`<h3>${name}</h3>${trBulletText(text).length?`<ul>${trBulletText(text).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p class="missing">No current market notes documented.</p>`}`).join("")}</div>`
 }
-function trCleanNote(t){return String(t||"").replace(/\s+/g," ").trim()}
-function trUniqueSnippets(items,limit=3){const out=[];for(const raw of items){let t=trCleanNote(raw);if(!t)continue;t=t.replace(/^(Location|Address|Contact):.*?(?=Customer|Quoted|Sent|Met|Called|Followed|Awaiting|$)/i,"");if(t.length>210)t=t.slice(0,207)+"…";const key=t.toLowerCase().replace(/\d{1,2}\/\d{1,2}\/\d{2,4}/g,"");if(!out.some(x=>x.key===key)){out.push({key,text:t});if(out.length>=limit)break}}return out.map(x=>x.text)}
-function trAccountActivitySummary(a){
- const texts=a.acts.slice(0,20).map(x=>x.comments||x.opportunityDetails||"");
- const won=trUniqueSnippets(texts.filter(x=>/order|po\b|closed won|purchased|first order|delivered/i.test(x)),2);
- const prospect=trUniqueSnippets(texts.filter(x=>/prospect|opportunit|quote|rfq|credit application|new account|support/i.test(x)),2);
- const issues=trUniqueSnippets(texts.filter(x=>/waiting|feedback|pricing|compet|vendor|stock|availability|lead time|cannot|can't|challenge|issue/i.test(x)),2);
- const back=a.back||[];
- const bits=[];
- if(won.length)bits.push(`<li><strong>Products won / growth:</strong> ${esc(won.join(" "))}</li>`);
- if(prospect.length)bits.push(`<li><strong>Prospecting / development:</strong> ${esc(prospect.join(" "))}</li>`);
- if(issues.length)bits.push(`<li><strong>Customer feedback / issues:</strong> ${esc(issues.join(" "))}</li>`);
- if(back.length)bits.push(`<li><strong>Backorders:</strong> ${back.length} open backorder item${back.length===1?"":"s"} affecting ${trMoney(back.reduce((s,x)=>s+(Number(x.openValue)||0),0))}.</li>`);
- return bits.length?`<p><strong>Account Activity Summary:</strong></p><ul>${bits.join("")}</ul>`:"";
-}
-function trTerritoryDevelopmentSummary(s){
- const byCustomer=new Map();s.recentActs.forEach(a=>{const n=activityCustomer(a)?.company||"Account";if(!byCustomer.has(n))byCustomer.set(n,[]);byCustomer.get(n).push(a.comments||a.opportunityDetails||"")});
- const parts=[];for(const [name,notes] of byCustomer){const sn=trUniqueSnippets(notes,1)[0];if(sn)parts.push(`${name}: ${sn}`);if(parts.length>=3)break}
- return parts.length?`<li><strong>Recent market development:</strong> ${esc(parts.join(" "))}</li>`:"";
-}
 function trAccountManagement(a){
  const contact=trContact(a),open=trOpenRfqs(a),top=a.top;
  const about=a.c.businessDescription||a.c.notes||"Not documented in CRM.";
@@ -4565,7 +4546,7 @@ function trAccountManagement(a){
  const openHtml=open.map(r=>{const items=r.items||[],rt=total(r);return `<div class="opp"><p><strong>Open RFQ${r.quoteNo?` — ${esc(r.quoteNo)}`:""}: ${trMoney(rt)}</strong></p>${items.length?`<ul>${items.map(i=>`<li>${Number(i.qty)||0} pcs — ${esc(i.part||i.product||"Product")}${i.product&&i.part?` — ${esc(i.product)}`:""} @ ${trMoney(i.price)} each = <strong>${trMoney(trRfqLineTotal(i))}</strong></li>`).join("")}</ul>`:`<p class="missing">Line items are not documented.</p>`}<ul><li><strong>Customer feedback / status:</strong> ${esc(trRfqReason(r))}</li>${r.nextAction?`<li><strong>Next action:</strong> ${esc(r.nextAction)}</li>`:""}</ul></div>`}).join("");
  const opps=a.acts.filter(x=>x.opportunityValue&&x.opportunityTitle&&!x.opportunityRfqId&&!/closed|lost/i.test(x.opportunityStage||"")).slice(0,8);
  const recent=a.acts.slice(0,6);
- return `<div class="account"><h2>${esc(a.c.company)}${a.c.isNewAccount?` <span style="font-size:8pt;border:1px solid #777;border-radius:10px;padding:2px 6px">NEW ACCOUNT</span>`:""}</h2><p class="small">${esc(a.c.marketRegion||"Territory not assigned")}${a.c.city?` · ${esc(a.c.city)}`:""}</p><ul><li><strong>What they do:</strong> ${esc(about)}</li><li><strong>Primary contact:</strong> ${esc(contact.name||"Not documented")}</li><li><strong>Purchasing drivers / competition:</strong> ${esc(why)}${supplier?` | ${esc(supplier)}`:""}</li></ul>${sold.length?`<p><strong>Items Sold — primary to least purchased:</strong></p><ul>${sold.map(x=>`<li>${esc(x.part||x.product)} — ${Math.round(x.qty)} units / ${trMoney(x.revenue)}</li>`).join("")}</ul>`:`<p><strong>Items Sold:</strong> No completed order history documented.</p>`}${wishlist.length?`<p><strong>Customer Wishlist:</strong></p><ul>${wishlist.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${trAccountActivitySummary(a)}${openHtml||`<p><strong>Open RFQs:</strong> None currently documented.</p>`}${opps.length?`<p><strong>Open Opportunities:</strong></p><ul>${opps.map(x=>`<li><strong>${esc(x.opportunityTitle)}</strong> — ${trMoney(x.opportunityValue)}${x.opportunityDetails?` — ${esc(x.opportunityDetails)}`:""}</li>`).join("")}</ul>`:`<p><strong>Open Opportunities:</strong> None outside RFQs currently documented.</p>`}</div>`
+ return `<div class="account"><h2>${esc(a.c.company)}${a.c.isNewAccount?` <span style="font-size:8pt;border:1px solid #777;border-radius:10px;padding:2px 6px">NEW ACCOUNT</span>`:""}</h2><p class="small">${esc(a.c.marketRegion||"Territory not assigned")}${a.c.city?` · ${esc(a.c.city)}`:""}</p><ul><li><strong>What they do:</strong> ${esc(about)}</li><li><strong>Primary contact:</strong> ${esc(contact.name||"Not documented")}</li><li><strong>Purchasing drivers / competition:</strong> ${esc(why)}${supplier?` | ${esc(supplier)}`:""}</li></ul>${sold.length?`<p><strong>Items Sold — primary to least purchased:</strong></p><ul>${sold.map(x=>`<li>${esc(x.part||x.product)} — ${Math.round(x.qty)} units / ${trMoney(x.revenue)}</li>`).join("")}</ul>`:`<p><strong>Items Sold:</strong> No completed order history documented.</p>`}${wishlist.length?`<p><strong>Customer Wishlist:</strong></p><ul>${wishlist.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${recent.length?`<p><strong>Account Activity Summary:</strong></p><ul>${(()=>{const all=recent.map(x=>trCleanActivityText(x.comments||x.opportunityDetails||"")).join(" "),b=[];if(/order|po\b|closed won|moving forward|purchased|delivered/i.test(all))b.push("Products won / sales activity is documented in the account.");if(/prospect|opportunity|credit application|quote|rfq|pricing/i.test(all))b.push("Prospecting and quotation activity is active.");if(/waiting|review|compare|feedback|end user|compet|vendor|price/i.test(all))b.push("Customer feedback / buying decision remains in progress.");if(/back.?order|out of stock|no stock|eta|lead time|availability/i.test(all))b.push("Inventory, backorder, or availability is affecting the account.");return (b.length?b:["Recent account-development activity is documented."]).map(x=>`<li>${esc(x)}</li>`).join("")})()}</ul>`:""}${openHtml||`<p><strong>Open RFQs:</strong> None currently documented.</p>`}${opps.length?`<p><strong>Open Opportunities:</strong></p><ul>${opps.map(x=>`<li><strong>${esc(x.opportunityTitle)}</strong> — ${trMoney(x.opportunityValue)}${x.opportunityDetails?` — ${esc(x.opportunityDetails)}`:""}</li>`).join("")}</ul>`:`<p><strong>Open Opportunities:</strong> None outside RFQs currently documented.</p>`}</div>`
 }
 
 const TERRITORY_SECTIONS=["Texas/Oklahoma Panhandle Territory","Oklahoma Northwest Territory","Oklahoma City Metropolitan Territory","Oklahoma Northeastern Territory","Oklahoma Southern Territory","Oklahoma Western Territory","Oklahoma Eastern Territory","Oklahoma Northern Territory","Kansas Western Territory","Kansas Eastern Territory","Wichita Kansas Territory","Arkansas Territory","Dallas/FW Territory","Ohio Territory","New Mexico Territory","Colorado Territory"];
@@ -4592,6 +4573,26 @@ function trTerritorySummary(data,territory){
  const recentActs=tacts.slice().sort((a,b)=>trDate(b.date)-trDate(a.date)).slice(0,5);
  return {territory,accs,open,openValue,lost,backValue,topSold,topReq,comps,purchasing,activeCustomerCount,recentActs};
 }
+function trCleanActivityText(text){
+ let t=String(text||"").replace(/\s+/g," ").trim();
+ t=t.replace(/Location:.*?(?=(Contact:|Customer|Quoted|Sent|Awaiting|$))/gi,"").replace(/Contact:.*?(?=(Customer|Quoted|Sent|Awaiting|$))/gi,"");
+ return t;
+}
+function trTerritoryActivityBrief(s){
+ const byCustomer=new Map();
+ s.recentActs.forEach(a=>{const name=customerName({customerId:a.customerId})||"Account";let x=byCustomer.get(name)||[];x.push(trCleanActivityText(a.comments||a.opportunityDetails||""));byCustomer.set(name,x)});
+ const bullets=[];
+ for(const [name,notes] of byCustomer){
+   const all=notes.join(" "), points=[];
+   if(/order|po\b|closed won|moving forward|purchased|delivered/i.test(all)) points.push("sales/order activity documented");
+   if(/prospect|opportunity|credit application|quote|rfq|pricing/i.test(all)) points.push("active prospecting/quotation activity");
+   if(/waiting|review|compare|feedback|end user|compet|vendor|price/i.test(all)) points.push("customer feedback or buying decision remains in progress");
+   if(/back.?order|out of stock|no stock|eta|lead time|availability/i.test(all)) points.push("inventory/availability requires attention");
+   if(!points.length) points.push("recent account development activity documented");
+   bullets.push(`<li><strong>${esc(name)}:</strong> ${esc([...new Set(points)].join("; "))}.</li>`);
+ }
+ return bullets.length?`<li><strong>Recent market development:</strong><ul>${bullets.slice(0,4).join("")}</ul></li>`:"";
+}
 function trTerritorySummaryHtml(s){
  const majorOpen=s.open.slice().sort((a,b)=>total(b)-total(a)).slice(0,4);
  const newAccounts=customers.filter(c=>c.marketRegion===s.territory&&c.isNewAccount);
@@ -4606,7 +4607,7 @@ function trTerritorySummaryHtml(s){
  ${s.lost?`<li><strong>Documented lost sales:</strong> ${trMoney(s.lost)}.</li>`:""}
  ${s.comps.length?`<li><strong>Competitive landscape:</strong> ${s.comps.slice(0,5).map(c=>`${esc(c.name)} (${c.count} account${c.count===1?"":"s"})`).join("; ")}</li>`:""}
  ${s.purchasing.length?`<li><strong>Documented purchasing / obstacle themes:</strong> ${s.purchasing.map(([r,n])=>`${esc(r)} (${n})`).join("; ")}</li>`:""}
- ${trTerritoryDevelopmentSummary(s)}
+ ${trTerritoryActivityBrief(s)}
  </ul></div>`
 }
 function trManagementHtml(data){
@@ -4646,37 +4647,10 @@ function trPrintDocument(kind){
  const w=window.open("","_blank");if(!w){alert("Allow pop-ups to generate the PDF.");return}
  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:letter;margin:.62in}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5pt;line-height:1.35}h1{font-size:19pt;margin:0 0 4px}h2{font-size:13pt;margin:16px 0 5px}h3{font-size:11pt;margin:11px 0 4px}p{margin:4px 0}ul{margin:4px 0 8px 20px;padding:0}li{margin:2px 0}.header{border-bottom:1px solid #777;padding-bottom:8px;margin-bottom:12px}.small,.missing{font-size:8.5pt;color:#666}.account,.script-account{break-inside:auto}.opp{margin:8px 0}.script{font-size:11pt;line-height:1.5}.qa{margin:9px 0;padding-left:10px;border-left:2px solid #777}.qa p{margin-top:3px}strong{font-weight:700}</style></head><body><div class="header"><h1>${title}</h1><div class="small">Data as of ${data.generatedAt.toLocaleString()}</div></div>${body}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()
 }
-function populateReportsCustomers(){const el=$("reportsCustomer");if(!el)return;const keep=el.value;el.innerHTML='<option value="">Select customer…</option>'+customers.slice().sort((a,b)=>(a.company||"").localeCompare(b.company||"")).map(c=>`<option value="${c.id}">${esc(c.company||"Unnamed")}</option>`).join("");if(customers.some(c=>String(c.id)===String(keep)))el.value=keep}
-function reportsSimpleTable(title,subtitle,heads,rows){return reportShell(title,subtitle,`<table><tr>${heads.map(h=>`<th>${reportEscape(h)}</th>`).join("")}</tr>${rows.join("")}</table>`)}
-function runReportsCenter(t){
- if(t==="management")return trPrintDocument("management");
- if(t==="goal")return generateReportForView("dashboardView");
- if(t==="lost")return renderIntelReport("lost");
- if(t==="businesscase")return renderIntelReport("feedback");
- if(t==="inventory")return renderIntelReport("inventory");
- if(t==="geo")return renderIntelReport("geo");
- if(t==="productintel"||t==="products")return generateReportForView("productsView");
- if(t==="followup")return generateReportForView("followupsView");
- if(t==="activity")return generateReportForView("activityLogView");
- if(t==="openrfq")return generateReportForView("rfqsView");
- if(t==="qbr")return renderIntelReport("qbr");
- if(t==="forecast"){
-   const rows=rfqs.filter(isOpen).sort((a,b)=>total(b)-total(a)).map(r=>`<tr><td>${reportEscape(customerName(r))}</td><td>${reportEscape(r.quoteNo||"RFQ")}</td><td>${reportEscape(r.status||"")}</td><td>${reportMoney(total(r))}</td><td>${reportEscape(r.nextAction||r.feedback||"")}</td></tr>`);
-   return reportsSimpleTable("Pipeline & Forecast","Open business ranked by value",["Customer","RFQ","Status","Value","Current Feedback / Next Action"],rows)
- }
- if(t==="newaccounts"){
-   const list=customers.filter(c=>c.isNewAccount).sort((a,b)=>(a.company||"").localeCompare(b.company||""));
-   return reportsSimpleTable("New / Developing Accounts","Accounts explicitly marked New in the CRM",["Account","Territory","YTD Sales","Open Pipeline","Latest Activity"],list.map(c=>{const acts=activities.filter(a=>String(a.customerId)===String(c.id)).sort((a,b)=>activityDateObj(b)-activityDateObj(a));return `<tr><td>${reportEscape(c.company)}</td><td>${reportEscape(c.marketRegion||"Unassigned")}</td><td>${reportMoney(ytdSalesForCustomer(c.id))}</td><td>${reportMoney(rfqs.filter(r=>String(r.customerId)===String(c.id)&&isOpen(r)).reduce((s,r)=>s+total(r),0))}</td><td>${reportEscape(trUniqueSnippets(acts.map(a=>a.comments||a.opportunityDetails),1)[0]||"—")}</td></tr>`}))
- }
- if(t==="account"){
-   const cid=$("reportsCustomer")?.value;if(!cid){alert("Choose a customer first.");return}const c=customerById(cid);const ps=customerProductStats(cid).products;const open=rfqs.filter(r=>String(r.customerId)===String(cid)&&isOpen(r));const acts=activities.filter(a=>String(a.customerId)===String(cid)).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
-   const body=`<div class="grid"><div class="metric"><small>YTD Sales</small><strong>${reportMoney(ytdSalesForCustomer(cid))}</strong></div><div class="metric"><small>Open Pipeline</small><strong>${reportMoney(open.reduce((s,r)=>s+total(r),0))}</strong></div></div><h2>Top Products</h2><table><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr>${ps.slice(0,8).map(x=>`<tr><td>${reportEscape(x.part||x.name)}</td><td>${Math.round(x.qty||0)}</td><td>${reportMoney(x.revenue)}</td></tr>`).join("")}</table><h2>Management Activity Summary</h2><p>${reportEscape(trUniqueSnippets(acts.map(a=>a.comments||a.opportunityDetails),4).join(" ")||"No recent activity documented.")}</p>`;return reportShell(`${c.company} Account Review`,"Customer performance and current business",body)
- }
-}
 function renderIntelligence(){if(!$("intelligenceView"))return;populateIntelCustomers();let lost=intelligence.filter(r=>r.type==="lost"),d=intelligence.filter(r=>r.type==="discount"),dv=intelligence.filter(r=>r.type==="delivery"),f=intelligence.filter(r=>r.type==="feedback");$("intelLostTotal").textContent=intelMoney(lost.reduce((s,r)=>s+(+r.amount||0),0));$("intelLostCount").textContent=lost.length+" records";$("intelSavingsTotal").textContent=intelMoney(orders.reduce((s,o)=>s+(Number(o.savingsTotal)||0),0));$("intelDeliveryTotal").textContent=intelMoney(dv.reduce((s,r)=>s+(+r.amount||0),0));$("intelFeedbackTotal").textContent=intelMoney(f.reduce((s,r)=>s+(+r.amount||0),0));$("intelRecordList").innerHTML=intelligence.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30).map(r=>`<div class="intel-record"><div class="intel-record-head"><div><span class="intel-pill">${esc(r.type.toUpperCase())}</span><strong style="display:block;margin-top:5px">${esc(intelName(r.customerId))}</strong><span class="mini">${esc(r.date||"")} · ${esc(r.product||r.need||r.reference||r.category||"")}</span></div><strong>${intelMoney(r.amount)}</strong></div><div class="mini" style="margin-top:6px">${esc(r.reason||r.impactStatus||r.notes||"")}</div><button class="secondary" style="margin-top:7px" onclick="deleteIntel('${r.id}')">Delete</button></div>`).join("")||'<p class="muted">No intelligence records yet.</p>'}
 function deleteIntel(id){if(confirm("Delete this record?")){intelligence=intelligence.filter(r=>r.id!==id);save();renderIntelligence()}}
 function agg(rs,key){let m=new Map();rs.forEach(r=>{let k=key(r)||"Unspecified",x=m.get(k)||{name:k,count:0,amount:0,qty:0};x.count++;x.amount+=+r.amount||0;x.qty+=+r.qty||0;m.set(k,x)});return [...m.values()].sort((a,b)=>b.amount-a.amount||b.count-a.count)}
-function intelTable(title,desc,heads,rows){$("intelReportOutput").innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
+function intelTable(title,desc,heads,rows){($(intelReportTarget)||$("intelReportOutput")).innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
 function renderIntelReport(t){
 if(t==="lost"){let a=agg(intelligence.filter(r=>r.type==="lost"),r=>r.product);intelTable("Lost RFQs Report","Lost RFQ demand including No Stock.",["Product","Requests","Units","Lost $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${x.qty}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
 if(t==="feedback"){let a=agg(intelligence.filter(r=>r.type==="feedback"),r=>r.need||r.category);intelTable("Feedback / Business Case","Measurable justification for staffing, delivery, inventory and services.",["Need","Records","Impact $"],a.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.count}</td><td>${intelMoney(x.amount)}</td></tr>`).join(""));return}
@@ -4695,6 +4669,20 @@ if(t==="inventory"){
   intelTable("OKC Master Inventory Intelligence","Combines actual moving items with documented No Stock demand.",["Product","Sold Units","Sales $","No Stock Requests","Lost Units","Lost $","Priority"],rows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.soldQty}</td><td>${intelMoney(x.soldValue)}</td><td>${x.lostReq}</td><td>${x.lostQty}</td><td>${intelMoney(x.lostValue)}</td><td>${x.score>=35?"MUST STOCK":x.score>=18?"STRONG":x.score>=7?"MONITOR":"LOW"}</td></tr>`).join(""));return}
 if(t==="product"){if(typeof renderProducts==="function"){showView("productsView",true);return}$("intelReportOutput").innerHTML='<p>Use the Products page for product mix.</p>';return}
 if(t==="qbr"){let cid=$("meetingCustomer").value;if(!cid){$("intelReportOutput").innerHTML='<p class="muted">Choose a customer above first.</p>';return}let rs=intelligence.filter(r=>String(r.customerId)===String(cid)),s=customerOrderSavings(cid),d=rs.filter(r=>r.type==="delivery").reduce((a,r)=>a+(+r.amount||0),0);$("intelReportOutput").innerHTML=`<h2>${esc(intelName(cid))} — QBR Value</h2><div class="metrics"><div class="metric"><span>Product Savings</span><strong>${intelMoney(s)}</strong><div class="sub">Captured from actual orders</div></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(d)}</strong></div><div class="metric"><span>Total Documented Value</span><strong>${intelMoney(s+d)}</strong></div></div>`}}
+let intelReportTarget="intelReportOutput";
+function reportTable(title,desc,heads,rows){const el=$(intelReportTarget)||$("intelReportOutput");el.innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
+function populateReportsCustomers(){if(!$("reportsCustomer"))return;$("reportsCustomer").innerHTML='<option value="">Select customer</option>'+customers.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("")}
+function renderReportCenter(t){
+ intelReportTarget="reportsOutput"; const out=$("reportsOutput");
+ if(t==="monthly"){lastTerritoryReview=buildTerritoryReviewData();out.innerHTML=`<div class="kicker">Management Preview</div>${trManagementHtml(lastTerritoryReview)}`;return}
+ if(t==="pipeline"){const open=rfqs.filter(isOpen),v=open.reduce((s,r)=>s+total(r),0);out.innerHTML=`<h2>Pipeline Summary</h2><div class="metrics"><div class="metric"><span>Open RFQs</span><strong>${open.length}</strong></div><div class="metric"><span>Open RFQ Value</span><strong>${trMoney(v)}</strong></div></div><ul>${open.sort((a,b)=>total(b)-total(a)).slice(0,15).map(r=>`<li><strong>${esc(customerName(r))}</strong> — ${trMoney(total(r))} — ${esc(r.status||"Open")}</li>`).join("")}</ul>`;return}
+ if(t==="forecast"){showView("forecastView",true);intelReportTarget="intelReportOutput";return}
+ if(t==="activity"){const recent=activities.slice().sort((a,b)=>trDate(b.date)-trDate(a.date)),types=new Map();recent.forEach(a=>types.set(a.type||"Activity",(types.get(a.type||"Activity")||0)+1));out.innerHTML=`<h2>Activity & Effort Report</h2><p class="muted">Quantifies documented field activity without printing every CRM note.</p><div class="metrics">${[...types.entries()].slice(0,8).map(([k,v])=>`<div class="metric"><span>${esc(k)}</span><strong>${v}</strong></div>`).join("")}</div>`;return}
+ if(t==="newaccounts"){const cs=customers.filter(c=>c.isNewAccount);out.innerHTML=`<h2>New Account Development</h2><p class="muted">Only accounts explicitly marked New Account are included.</p><ul>${cs.map(c=>{const a=trAccountSummary(c);return `<li><strong>${esc(c.company)}</strong> — ${esc(c.marketRegion||"Territory not assigned")} — YTD ${trMoney(a.ytd)} — Open ${trMoney(a.open)}</li>`}).join("")||"<li>No accounts are currently marked New Account.</li>"}</ul>`;return}
+ if(t==="business"){renderIntelReport("feedback");intelReportTarget="intelReportOutput";return}
+ if(["lost","inventory","geo","product"].includes(t)){renderIntelReport(t);intelReportTarget="intelReportOutput";return}
+ if(t==="qbr"||t==="customer"){const cid=$("reportsCustomer").value;if(!cid){out.innerHTML='<p class="muted">Select a customer first.</p>';return}const c=customerById(cid),a=trAccountSummary(c);if(t==="qbr"){const old=$("meetingCustomer").value;$("meetingCustomer").value=cid;renderIntelReport("qbr");$("meetingCustomer").value=old;intelReportTarget="intelReportOutput";return}out.innerHTML=`<h2>${esc(c.company)} — Account Summary</h2>${trAccountManagement(a)}`;return}
+}
 function meetingContact(){
   const c=intelCust($("meetingCustomer")?.value);
   const contacts=Array.isArray(c.contacts)?c.contacts:[];
@@ -5216,7 +5204,7 @@ function renderForecast(){
 
 function renderAll(){ensureYearSettings();refreshLinkedOpportunityValues();
   renderBackorders();
-renderIntelligence();populateReportsCustomers();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderPipeline();renderForecast();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
+renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderPipeline();renderForecast();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
 let editingOrderId=null;
@@ -7148,7 +7136,7 @@ if($("testAiConnection"))$("testAiConnection").onclick=async()=>{
 
 if($("globalLogActivity"))$("globalLogActivity").onclick=()=>openNewActivity(currentViewId==="customerAccountView"?(activeCustomerId||""):"");
 if($("globalExportPdf"))$("globalExportPdf").onclick=exportCurrentViewPDF;
-if($("backFromAccount"))$("backFromAccount").onclick=()=>showView("customersView",true);
+if($("backFromAccount"))$("backFromAccount").onclick=returnToCustomerList;
 if($("editAccountFromDetail"))$("editAccountFromDetail").onclick=()=>{if(activeCustomerId)editCustomer(activeCustomerId)};
 document.querySelectorAll(".account-tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".account-tab").forEach(x=>x.classList.remove("active"));
@@ -7165,7 +7153,8 @@ applyLayoutMode(layoutMode);
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
 document.querySelectorAll("[data-intel-form]").forEach(b=>b.onclick=()=>openIntelForm(b.dataset.intelForm));
 document.querySelectorAll("[data-intel-report]").forEach(b=>b.onclick=()=>renderIntelReport(b.dataset.intelReport));
-document.querySelectorAll("[data-report-center]").forEach(b=>b.onclick=()=>runReportsCenter(b.dataset.reportCenter));
+document.querySelectorAll("[data-report-center]").forEach(b=>b.onclick=()=>renderReportCenter(b.dataset.reportCenter));
+populateReportsCustomers();
 if($("closeIntelForm"))$("closeIntelForm").onclick=()=>$("intelFormCard").classList.add("hidden");
 if($("saveIntelRecord"))$("saveIntelRecord").onclick=saveIntelRecord;
 if($("generateMeetingTemplates"))$("generateMeetingTemplates").onclick=generateMeetingTemplates;
