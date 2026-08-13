@@ -1234,7 +1234,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.8 Web Research Fallback</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.3.9 Web Research Fallback</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2367,6 +2367,10 @@ body[data-skin="baby-blue"] .insight-card .status.green{
         </div>
       </div>
       <label>Company Website</label><input id="cWebsite" inputmode="url" placeholder="https://www.company.com">
+      <div class="row">
+        <div><label class="verify-check"><input id="cIsNewAccount" type="checkbox"> New Account</label><div class="mini">Check only when this account was genuinely opened/developed as a new account. It can be changed later.</div></div>
+        <div><label>Customer Wishlist</label><textarea id="cWishlist" rows="3" placeholder="Products / configurations the customer wants us to support. One item per line."></textarea></div>
+      </div>
       <label>What This Customer Does</label><textarea id="cBusiness" placeholder="Specific operations, services, equipment, and why ABCO products are relevant..."></textarea>
       <div class="row">
         <div><label>Territory Section</label><select id="cMarket"><option value="">Not set</option><option>Texas/Oklahoma Panhandle Territory</option><option>Oklahoma Northwest Territory</option><option>Oklahoma City Metropolitan Territory</option><option>Oklahoma Northeastern Territory</option><option>Oklahoma Southern Territory</option><option>Oklahoma Western Territory</option><option>Oklahoma Eastern Territory</option><option>Oklahoma Northern Territory</option><option>Kansas Western Territory</option><option>Kansas Eastern Territory</option><option>Wichita Kansas Territory</option><option>Arkansas Territory</option><option>Dallas/FW Territory</option><option>Ohio Territory</option><option>New Mexico Territory</option><option>Colorado Territory</option></select></div>
@@ -4509,9 +4513,12 @@ function trAccountManagement(a){
  const about=a.c.businessDescription||a.c.notes||"Not documented in CRM.";
  const supplier=a.c.knownSuppliers|| (a.competitors.length?a.competitors.map(x=>x.name).join(", "):"Not documented in CRM.");
  const why=a.c.buyingDrivers|| (a.competitors.length?a.competitors.map(x=>x.reason).filter(Boolean).join("; "):"Not documented in CRM.");
- const openHtml=open.map(r=>{const items=r.items||[],rt=total(r);return `<div class="opp"><p><strong>Open Opportunity${r.quoteNo?` — ${esc(r.quoteNo)}`:""}</strong></p><p><strong>Opportunity Value: ${trMoney(rt)}</strong></p>${items.length?`<ul>${items.map(i=>`<li>${Number(i.qty)||0} pcs — ${esc(i.part||i.product||"Product")}${i.product&&i.part?` — ${esc(i.product)}`:""} @ ${trMoney(i.price)} each = <strong>${trMoney(trRfqLineTotal(i))}</strong></li>`).join("")}</ul>`:`<p class="missing">Line items are not documented on this opportunity.</p>`}<ul><li><strong>Current status / why open:</strong> ${esc(trRfqReason(r))}</li>${r.nextAction?`<li><strong>Next action:</strong> ${esc(r.nextAction)}</li>`:""}</ul></div>`}).join("");
- const recent=a.acts.slice(0,5);
- return `<div class="account"><h2>${esc(a.c.company)}${a.c.city?` – ${esc(a.c.city)}`:""}</h2><p><strong>About:</strong> ${esc(about)}</p><p><strong>Primary Contact:</strong> ${esc(contact.name||"Not documented")}${contact.title?` — ${esc(contact.title)}`:""}</p>${top?`<p><strong>Primary / Fast-Moving Item:</strong> ${esc(top.part||top.product)} — ${Math.round(top.qty)} units / ${trMoney(top.revenue)} in documented order history.</p>`:""}<p><strong>Known Suppliers / Competitors:</strong> ${esc(supplier)}</p><p><strong>Why / Purchasing Drivers:</strong> ${esc(why)}</p>${openHtml||`<p><strong>Open Opportunities:</strong> None currently documented.</p>`}${recent.length?`<p><strong>Recent Account Development:</strong></p><ul>${recent.map(x=>`<li>${formatDate(x.date)} — ${esc(x.comments||x.opportunityDetails||"Activity logged")}</li>`).join("")}</ul>`:""}</div>`
+ const wishlist=Array.isArray(a.c.wishlist)?a.c.wishlist:trBulletText(a.c.wishlist||"");
+ const sold=a.products.slice(0,8);
+ const openHtml=open.map(r=>{const items=r.items||[],rt=total(r);return `<div class="opp"><p><strong>Open RFQ${r.quoteNo?` — ${esc(r.quoteNo)}`:""}: ${trMoney(rt)}</strong></p>${items.length?`<ul>${items.map(i=>`<li>${Number(i.qty)||0} pcs — ${esc(i.part||i.product||"Product")}${i.product&&i.part?` — ${esc(i.product)}`:""} @ ${trMoney(i.price)} each = <strong>${trMoney(trRfqLineTotal(i))}</strong></li>`).join("")}</ul>`:`<p class="missing">Line items are not documented.</p>`}<ul><li><strong>Customer feedback / status:</strong> ${esc(trRfqReason(r))}</li>${r.nextAction?`<li><strong>Next action:</strong> ${esc(r.nextAction)}</li>`:""}</ul></div>`}).join("");
+ const opps=a.acts.filter(x=>x.opportunityValue&&x.opportunityTitle&&!x.opportunityRfqId&&!/closed|lost/i.test(x.opportunityStage||"")).slice(0,8);
+ const recent=a.acts.slice(0,6);
+ return `<div class="account"><h2>${esc(a.c.company)}${a.c.isNewAccount?` <span style="font-size:8pt;border:1px solid #777;border-radius:10px;padding:2px 6px">NEW ACCOUNT</span>`:""}</h2><p class="small">${esc(a.c.marketRegion||"Territory not assigned")}${a.c.city?` · ${esc(a.c.city)}`:""}</p><ul><li><strong>What they do:</strong> ${esc(about)}</li><li><strong>Primary contact:</strong> ${esc(contact.name||"Not documented")}</li><li><strong>Purchasing drivers / competition:</strong> ${esc(why)}${supplier?` | ${esc(supplier)}`:""}</li></ul>${sold.length?`<p><strong>Items Sold — primary to least purchased:</strong></p><ul>${sold.map(x=>`<li>${esc(x.part||x.product)} — ${Math.round(x.qty)} units / ${trMoney(x.revenue)}</li>`).join("")}</ul>`:`<p><strong>Items Sold:</strong> No completed order history documented.</p>`}${wishlist.length?`<p><strong>Customer Wishlist:</strong></p><ul>${wishlist.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${recent.length?`<p><strong>Recent Activity:</strong></p><ul>${recent.map(x=>`<li>${formatDate(x.date)} — ${esc(x.comments||x.opportunityDetails||"Activity logged")}</li>`).join("")}</ul>`:""}${openHtml||`<p><strong>Open RFQs:</strong> None currently documented.</p>`}${opps.length?`<p><strong>Open Opportunities:</strong></p><ul>${opps.map(x=>`<li><strong>${esc(x.opportunityTitle)}</strong> — ${trMoney(x.opportunityValue)}${x.opportunityDetails?` — ${esc(x.opportunityDetails)}`:""}</li>`).join("")}</ul>`:`<p><strong>Open Opportunities:</strong> None outside RFQs currently documented.</p>`}</div>`
 }
 
 const TERRITORY_SECTIONS=["Texas/Oklahoma Panhandle Territory","Oklahoma Northwest Territory","Oklahoma City Metropolitan Territory","Oklahoma Northeastern Territory","Oklahoma Southern Territory","Oklahoma Western Territory","Oklahoma Eastern Territory","Oklahoma Northern Territory","Kansas Western Territory","Kansas Eastern Territory","Wichita Kansas Territory","Arkansas Territory","Dallas/FW Territory","Ohio Territory","New Mexico Territory","Colorado Territory"];
@@ -4540,8 +4547,11 @@ function trTerritorySummary(data,territory){
 }
 function trTerritorySummaryHtml(s){
  const majorOpen=s.open.slice().sort((a,b)=>total(b)-total(a)).slice(0,4);
- return `<div class="territory-summary"><h2>${esc(s.territory)}</h2><ul>
+ const newAccounts=customers.filter(c=>c.marketRegion===s.territory&&c.isNewAccount);
+ const direction=s.openValue>0?`The territory currently carries ${trMoney(s.openValue)} in open RFQs and opportunities, with ${s.activeCustomerCount||0} accounts/prospects showing documented activity.`:`The territory has ${s.activeCustomerCount||0} accounts/prospects with documented activity, but no open RFQ value is currently recorded.`;
+ return `<div class="territory-summary"><h2>${esc(s.territory)}</h2><p>${direction}${newAccounts.length?` New-account development includes ${newAccounts.map(c=>esc(c.company)).join(", ")}.`:""}</p><ul>
  <li><strong>Active accounts / prospects:</strong> ${s.activeCustomerCount||0}</li>
+ ${newAccounts.length?`<li><strong>New accounts:</strong> ${newAccounts.map(c=>esc(c.company)).join("; ")}</li>`:""}
  ${s.topSold.length?`<li><strong>Primary products being purchased:</strong> ${s.topSold.map(x=>`${esc(x.part||x.product)} — ${Math.round(x.qty)} units / ${trMoney(x.value)}`).join("; ")}</li>`:""}
  ${s.topReq.length?`<li><strong>Most requested products:</strong> ${s.topReq.map(x=>`${esc(x.part||x.product)} — ${Math.round(x.qty)} requested units / ${x.lines} RFQ line${x.lines===1?"":"s"}`).join("; ")}</li>`:""}
  <li><strong>Open opportunities:</strong> ${trMoney(s.openValue)}${majorOpen.length?` — ${majorOpen.map(r=>`${esc(customerName(r))}: ${trMoney(total(r))}`).join("; ")}`:""}</li>
@@ -4560,7 +4570,10 @@ function trManagementHtml(data){
  }).join("");
  const unassigned=data.accounts.filter(a=>!TERRITORY_SECTIONS.includes(a.c.marketRegion||""));
  const unassignedBlock=unassigned.length?`<div class="territory-summary"><h2>Unassigned Territory</h2><p class="missing">These accounts need a Territory Section selected in the customer record.</p></div>${unassigned.map(trAccountManagement).join("")}`:"";
- return `${territoryBlocks}${unassignedBlock}`
+ const needs=[];
+ data.accounts.forEach(a=>{(Array.isArray(a.c.wishlist)?a.c.wishlist:[]).forEach(x=>needs.push(`${a.c.company}: wishlist — ${x}`));a.rs.filter(isOpen).forEach(r=>{const n=r.nextAction||r.feedback;if(n)needs.push(`${a.c.company}: ${n}`)});a.feedback.slice(0,1).forEach(f=>{if(f.need||f.category)needs.push(`${a.c.company}: ${f.need||f.category}`)})});
+ const close=`<div class="territory-summary"><h2>What We Need to Win</h2><p>This section converts the account data above into the clearest actions, support needs, and decisions required to move business forward.</p>${needs.length?`<ul>${[...new Set(needs)].slice(0,15).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p class="missing">No specific customer support needs are documented yet.</p>`}<h3>Management Decisions / Support Needed</h3><ul><li>Prioritize inventory and product-support gaps tied to repeated RFQ demand or customer wishlists.</li><li>Resolve pricing, lead-time, delivery, or product-capability obstacles that are holding open RFQs.</li><li>Focus follow-up resources on the highest-value open RFQs and opportunities with a documented next action.</li></ul></div>`;
+ return `${territoryBlocks}${unassignedBlock}${close}`
 }
 
 function trSayOpportunity(r){
@@ -4582,7 +4595,7 @@ function buildTerritoryReview(){
 }
 function trPrintDocument(kind){
  const data=buildTerritoryReviewData(),management=kind==="management",body=management?trManagementHtml(data):trPresenterHtml(data);
- const title=management?"Oklahoma Territory Sales Report":"Oklahoma Territory — Presenter Narrative & Q&A";
+ const title=management?"Monthly Territory & Account Review":"Oklahoma Territory — Presenter Narrative & Q&A";
  const w=window.open("","_blank");if(!w){alert("Allow pop-ups to generate the PDF.");return}
  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:letter;margin:.62in}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5pt;line-height:1.35}h1{font-size:19pt;margin:0 0 4px}h2{font-size:13pt;margin:16px 0 5px}h3{font-size:11pt;margin:11px 0 4px}p{margin:4px 0}ul{margin:4px 0 8px 20px;padding:0}li{margin:2px 0}.header{border-bottom:1px solid #777;padding-bottom:8px;margin-bottom:12px}.small,.missing{font-size:8.5pt;color:#666}.account,.script-account{break-inside:auto}.opp{margin:8px 0}.script{font-size:11pt;line-height:1.5}.qa{margin:9px 0;padding-left:10px;border-left:2px solid #777}.qa p{margin-top:3px}strong{font-weight:700}</style></head><body><div class="header"><h1>${title}</h1><div class="small">Data as of ${data.generatedAt.toLocaleString()}</div></div>${body}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()
 }
@@ -4683,7 +4696,7 @@ function aiCustomerSummary(c){
   const cid=c.id,acctOrders=orders.filter(o=>o.customerId===cid),acctRfqs=rfqs.filter(r=>r.customerId===cid),acctActivities=activities.filter(a=>a.customerId===cid);
   return {
     id:cid,company:c.company,city:c.city||"",accountType:c.accountType||"",marketRegion:c.marketRegion||"",
-    notes:c.notes||"",website:c.website||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",aiRecommendedProducts:Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[],
+    notes:c.notes||"",website:c.website||"",businessDescription:c.businessDescription||"",knownSuppliers:c.knownSuppliers||"",buyingDrivers:c.buyingDrivers||"",isNewAccount:!!c.isNewAccount,wishlist:Array.isArray(c.wishlist)?c.wishlist:[],aiRecommendedProducts:Array.isArray(c.aiRecommendedProducts)?c.aiRecommendedProducts:[],
     contacts:(c.contacts||[]).map(x=>({id:x.id,name:x.name,role:x.role,email:x.email,phone:x.phone,primary:!!x.primary})),
     orderCount:acctOrders.length,totalSales:acctOrders.reduce((s,o)=>s+boRecognizedValue(o),0),
     lastOrderDate:acctOrders.map(o=>o.orderDate).filter(Boolean).sort().pop()||"",
@@ -4816,18 +4829,19 @@ async function aiResearchCustomerWebsite(){
   if(out)out.innerHTML="<div class='ai-data-note'>Researching the company website and matching services to the ABCO Flowline catalog…</div>";
   try{
     const directQ=`Research the official company website ${website}. Identify the company's documented services, operations, equipment and markets relevant to American Block. Compare documented facts to the ABCO Flowline catalog in CRM context. Return a concise analysis and propose exactly one update_customer_profile action for this customer. In that action payload include: businessDescription (1-2 sentence factual summary), websiteFitSummary (1 concise sentence explaining why ABCO Flowline is relevant), and recommendedProducts (3-8 catalog-grounded product families, each with product, reason, and application when supported). Do not invent products, services, inventory, prices or customer needs.`;
-    let r=await aiAsk(directQ,{customerId:c.id,mode:"website_research",website});
-    let usedFallback=false;
+    const isRestrictedSocial=/facebook\.com|instagram\.com|linkedin\.com/i.test(website);
+    let r=isRestrictedSocial?{answer:"",actions:[]}:await aiAsk(directQ,{customerId:c.id,mode:"website_research",website});
+    let usedFallback=isRestrictedSocial;
 
-    if(websiteResearchNeedsFallback(r.answer)){
+    if(isRestrictedSocial||websiteResearchNeedsFallback(r.answer)){
       usedFallback=true;
       if(out)out.innerHTML="<div class='ai-data-note'>Direct website access is restricted. Searching reliable public web sources for this company instead…</div>";
       const company=String(c.company||"").trim();
       const location=[c.city,c.state].filter(Boolean).join(", ");
-      const fallbackQ=`The saved website ${website} could not be read directly. Research ${company}${location?` in ${location}`:""} using the public web without restricting the search to the saved domain. Prefer the official website when indexed, then use reliable public sources such as search-indexed company pages, manufacturer/distributor pages, business directories, trade/industry pages, and other sources that clearly refer to this same company. Do not rely on unrelated companies with similar names. Clearly distinguish verified public-web facts from CRM context. Identify documented services, operations, equipment and markets relevant to American Block, then map only supported needs/applications to the ABCO Flowline catalog supplied in CRM context. Return a concise useful analysis instead of a fetch-error message. Propose exactly one update_customer_profile action with businessDescription, websiteFitSummary, and 3-8 catalog-grounded recommendedProducts when supported. Do not invent facts, products, inventory, pricing, or customer needs.`;
+      const fallbackQ=`The saved website ${website} could not be read directly. Research ${company}${location?` in ${location}`:""} using the public web without restricting the search to the saved domain. Prefer the official website when indexed, then use reliable public sources such as search-indexed company pages, manufacturer/distributor pages, business directories, trade/industry pages, and other sources that clearly refer to this same company. Do not rely on unrelated companies with similar names. Clearly distinguish verified public-web facts from CRM context. Identify documented services, operations, equipment and markets relevant to American Block, then map only supported needs/applications to the ABCO Flowline catalog supplied in CRM context. Return a concise useful analysis instead of a fetch-error message. Use these headings in the answer: Company Summary, Why They Fit ABCO, Best ABCO Opportunities, Evidence / Sources. When structured CRM actions are supported, propose one update_customer_profile action with businessDescription, websiteFitSummary, and 3-8 catalog-grounded recommendedProducts. Do not invent facts, products, inventory, pricing, or customer needs.`;
       // Deliberately pass an empty website to remove the Edge Function's exact-domain filter.
       // This lets the existing deployed function use unrestricted web search without requiring a redeploy.
-      r=await aiAsk(fallbackQ,{customerId:c.id,mode:"website_research",website:""});
+      r=await aiAsk(fallbackQ,{customerId:c.id,mode:isRestrictedSocial?"chat":"website_research",website:""});
     }
 
     const profileAction=(r.actions||[]).find(a=>a.type==="update_customer_profile");
@@ -6008,8 +6022,8 @@ function getContactRows(){
     primary:row.querySelector('[data-c="primary"]').value==="yes"
   })).filter(c=>c.name||c.phone||c.email);
 }
-function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes"].forEach(id=>$(id).value="");$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
-function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
+function newCustomer(){editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes","cWishlist"].forEach(id=>$(id).value="");$("cIsNewAccount").checked=false;$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
+function editCustomer(id){const c=customerById(id);if(!c)return;editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cIsNewAccount").checked=!!c.isNewAccount;$("cWishlist").value=Array.isArray(c.wishlist)?c.wishlist.join("\n"):(c.wishlist||"");$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
 
 
 
@@ -6170,7 +6184,7 @@ $("saveRfq").onclick=()=>{
   convertingOpportunityActivityId=null;
   save();showView("rfqsView",true)
 }
-$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:old?.isNewAccount??(!editingCustomerId),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
+$("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();if(contacts.length&&!contacts.some(c=>c.primary))contacts[0].primary=true;const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:!!$("cIsNewAccount").checked,wishlist:$("cWishlist").value.split(/\n+/).map(x=>x.trim()).filter(Boolean),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();showView("customersView",true)}
 $("saveGoal").onclick=()=>{
   ensureMonthlySalesAdjustments();
   settings.goal=Number($("monthlyGoal").value)||0;
