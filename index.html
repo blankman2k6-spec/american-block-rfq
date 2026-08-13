@@ -6518,6 +6518,52 @@ function cloudSnapshot(){
     savedAt:new Date().toISOString()
   };
 }
+
+async function exportFullBackup(){
+  try{
+    const payload={
+      version:6,
+      appVersion:"5.4.2",
+      exportedAt:new Date().toISOString(),
+      ...cloudSnapshot()
+    };
+    const jsonText=JSON.stringify(payload,null,2);
+    const blob=new Blob([jsonText],{type:"application/json"});
+    const stamp=new Date().toISOString().slice(0,10);
+    const fileName=`american-block-sales-os-backup-${stamp}.json`;
+
+    // iPhone/iPad installed PWA: native share sheet is the most reliable way
+    // to save a generated file without navigating away from the CRM.
+    try{
+      if(typeof File!=="undefined" && navigator.share && navigator.canShare){
+        const file=new File([blob],fileName,{type:"application/json"});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:"American Block Sales OS Backup"});
+          return;
+        }
+      }
+    }catch(shareErr){
+      if(shareErr?.name==="AbortError")return;
+      console.warn("Backup share unavailable; using download fallback.",shareErr);
+    }
+
+    // Desktop / Safari fallback.
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=fileName;
+    a.target="_blank";
+    a.rel="noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }catch(err){
+    console.error("Backup export failed",err);
+    alert("Backup export failed: "+(err?.message||"Unknown error"));
+  }
+}
+
 function applyCloudSnapshot(state){
   if(!state||typeof state!=="object")throw new Error("Cloud state is empty or invalid.");
   applyingCloudState=true;
@@ -7260,6 +7306,10 @@ if($("pipelineTypeFilter"))$("pipelineTypeFilter").onchange=renderPipeline;
 if($("pipelineSort"))$("pipelineSort").onchange=renderPipeline;
 if($("pipelineSearch"))$("pipelineSearch").oninput=renderPipeline;
 if($("forecastMonth"))$("forecastMonth").onchange=renderForecast;
+
+
+if($("exportBackup"))$("exportBackup").onclick=exportFullBackup;
+if($("settingsExport"))$("settingsExport").onclick=exportFullBackup;
 
 renderAll();
 initializeCloudSync();
