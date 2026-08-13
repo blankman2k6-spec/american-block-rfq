@@ -1228,7 +1228,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
 }
 
 
-/* v5.5.2 Contact Location Sync + Reporting */
+/* v5.5.3 Activity Log + Excel Reliability */
 .private-user-card{display:grid;gap:10px}
 .private-user-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .private-user-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -1243,6 +1243,11 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   .private-user-card .ai-key-row{grid-template-columns:1fr}
 }
 
+
+    .activity-type-select{appearance:auto;-webkit-appearance:menulist;max-width:150px;min-width:92px;padding:6px 28px 6px 10px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:850}
+    .week-log-collapsible{margin:14px 0}
+    .week-log-collapsible>.group-title{list-style:none}
+    .week-log-collapsible>.group-title::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
@@ -1250,7 +1255,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.5.2 Contact Location Sync</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.5.3 Activity Log + Excel Reliability</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2841,7 +2846,7 @@ function migrate(){
     if(r.status==="Closed Won"&&!r.closedWonAt)r.closedWonAt=r.updatedAt||r.createdAt||new Date().toISOString();
   });
 
-  // v5.5.2: contacts may each represent a different branch/location.
+  // v5.5.3: contacts may each represent a different branch/location.
   // Multiple location-primary contacts are allowed on the same account.
   customers.forEach(c=>{
     if(c.state===undefined)c.state="";
@@ -4334,14 +4339,29 @@ function renderDailyTracker(month,list){
     </div>`;
   }).join("") || "<div class='empty'>No workdays found for this month.</div>";
 }
+function activityTypeChoices(current=""){
+  const standard=["Visit","Call","Email","Text","RFQ","RFQ Update","Opportunity","Follow-up"];
+  const values=[...new Set([current,...standard].filter(Boolean))];
+  return values.map(v=>`<option value="${esc(v)}" ${v===current?"selected":""}>${esc(v)}</option>`).join("");
+}
+function quickChangeActivityType(id,newType){
+  const a=activities.find(x=>String(x.id)===String(id));
+  if(!a||!newType||a.type===newType)return;
+  a.type=newType;
+  a.updatedAt=new Date().toISOString();
+  save();
+  renderAll();
+}
 function renderActivityLog(){
   if(!$("activityLogList"))return;
   if(!$("activityMonth").value)$("activityMonth").value=localIsoDate().slice(0,7);
   const month=$("activityMonth").value;
   const list=activities.filter(a=>activityMonthKey(a)===month).sort((a,b)=>activityDateObj(b)-activityDateObj(a));
-  const exportable=list.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
-  const directTouches=exportable.filter(a=>["Visit","Call","Email"].includes(a.type));
-  const trackerTouches=exportable.filter(a=>["Visit","Call","Email","Text","RFQ","RFQ Update"].includes(a.type));
+  // v5.5.3: Tracker and Excel now mirror the actual customer log instead of silently
+  // omitting RFQ/auto-logged entries. Internal Update remains excluded from goal counts only.
+  const reportable=list.slice();
+  const directTouches=reportable.filter(a=>["Visit","Call","Email"].includes(a.type));
+  const trackerTouches=reportable.filter(a=>a.type!=="Internal Update"&&!a.internalOnly);
   $("activityMonthCount").textContent=trackerTouches.length;
   $("activityVisitCount").textContent=directTouches.filter(a=>a.type==="Visit").length;
   $("activityCallCount").textContent=directTouches.filter(a=>a.type==="Call").length;
@@ -4349,27 +4369,47 @@ function renderActivityLog(){
   renderDailyTracker(month,trackerTouches);
 
   if(!list.length){$("activityLogList").innerHTML="<div class='empty'>No activities saved for this month yet.</div>";return}
-  const groups=new Map();
-  list.forEach(a=>{const k=a.date;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(a)});
-  $("activityLogList").innerHTML=[...groups.entries()].map(([date,records])=>`<details class="day-section day-log-collapsible" open>
-    <summary class="day-section-head day-log-summary">
-      <div><div class="day-section-title">${esc(activityDayLabel(date))}</div><div class="mini">${formatDate(date)}</div></div>
-      <div class="day-log-summary-right"><span class="meta-badge compact-badge">${records.length} entr${records.length===1?"y":"ies"}</span><span class="day-log-chevron">⌄</span></div>
-    </summary>
-    <div class="day-log-content">
-    ${records.map(a=>{
-      const c=activityCustomer(a),ct=activityContact(a);
-      return `<div class="activity-card">
-        <div class="activity-top">
-          <div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${ct?.name?esc(ct.name):"No contact selected"}</div></div>
-          <span class="activity-type">${esc(a.type||"Activity")}</span>
-        </div>
-        <div class="activity-comments">${esc(a.comments||"No comments")}</div>
-        <div class="toolbar" style="margin-top:10px"><button class="secondary" data-edit-activity="${a.id}">Edit</button><button class="secondary" data-delete-activity="${a.id}">Delete</button></div>
-      </div>`;
-    }).join("")}
-    </div>
-  </details>`).join("");
+
+  const weeks=new Map();
+  list.forEach(a=>{
+    const wk=activityWeekStart(a.date||localIsoDate());
+    if(!weeks.has(wk))weeks.set(wk,[]);
+    weeks.get(wk).push(a);
+  });
+  const weekEntries=[...weeks.entries()].sort((a,b)=>b[0].localeCompare(a[0]));
+  $("activityLogList").innerHTML=weekEntries.map(([weekStart,weekRecords],weekIndex)=>{
+    const sample=weekRecords[0];
+    const days=new Map();
+    weekRecords.forEach(a=>{const k=a.date||localIsoDate();if(!days.has(k))days.set(k,[]);days.get(k).push(a)});
+    const dayHtml=[...days.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([date,records],dayIndex)=>`<details class="day-section day-log-collapsible" ${weekIndex===0&&dayIndex===0?"open":""}>
+      <summary class="day-section-head day-log-summary">
+        <div><div class="day-section-title">${esc(activityDayLabel(date))}</div><div class="mini">${formatDate(date)}</div></div>
+        <div class="day-log-summary-right"><span class="meta-badge compact-badge">${records.length} entr${records.length===1?"y":"ies"}</span><span class="day-log-chevron">⌄</span></div>
+      </summary>
+      <div class="day-log-content">
+      ${records.map(a=>{
+        const c=activityCustomer(a),ct=activityContact(a);
+        return `<div class="activity-card">
+          <div class="activity-top">
+            <div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${ct?.name?esc(ct.name):"No contact selected"}</div></div>
+            <select class="activity-type activity-type-select" data-activity-type-id="${a.id}" aria-label="Change activity type">${activityTypeChoices(a.type||"Activity")}</select>
+          </div>
+          <div class="activity-comments">${esc(a.comments||"No comments")}</div>
+          <div class="toolbar" style="margin-top:10px"><button class="secondary" data-edit-activity="${a.id}">Edit</button><button class="secondary" data-delete-activity="${a.id}">Delete</button></div>
+        </div>`;
+      }).join("")}
+      </div>
+    </details>`).join("");
+    return `<details class="week-log-collapsible" ${weekIndex===0?"open":""}>
+      <summary class="group-title" style="cursor:pointer">
+        <div><strong>Week of ${esc(formatDate(weekStart))}</strong><div class="mini">${esc(weekRangeLabel(sample))}</div></div>
+        <span class="meta-badge compact-badge">${weekRecords.length} entr${weekRecords.length===1?"y":"ies"}</span>
+      </summary>
+      <div style="padding-left:4px">${dayHtml}</div>
+    </details>`;
+  }).join("");
+
+  document.querySelectorAll("[data-activity-type-id]").forEach(sel=>sel.onchange=()=>quickChangeActivityType(sel.dataset.activityTypeId,sel.value));
   document.querySelectorAll("[data-edit-activity]").forEach(b=>b.onclick=()=>editActivity(b.dataset.editActivity));
   document.querySelectorAll("[data-delete-activity]").forEach(b=>b.onclick=()=>{
     const a=activities.find(x=>x.id===b.dataset.deleteActivity);
@@ -4411,7 +4451,9 @@ function bossLogRowData(a){
 }
 async function exportCustomerLogWorkbook(){
   if(typeof ExcelJS==="undefined"){alert("Excel export library is still loading. Make sure you have an internet connection, wait a moment, and try again.");return}
-  const reportable=activities.filter(a=>!a.internalOnly&&a.type!=="Internal Update");
+  const reportable=activities.filter(a=>!!safeActivityDate(a?.date||a?.createdAt));
+  // v5.5.3: Excel is a true mirror of the saved Activity Log, including RFQs,
+  // RFQ updates, texts, auto-logged follow-ups, and other visible activity types.
   if(!reportable.length){alert("There are no customer-log activities to export yet.");return}
   try{
     const wb=new ExcelJS.Workbook();
@@ -4475,7 +4517,8 @@ async function exportCustomerLogWorkbook(){
 
     const buffer=await wb.xlsx.writeBuffer();
     const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    const fileName="Cazares Customer Log TT.xlsx";
+    const exportStamp=new Date().toISOString().replace(/[:T]/g,"-").slice(0,16);
+    const fileName=`Cazares Customer Log TT ${exportStamp}.xlsx`;
 
     // Prefer the native iOS share sheet so the installed CRM stays open underneath.
     try{
