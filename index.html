@@ -1389,7 +1389,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
   </section>
 
   <section id="customersView" class="view">
-    <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2><div class="mini">Tap a company to open the full account.</div></div><button id="addCustomerBtn" class="primary">＋ Customer</button></div>
+    <div class="section-head"><div><div class="kicker">Customer CRM</div><h2 style="margin-top:4px">Accounts</h2><div class="mini">Tap a company to open the full account.</div></div><div class="toolbar"><button id="scanBusinessCardBtn" class="secondary">📇 Scan Business Card</button><button id="addCustomerBtn" class="primary">＋ Customer</button></div><input id="businessCardInput" type="file" accept="image/*" capture="environment" class="hidden"></div>
     <div class="grid metrics customer-health-grid" style="margin:0 0 12px">
       <button class="metric customer-health-card" type="button" data-health-filter="all"><small>Total Accounts</small><strong id="customerTotalCount">0</strong><div class="sub">Tap to show all</div></button>
       <button class="metric customer-health-card" type="button" data-health-filter="active"><small>Active Accounts</small><strong id="customerActiveCount">0</strong><div class="sub">Tap to view</div></button>
@@ -2112,7 +2112,7 @@ body[data-skin="baby-blue"] .insight-card .status.green{
     </div>
 
     <div class="card">
-      <h2>Version 5.1.0 — Customer Health + Catalog AI</h2>
+      <h2>Version 5.5.4 — Export Repair + Business Card Scanner</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -7581,7 +7581,43 @@ if($("accountingMonthSales")){
 if($("customerSearch"))$("customerSearch").oninput=renderCustomers;
 if($("customerHealthFilter"))$("customerHealthFilter").onchange=renderCustomers;
 if($("addContact"))$("addContact").onclick=addNewContactAtTop;
+
+async function exportBackupFile(){
+  try{
+    const backup={format:"American Block Sales OS Backup",version:"5.5.4",exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings};
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+    const stamp=new Date().toISOString().replace(/[:.]/g,"-");
+    const name=`American_Block_Sales_OS_Backup_${stamp}.json`;
+    if(navigator.share&&navigator.canShare){
+      try{const f=new File([blob],name,{type:"application/json"});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"American Block Sales OS Backup"});return}}catch(e){if(e?.name==="AbortError")return}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }catch(e){alert("Backup export failed: "+e.message)}
+}
+function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(r.error||new Error("Could not read image."));r.readAsDataURL(file)})}
+async function scanBusinessCard(file){
+  if(!file)return;
+  const btn=$("scanBusinessCardBtn");const old=btn.textContent;btn.disabled=true;btn.textContent="Reading card…";
+  try{
+    ensureAiSettings();
+    if(!settings.ai.enabled)throw new Error("Sales AI must be enabled in Settings to read a business card.");
+    const endpoint=String(settings.ai.endpoint||"").trim();if(!/^https:\/\//i.test(endpoint))throw new Error("Secure AI endpoint is not configured.");
+    const imageDataUrl=await fileToDataUrl(file);
+    const res=await fetch(endpoint,{method:"POST",headers:aiAuthHeaders(),body:JSON.stringify({mode:"business_card",imageDataUrl})});
+    const raw=await res.text();let body={};try{body=JSON.parse(raw)}catch{body={error:raw}}
+    if(!res.ok)throw new Error(body.error||`Card scanner returned ${res.status}`);
+    const c=body.card||{};newCustomer();
+    $("cCompany").value=c.company||"";$("cAddress").value=c.address||"";$("cCity").value=c.city||"";$("cState").value=c.state||"";$("cZip").value=c.zip||"";$("cWebsite").value=c.website||"";
+    const row=document.querySelector("#contactRows .contact-row");if(row){["name","role","phone","email"].forEach(k=>{const el=row.querySelector(`[data-c="${k}"]`);if(el)el.value=c[k]||""});const same=row.querySelector('[data-c="sameAsCompany"]');if(same)same.value="yes";syncContactSameAsCompanyRow(row)}
+    $("customerMessage").textContent="Business card scanned. Review the fields, add anything the card did not contain, then tap Save Customer.";
+  }catch(e){alert("Business card scan failed: "+e.message)}finally{btn.disabled=false;btn.textContent=old;$("businessCardInput").value=""}
+}
+
 if($("addCustomerBtn"))$("addCustomerBtn").onclick=newCustomer;
+if($("scanBusinessCardBtn"))$("scanBusinessCardBtn").onclick=()=>$("businessCardInput").click();
+if($("businessCardInput"))$("businessCardInput").onchange=e=>scanBusinessCard(e.target.files?.[0]);
+if($("exportBackup"))$("exportBackup").onclick=exportBackupFile;
+if($("settingsExport"))$("settingsExport").onclick=exportBackupFile;
 if($("backFromCustomer"))$("backFromCustomer").onclick=()=>showView("customersView",true);
 if($("cancelCustomer"))$("cancelCustomer").onclick=()=>showView("customersView",true);
 
