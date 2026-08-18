@@ -1248,6 +1248,37 @@ body[data-skin="baby-blue"] .insight-card .status.green{
     .week-log-collapsible{margin:14px 0}
     .week-log-collapsible>.group-title{list-style:none}
     .week-log-collapsible>.group-title::-webkit-details-marker{display:none}
+
+/* v5.5.5 — Baby Blue RFQ contrast-only repair.
+   Scoped to baby-blue so no other skin or RFQ behavior is changed. */
+body[data-skin="baby-blue"] .total{
+  background:#e3f3fd !important;
+  color:#14233a !important;
+  border:1px solid #a9cfe5 !important;
+  box-shadow:0 3px 10px rgba(53,116,157,.06) !important;
+}
+body[data-skin="baby-blue"] .total *{color:inherit !important;}
+body[data-skin="baby-blue"] .auto-log-box{
+  background:#f4fbff !important;
+  color:#14233a !important;
+  border-color:#a9cfe5 !important;
+  box-shadow:0 3px 12px rgba(53,116,157,.07) !important;
+}
+body[data-skin="baby-blue"] .auto-log-box strong,
+body[data-skin="baby-blue"] .auto-log-box label{color:#14233a !important;}
+body[data-skin="baby-blue"] .auto-log-box .mini,
+body[data-skin="baby-blue"] .auto-log-box .muted{color:#60768c !important;}
+body[data-skin="baby-blue"] .rfq-feedback-checks .verify-check{
+  background:#e8f5fd !important;
+  color:#29445f !important;
+  border-color:#a9cfe5 !important;
+}
+body[data-skin="baby-blue"] .rfq-feedback-checks .verify-check:has(input:checked){
+  background:#d9effd !important;
+  color:#17679d !important;
+  border-color:#69b2df !important;
+}
+body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
 </style>
 </head>
 <body>
