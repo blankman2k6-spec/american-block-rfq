@@ -889,6 +889,11 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 .quick-event-dialog{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 28px 80px rgba(0,0,0,.32)}
 .quick-event-source{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0 12px}
 .quick-event-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.quick-event-pill{min-height:40px;padding:8px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:800}.quick-event-pill.active{background:var(--accent);color:white;border-color:var(--accent)}
+/* v5.6.3 RFQ / pipeline action-menu reliability */
+#rfqList .list-card,#pipelineList .list-card{position:relative;overflow:visible}
+#rfqList .source-menu-wrap,#pipelineList .source-menu-wrap{position:absolute;right:12px;bottom:12px;z-index:90;pointer-events:auto}
+#rfqList .source-menu-wrap .menu-btn,#pipelineList .source-menu-wrap .menu-btn{pointer-events:auto;touch-action:manipulation}
+#rfqList .source-menu-wrap .order-menu,#pipelineList .source-menu-wrap .order-menu{z-index:240;pointer-events:auto}
 .source-menu-wrap{position:absolute;right:12px;bottom:12px;z-index:42}.source-menu-wrap .order-menu{z-index:150}
 .meeting-strategy-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.meeting-strategy-box{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}
 body[data-skin="baby-blue"] .quick-event-dialog,body[data-skin="baby-blue"] .quick-event-source,body[data-skin="baby-blue"] .meeting-strategy-box{background:#fff!important;color:#14233a!important;border-color:#a9cfe5!important}
@@ -1367,7 +1372,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.2 Source-Linked Event Planner</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.3 RFQ Action Menu Reliability</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2348,7 +2353,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
     </div>
 
     <div class="card">
-      <h2>Version 5.6.2 — Source-Linked Event Planner</h2>
+      <h2>Version 5.6.3 — RFQ Action Menu Reliability</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -8130,7 +8135,25 @@ if($("goFollowups"))$("goFollowups").onclick=()=>showView("followupsView",true);
 if($("newPlannerMeeting"))$("newPlannerMeeting").onclick=()=>openPlannerMeeting();
 if($("cancelPlannerMeeting"))$("cancelPlannerMeeting").onclick=closePlannerMeetingForm;
 if($("savePlannerMeeting"))$("savePlannerMeeting").onclick=savePlannerMeeting;
-document.addEventListener("click",e=>{const sm=e.target.closest("[data-source-menu]");if(sm){e.preventDefault();e.stopPropagation();const key=sm.dataset.sourceMenu;document.querySelectorAll("[data-source-menu-panel]").forEach(m=>{if(m.dataset.sourceMenuPanel!==key)m.classList.add("hidden")});document.querySelectorAll("[data-source-menu-panel]").forEach(m=>{if(m.dataset.sourceMenuPanel===key)m.classList.toggle("hidden")});return}const ce=e.target.closest("[data-create-event-source]");if(ce){e.preventDefault();e.stopPropagation();document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));openQuickEvent(ce.dataset.createEventSource,ce.dataset.createEventId)}});
+// v5.6.3: capture-phase delegated source menus so dynamically rendered RFQ / pipeline dots
+// respond consistently on iPhone/Safari and cannot be swallowed by the parent card click.
+document.addEventListener("click",e=>{
+  const ce=e.target.closest("[data-create-event-source]");
+  if(ce){
+    e.preventDefault();e.stopPropagation();
+    document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));
+    openQuickEvent(ce.dataset.createEventSource,ce.dataset.createEventId);
+    return;
+  }
+  const sm=e.target.closest("[data-source-menu]");
+  if(sm){
+    e.preventDefault();e.stopPropagation();
+    const key=sm.dataset.sourceMenu;
+    const panel=document.querySelector(`[data-source-menu-panel="${CSS.escape(key)}"]`);
+    document.querySelectorAll("[data-source-menu-panel]").forEach(m=>{if(m!==panel)m.classList.add("hidden")});
+    panel?.classList.toggle("hidden");
+  }
+},true);
 if($("quickEventClose"))$("quickEventClose").onclick=closeQuickEvent;if($("quickEventCancel"))$("quickEventCancel").onclick=closeQuickEvent;if($("quickEventCreate"))$("quickEventCreate").onclick=createQuickEvent;if($("quickEventModal"))$("quickEventModal").onclick=e=>{if(e.target===$("quickEventModal"))closeQuickEvent()};
 if($("quickEventDayPills"))$("quickEventDayPills").onclick=e=>{const b=e.target.closest("[data-qe-day]");if(!b)return;let d=localIsoDate();if(b.dataset.qeDay==="tomorrow")d=calAddDays(d,1);if(b.dataset.qeDay==="next-business")d=nextBusinessDate(d);$("quickEventDate").value=d;document.querySelectorAll("[data-qe-day]").forEach(x=>x.classList.toggle("active",x===b))};
 if($("quickEventDuration"))$("quickEventDuration").onchange=()=>{const opt=$("quickEventDuration").selectedOptions[0];if(opt?.dataset.lunch){$("quickEventPurpose").value="Lunch";$("quickEventTime").value="11:30"}};
