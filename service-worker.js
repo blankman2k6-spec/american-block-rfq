@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-5-7-planner-backorder-revenue";
+const CACHE="ab-sales-os-v5-5-8-visual-sales-calendar";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{

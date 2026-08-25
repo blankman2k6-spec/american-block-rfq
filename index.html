@@ -1287,6 +1287,29 @@ body[data-skin="baby-blue"] .rfq-feedback-checks .verify-check:has(input:checked
 }
 body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
 
+
+/* v5.5.8 Visual Sales Calendar */
+.calendar-shell{border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden;margin-top:12px}
+.calendar-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.calendar-toolbar .seg{display:flex;gap:6px;flex-wrap:wrap}
+.calendar-toolbar button.active{background:var(--accent);color:white;border-color:var(--accent)}
+.calendar-range{font-weight:800;color:var(--text)}
+.calendar-scroll{overflow:auto;-webkit-overflow-scrolling:touch;max-height:680px}
+.calendar-grid{display:grid;grid-template-columns:72px repeat(var(--cal-days,5),minmax(150px,1fr));min-width:850px;position:relative}
+.calendar-head-cell{position:sticky;top:0;z-index:6;background:var(--panel);border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:9px;text-align:center;font-weight:800}
+.calendar-time{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 6px;text-align:right;font-size:12px;color:var(--muted);height:56px;background:var(--panel)}
+.calendar-slot{position:relative;border-right:1px solid var(--line);border-bottom:1px solid var(--line);height:56px;background:var(--panel);cursor:pointer}
+.calendar-slot:hover{background:var(--panel2)}
+.calendar-event{position:absolute;left:4px;right:4px;top:4px;min-height:46px;padding:6px 7px;border-radius:9px;background:#dff2ff;border:1px solid #89c4e8;color:#14233a;z-index:3;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.calendar-event .ev-time{font-size:11px;font-weight:800}.calendar-event .ev-title{font-size:12px;font-weight:900;line-height:1.2}.calendar-event .ev-sub{font-size:10px;line-height:1.2;margin-top:2px}
+.calendar-event.lunch{background:#fff0d9;border-color:#edbd72}.calendar-event.market-share{background:#e9e5ff;border-color:#a99ae6}.calendar-event.product-expansion{background:#e2f7ec;border-color:#80c8a3}.calendar-event.follow-up{background:#ffe6e8;border-color:#df9da4}
+.calendar-agenda{display:none;padding:12px}.calendar-agenda.active{display:block}.calendar-board.hidden{display:none}
+.calendar-day-group{margin-bottom:14px}.calendar-day-group h3{margin:0 0 8px}.calendar-agenda-item{border:1px solid var(--line);border-radius:12px;padding:10px;margin:7px 0;background:var(--panel2)}
+.calendar-connect{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.calendar-connect .connect-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--panel)}
+.calendar-connect .connect-card strong{display:block;margin-bottom:4px}.calendar-connect .connect-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+@media(max-width:700px){.calendar-connect{grid-template-columns:1fr}.calendar-scroll{max-height:600px}.calendar-toolbar{align-items:flex-start}.calendar-toolbar .seg{width:100%}.calendar-toolbar .seg button{flex:1;min-width:70px}}
+body[data-skin="baby-blue"] .calendar-shell,body[data-skin="baby-blue"] .connect-card{background:#fff!important;border-color:#afd3e8!important}body[data-skin="baby-blue"] .calendar-toolbar,body[data-skin="baby-blue"] .calendar-head-cell{background:#eef8fe!important;color:#14233a!important}
+
 /* v5.5.7 Two-Week Planner + To-Do Center */
 .planner-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
 .planner-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -1315,7 +1338,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.5.3 Activity Log + Excel Reliability</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.5.8 Visual Sales Calendar</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1861,6 +1884,31 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
       <div id="plannerAiStrategy" class="planner-prep hidden"></div>
     </div>
 
+
+    <div class="calendar-shell">
+      <div class="calendar-toolbar">
+        <div class="seg">
+          <button id="calPrev" class="secondary" title="Previous">‹</button>
+          <button id="calToday" class="secondary">Today</button>
+          <button id="calNext" class="secondary" title="Next">›</button>
+        </div>
+        <div id="calendarRangeLabel" class="calendar-range">Next 2 Weeks</div>
+        <div class="seg">
+          <button class="secondary cal-mode" data-cal-mode="day">Day</button>
+          <button class="secondary cal-mode active" data-cal-mode="workweek">Work Week</button>
+          <button class="secondary cal-mode" data-cal-mode="twoweek">2 Weeks</button>
+          <button class="secondary cal-mode" data-cal-mode="agenda">Agenda</button>
+        </div>
+      </div>
+      <div id="calendarBoard" class="calendar-board calendar-scroll"><div id="calendarGrid" class="calendar-grid"></div></div>
+      <div id="calendarAgenda" class="calendar-agenda"></div>
+    </div>
+
+    <div class="calendar-connect">
+      <div class="connect-card"><strong>iPhone / Apple Calendar</strong><div class="mini">Add individual Sales OS meetings or export the next 14 days as a standard calendar file. Apple Calendar can open the file directly.</div><div class="connect-actions"><button id="exportPlannerIcsApple" class="secondary">Add 14 Days to Calendar (.ics)</button></div></div>
+      <div class="connect-card"><strong>Outlook Calendar</strong><div class="mini">Standard .ics works with Outlook now. Live two-way Outlook sync will require Microsoft authorization and will be added as a separate secure connection so it cannot affect CRM data.</div><div class="connect-actions"><button id="exportPlannerIcsOutlook" class="secondary">Export for Outlook (.ics)</button></div></div>
+    </div>
+
     <div id="plannerMeetingForm" class="card hidden">
       <div class="section-head"><div><div class="kicker">Meeting Plan</div><h2 id="plannerMeetingFormTitle" style="margin:3px 0">Add Customer Meeting</h2></div><button id="cancelPlannerMeeting" class="secondary">Close</button></div>
       <input id="plannerMeetingId" type="hidden">
@@ -2265,7 +2313,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
     </div>
 
     <div class="card">
-      <h2>Version 5.5.7 — Back Order Revenue + 2-Week Planner</h2>
+      <h2>Version 5.5.8 — Visual Sales Calendar + Planner</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -5586,13 +5634,52 @@ function saveTodo(){
   settings.salesTodos=settings.salesTodos.filter(x=>x.id!==id);settings.salesTodos.push(rec);save();closeTodoForm();renderPlanner();
 }
 function plannerDateTime(rec){return rec.date?new Date(`${rec.date}T${rec.time||"12:00"}:00`):new Date(8640000000000000)}
+
+function plannerCalendarState(){
+  ensurePlannerSettings();
+  settings.plannerCalendarMode=settings.plannerCalendarMode||"workweek";
+  settings.plannerCalendarAnchor=settings.plannerCalendarAnchor||localIsoDate();
+  return {mode:settings.plannerCalendarMode,anchor:settings.plannerCalendarAnchor};
+}
+function calISO(d){const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`}
+function calAddDays(dateStr,n){const d=new Date(`${dateStr}T12:00:00`);d.setDate(d.getDate()+n);return calISO(d)}
+function calStartMonday(dateStr){const d=new Date(`${dateStr}T12:00:00`),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return calISO(d)}
+function plannerCalendarDates(){
+  const st=plannerCalendarState(),a=st.anchor;
+  if(st.mode==="day")return [a];
+  if(st.mode==="workweek"){const m=calStartMonday(a);return Array.from({length:5},(_,i)=>calAddDays(m,i))}
+  if(st.mode==="twoweek"){const m=calStartMonday(a);return Array.from({length:14},(_,i)=>calAddDays(m,i))}
+  const m=calStartMonday(a);return Array.from({length:14},(_,i)=>calAddDays(m,i));
+}
+function plannerEventClass(m){const p=String(m.purpose||"").toLowerCase();if(p.includes("lunch"))return "lunch";if(p.includes("market share"))return "market-share";if(p.includes("product expansion"))return "product-expansion";if(p.includes("follow"))return "follow-up";return ""}
+function renderPlannerCalendar(){
+  if(!$('calendarGrid'))return;const st=plannerCalendarState(),dates=plannerCalendarDates(),meetings=settings.salesPlannerMeetings||[];
+  document.querySelectorAll('.cal-mode').forEach(b=>b.classList.toggle('active',b.dataset.calMode===st.mode));
+  const first=dates[0],last=dates[dates.length-1];$('calendarRangeLabel').textContent=dates.length===1?new Date(first+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}):`${new Date(first+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${new Date(last+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  const board=$('calendarBoard'),agenda=$('calendarAgenda');
+  if(st.mode==='agenda'){
+    board.classList.add('hidden');agenda.classList.add('active');
+    agenda.innerHTML=dates.map(d=>{const list=meetings.filter(m=>!m.completed&&m.date===d).sort((a,b)=>(a.time||'').localeCompare(b.time||''));if(!list.length)return '';return `<div class="calendar-day-group"><h3>${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>${list.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="calendar-agenda-item" data-cal-event="${m.id}"><strong>${esc(m.time||'All day')} · ${esc(c?.company||'Customer')}</strong><div class="mini">${esc(ct?.name||'')}${m.purpose?` · ${esc(m.purpose)}`:''}</div><div>${esc(m.topic||'No topic entered')}</div><div class="mini">${esc(m.address||'')}</div></div>`}).join('')}</div>`}).join('')||"<div class='empty'>No meetings in this period.</div>";return;
+  }
+  board.classList.remove('hidden');agenda.classList.remove('active');agenda.innerHTML='';
+  const hours=Array.from({length:13},(_,i)=>i+6);$('calendarGrid').style.setProperty('--cal-days',dates.length);
+  let out=`<div class="calendar-head-cell"></div>${dates.map(d=>`<div class="calendar-head-cell">${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})}</div>`).join('')}`;
+  for(const h of hours){out+=`<div class="calendar-time">${new Date(2000,0,1,h).toLocaleTimeString('en-US',{hour:'numeric'})}</div>`;for(const d of dates){const list=meetings.filter(m=>!m.completed&&m.date===d&&(parseInt((m.time||'09:00').split(':')[0],10)||9)===h);out+=`<div class="calendar-slot" data-cal-date="${d}" data-cal-hour="${h}">${list.map((m,idx)=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="calendar-event ${plannerEventClass(m)}" data-cal-event="${m.id}" style="top:${4+idx*5}px"><div class="ev-time">${esc(m.time||'')}</div><div class="ev-title">${esc(c?.company||'Customer')}</div><div class="ev-sub">${esc(ct?.name||m.purpose||'Meeting')}</div></div>`}).join('')}</div>`}}
+  $('calendarGrid').innerHTML=out;
+}
+function shiftPlannerCalendar(dir){const st=plannerCalendarState(),step=st.mode==='day'?1:st.mode==='workweek'?7:14;settings.plannerCalendarAnchor=calAddDays(st.anchor,dir*step);save();renderPlannerCalendar()}
+function setPlannerCalendarMode(mode){settings.plannerCalendarMode=mode;if(mode==='agenda'&&!settings.plannerCalendarAnchor)settings.plannerCalendarAnchor=localIsoDate();save();renderPlannerCalendar()}
+function escICS(v){return String(v||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;')}
+function plannerICS(meetings){let s='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//American Block Sales OS//Planner//EN\r\nCALSCALE:GREGORIAN\r\n';for(const m of meetings){const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId),t=(m.time||'09:00').replace(':',''),start=(m.date||localIsoDate()).replaceAll('-','')+'T'+t+'00',endDate=new Date(`${m.date||localIsoDate()}T${m.time||'09:00'}:00`);endDate.setMinutes(endDate.getMinutes()+60);const end=calISO(endDate).replaceAll('-','')+'T'+String(endDate.getHours()).padStart(2,'0')+String(endDate.getMinutes()).padStart(2,'0')+'00';s+=`BEGIN:VEVENT\r\nUID:${escICS(m.id)}@american-block-sales-os\r\nDTSTART:${start}\r\nDTEND:${end}\r\nSUMMARY:${escICS((c?.company||'Customer')+' — '+(m.purpose||'Sales Meeting'))}\r\nLOCATION:${escICS(m.address||'')}\r\nDESCRIPTION:${escICS([ct?.name,m.topic,m.outcome?`Desired outcome: ${m.outcome}`:'',m.objection?`Anticipated objection: ${m.objection}`:'',m.commitmentDate?`Follow-up commitment: ${m.commitmentDate}`:''].filter(Boolean).join('\n'))}\r\nEND:VEVENT\r\n`}return s+'END:VCALENDAR\r\n'}
+function downloadPlannerICS(singleId){ensurePlannerSettings();const today=localIsoDate(),end=calAddDays(today,13);let ms=settings.salesPlannerMeetings.filter(m=>!m.completed&&m.date>=today&&m.date<=end);if(singleId)ms=ms.filter(m=>m.id===singleId);if(!ms.length){alert('No planned meetings to export.');return}const blob=new Blob([plannerICS(ms)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=singleId?'Sales_Meeting.ics':'ABCO_Next_14_Days.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+
 function renderPlanner(){
-  if(!$("plannerMeetingList"))return;ensurePlannerSettings();plannerFillCustomerOptions();
+  if(!$("plannerMeetingList"))return;ensurePlannerSettings();plannerFillCustomerOptions();renderPlannerCalendar();
   const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),end=new Date(today);end.setDate(end.getDate()+14);end.setHours(23,59,59,999);
   const meetings=settings.salesPlannerMeetings.filter(m=>{const d=plannerDateTime(m);return !m.completed&&d>=today&&d<=end}).sort((a,b)=>plannerDateTime(a)-plannerDateTime(b));
   const todos=settings.salesTodos||[],open=todos.filter(t=>!t.completed),overdue=open.filter(t=>t.date&&new Date(t.date+"T23:59:59")<today);
   $("plannerMeetingCount").textContent=meetings.length;$("plannerTodoCount").textContent=open.length;$("plannerOverdueCount").textContent=overdue.length;$("plannerCommitmentCount").textContent=meetings.filter(m=>m.commitmentDate).length;
-  $("plannerMeetingList").innerHTML=meetings.length?meetings.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="planner-card"><div class="planner-head"><div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${esc(ct?.name||"")}${m.date?` · ${formatDate(m.date)}`:""}${m.time?` · ${esc(m.time)}`:""}</div></div><span class="status blue">${esc(m.purpose||"Meeting")}</span></div><div style="margin-top:8px"><strong>${esc(m.topic||"No topic entered")}</strong></div><div class="mini" style="margin-top:4px">${esc(m.address||"Address not set")}</div>${m.objection?`<div class="mini" style="margin-top:7px"><strong>Likely objection:</strong> ${esc(m.objection)}</div>`:""}${m.commitmentDate?`<div class="mini" style="margin-top:5px"><strong>Hold to follow-up:</strong> ${formatDate(m.commitmentDate)}</div>`:""}${m.aiPrep?`<details style="margin-top:8px"><summary><strong>Meeting Prep</strong></summary><div class="planner-prep">${esc(m.aiPrep)}</div></details>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-plan-edit="${m.id}">Edit / Prepare</button><button class="secondary" data-plan-todo="${m.id}">＋ Follow-Up To-Do</button><button class="secondary" data-plan-complete="${m.id}">✓ Complete</button><button class="danger" data-plan-delete="${m.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No meetings scheduled in the next 14 days yet.</div>";
+  $("plannerMeetingList").innerHTML=meetings.length?meetings.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="planner-card"><div class="planner-head"><div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${esc(ct?.name||"")}${m.date?` · ${formatDate(m.date)}`:""}${m.time?` · ${esc(m.time)}`:""}</div></div><span class="status blue">${esc(m.purpose||"Meeting")}</span></div><div style="margin-top:8px"><strong>${esc(m.topic||"No topic entered")}</strong></div><div class="mini" style="margin-top:4px">${esc(m.address||"Address not set")}</div>${m.objection?`<div class="mini" style="margin-top:7px"><strong>Likely objection:</strong> ${esc(m.objection)}</div>`:""}${m.commitmentDate?`<div class="mini" style="margin-top:5px"><strong>Hold to follow-up:</strong> ${formatDate(m.commitmentDate)}</div>`:""}${m.aiPrep?`<details style="margin-top:8px"><summary><strong>Meeting Prep</strong></summary><div class="planner-prep">${esc(m.aiPrep)}</div></details>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-plan-edit="${m.id}">Edit / Prepare</button><button class="secondary" data-plan-calendar="${m.id}">Add to Calendar</button><button class="secondary" data-plan-todo="${m.id}">＋ Follow-Up To-Do</button><button class="secondary" data-plan-complete="${m.id}">✓ Complete</button><button class="danger" data-plan-delete="${m.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No meetings scheduled in the next 14 days yet.</div>";
   const filter=$("todoFilter")?.value||"open";let shown=todos.slice();if(filter==="open")shown=shown.filter(t=>!t.completed);if(filter==="completed")shown=shown.filter(t=>t.completed);
   shown.sort((a,b)=>(Number(a.completed)-Number(b.completed))||plannerDateTime(a)-plannerDateTime(b));
   $("todoList").innerHTML=shown.length?shown.map(t=>{const c=customerById(t.customerId),ct=contactById(t.customerId,t.contactId);return `<div class="planner-card todo-card ${String(t.priority||"").toLowerCase()} ${t.completed?"completed":""}"><div class="planner-head"><div><div class="list-title">${esc(t.task)}</div><div class="mini">${esc(t.type)} · ${esc(t.priority)}${t.date?` · Due ${formatDate(t.date)}`:""}${t.time?` ${esc(t.time)}`:""}</div></div><input class="todo-check" type="checkbox" data-todo-toggle="${t.id}" ${t.completed?"checked":""}></div><div class="mini" style="margin-top:6px">${esc(c?.company||"")}${ct?.name?` · ${esc(ct.name)}`:""}</div>${t.notes?`<div style="margin-top:7px">${esc(t.notes)}</div>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-todo-edit="${t.id}">Edit</button><button class="danger" data-todo-delete="${t.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No to-do items in this view.</div>";
@@ -7662,6 +7749,14 @@ if($("testCloudConnection"))$("testCloudConnection").onclick=async()=>{
 
 // v5.5.6: delegated order actions are bound at capture phase so iOS/Safari
 // cannot lose dynamically-rendered menu button taps during card re-renders.
+
+if($("calPrev"))$("calPrev").onclick=()=>shiftPlannerCalendar(-1);
+if($("calNext"))$("calNext").onclick=()=>shiftPlannerCalendar(1);
+if($("calToday"))$("calToday").onclick=()=>{settings.plannerCalendarAnchor=localIsoDate();save();renderPlannerCalendar()};
+document.querySelectorAll(".cal-mode").forEach(b=>b.onclick=()=>setPlannerCalendarMode(b.dataset.calMode));
+if($("exportPlannerIcsApple"))$("exportPlannerIcsApple").onclick=()=>downloadPlannerICS();
+if($("exportPlannerIcsOutlook"))$("exportPlannerIcsOutlook").onclick=()=>downloadPlannerICS();
+
 document.addEventListener("click",e=>{
   const manage=e.target.closest("[data-manage-backorder-order]");
   const edit=e.target.closest("[data-order-edit]");
@@ -7901,7 +7996,7 @@ if($("addContact"))$("addContact").onclick=addNewContactAtTop;
 
 async function exportBackupFile(){
   try{
-    const backup={format:"American Block Sales OS Backup",version:"5.5.7",exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings};
+    const backup={format:"American Block Sales OS Backup",version:"5.5.8",exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings};
     const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
     const stamp=new Date().toISOString().replace(/[:.]/g,"-");
     const name=`American_Block_Sales_OS_Backup_${stamp}.json`;
@@ -7968,6 +8063,9 @@ if($("saveTodoItem"))$("saveTodoItem").onclick=saveTodo;
 if($("todoCustomer"))$("todoCustomer").onchange=()=>plannerFillContacts("todo");
 if($("todoFilter"))$("todoFilter").onchange=renderPlanner;
 document.addEventListener("click",e=>{
+  const ce=e.target.closest("[data-cal-event]");if(ce){openPlannerMeeting(ce.dataset.calEvent);return}
+  const slot=e.target.closest("[data-cal-date]");if(slot&&!e.target.closest("[data-cal-event]")){openPlannerMeeting();$("plannerDate").value=slot.dataset.calDate;$("plannerTime").value=String(slot.dataset.calHour).padStart(2,"0")+":00";return}
+  const ca=e.target.closest("[data-plan-calendar]");if(ca){downloadPlannerICS(ca.dataset.planCalendar);return}
   const pe=e.target.closest("[data-plan-edit]");if(pe){openPlannerMeeting(pe.dataset.planEdit);return}
   const pd=e.target.closest("[data-plan-delete]");if(pd){if(confirm("Delete this planned meeting?")){ensurePlannerSettings();settings.salesPlannerMeetings=settings.salesPlannerMeetings.filter(x=>x.id!==pd.dataset.planDelete);save();renderPlanner()}return}
   const pc=e.target.closest("[data-plan-complete]");if(pc){const m=settings.salesPlannerMeetings.find(x=>x.id===pc.dataset.planComplete);if(m){m.completed=true;m.completedAt=new Date().toISOString();save();renderPlanner()}return}
