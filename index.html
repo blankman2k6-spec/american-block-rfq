@@ -1286,6 +1286,28 @@ body[data-skin="baby-blue"] .rfq-feedback-checks .verify-check:has(input:checked
   border-color:#69b2df !important;
 }
 body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
+
+/* v5.5.7 Two-Week Planner + To-Do Center */
+.planner-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+.planner-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.planner-card{border:1px solid var(--line);border-radius:16px;padding:13px;background:var(--panel);margin-top:10px}
+.planner-card.completed{opacity:.7}
+.planner-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.planner-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.planner-prep{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
+.todo-card{border-left:5px solid #4f9ee8}
+.todo-card.high{border-left-color:#dc5b64}
+.todo-card.medium{border-left-color:#e8ad45}
+.todo-card.low{border-left-color:#69b786}
+.todo-card.completed{opacity:.62}
+.todo-check{width:22px;height:22px}
+body[data-skin="baby-blue"] .planner-prep,
+body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14233a!important;border-color:#a9cfe5!important}
+@media(max-width:700px){
+  .planner-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .planner-grid{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -1593,6 +1615,7 @@ body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
       <div id="backorderEditorItems" style="margin-top:12px"></div>
       <div class="toolbar" style="margin-top:14px">
         <button id="saveBackorderChanges" class="primary">Save Back Order Changes</button>
+        <button id="closeBackorderNow" class="secondary">✓ Close Remaining Back Order Today</button>
         <button id="cancelBackorderChanges" class="secondary">Cancel</button>
       </div>
     </div>
@@ -1814,6 +1837,98 @@ body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
       <div><label>Search</label><input id="followupSearch" placeholder="Account or RFQ"></div>
     </div>
     <div id="followupList" class="list" style="margin-top:12px"></div>
+  </section>
+
+  <section id="plannerView" class="view">
+    <div class="section-head">
+      <div><div class="kicker">Territory Execution</div><h2 style="margin-top:4px">2-Week Sales Planner</h2><div class="mini">Plan customer meetings, prepare with AI, lock in follow-up commitments, and manage every call, email, text, and quote.</div></div>
+      <span class="status blue">14 DAYS</span>
+    </div>
+
+    <div class="planner-hero">
+      <div class="planner-metrics">
+        <div class="metric"><small>Meetings Next 14 Days</small><strong id="plannerMeetingCount">0</strong></div>
+        <div class="metric"><small>Open To-Dos</small><strong id="plannerTodoCount">0</strong></div>
+        <div class="metric"><small>Overdue To-Dos</small><strong id="plannerOverdueCount">0</strong></div>
+        <div class="metric"><small>Follow-Up Commitments</small><strong id="plannerCommitmentCount">0</strong></div>
+      </div>
+      <div class="toolbar" style="margin-top:12px">
+        <button id="aiBuildTwoWeekPlan" class="primary">✦ AI: Analyze My Next 2 Weeks</button>
+        <button id="newPlannerMeeting" class="secondary">＋ Meeting</button>
+        <button id="newTodoItem" class="secondary">＋ To-Do</button>
+      </div>
+      <div id="plannerAiStatus" class="mini" style="margin-top:8px"></div>
+      <div id="plannerAiStrategy" class="planner-prep hidden"></div>
+    </div>
+
+    <div id="plannerMeetingForm" class="card hidden">
+      <div class="section-head"><div><div class="kicker">Meeting Plan</div><h2 id="plannerMeetingFormTitle" style="margin:3px 0">Add Customer Meeting</h2></div><button id="cancelPlannerMeeting" class="secondary">Close</button></div>
+      <input id="plannerMeetingId" type="hidden">
+      <div class="row">
+        <div><label>Customer</label><select id="plannerCustomer"></select></div>
+        <div><label>Contact</label><select id="plannerContact"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Date</label><input id="plannerDate" type="date"></div>
+        <div><label>Time</label><input id="plannerTime" type="time"></div>
+      </div>
+      <label>Meeting Address</label><input id="plannerAddress" placeholder="Auto-filled from contact/company; edit if meeting elsewhere">
+      <div class="row">
+        <div><label>Meeting Purpose</label><select id="plannerPurpose">
+          <option>Lunch</option><option>Product Expansion</option><option>Market Share</option><option>RFQ / Quote Review</option>
+          <option>Back Order / Delivery</option><option>Relationship / Check-In</option><option>New Account Introduction</option>
+          <option>Pricing Review</option><option>Technical / Product Fit</option><option>QBR / Business Review</option><option>Other</option>
+        </select></div>
+        <div><label>Desired Outcome</label><select id="plannerOutcome">
+          <option>Get RFQ</option><option>Win Order</option><option>Expand Product Mix</option><option>Increase Share of Wallet</option>
+          <option>Secure Trial Order</option><option>Resolve Issue</option><option>Set Next Meeting</option><option>Strengthen Relationship</option><option>Other</option>
+        </select></div>
+      </div>
+      <label>Topic for Discussion</label><input id="plannerTopic" placeholder="What specifically do you need to discuss?">
+      <div class="row">
+        <div><label>Anticipated Objection</label><select id="plannerObjection">
+          <option value="">Select likely objection…</option>
+          <option>We like your pricing — we'll call you.</option><option>We already have a supplier.</option><option>Your price is too high.</option>
+          <option>We don't need anything right now.</option><option>Send me information and I'll review it.</option><option>Corporate / end user decides.</option>
+          <option>Freight / delivery is the issue.</option><option>We need stock availability first.</option><option>Other</option>
+        </select></div>
+        <div><label>Next Follow-Up Commitment</label><input id="plannerCommitmentDate" type="date"></div>
+      </div>
+      <label>Meeting Preparation / Notes</label><textarea id="plannerPrepNotes" rows="5" placeholder="Products, pricing, recent activity, customer issues, people involved, what you need to accomplish..."></textarea>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="aiPrepareMeeting" class="secondary">✦ AI Prepare This Meeting</button>
+        <button id="savePlannerMeeting" class="primary">Save Meeting</button>
+      </div>
+      <div id="plannerMeetingAiStatus" class="mini" style="margin-top:8px"></div>
+      <label style="margin-top:10px">AI Meeting Brief / Questions / Objection Strategy</label>
+      <textarea id="plannerAiPrep" rows="12" placeholder="AI preparation will appear here. You can edit it manually before saving."></textarea>
+    </div>
+
+    <div id="todoForm" class="card hidden">
+      <div class="section-head"><div><div class="kicker">Action Item</div><h2 id="todoFormTitle" style="margin:3px 0">Add To-Do</h2></div><button id="cancelTodoItem" class="secondary">Close</button></div>
+      <input id="todoId" type="hidden">
+      <div class="row">
+        <div><label>Type</label><select id="todoType"><option>Email</option><option>Phone Call</option><option>Text Message</option><option>Quote</option><option>Customer Follow-Up</option><option>Meeting Prep</option><option>Internal</option><option>Other</option></select></div>
+        <div><label>Priority</label><select id="todoPriority"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+      </div>
+      <div class="row"><div><label>Customer</label><select id="todoCustomer"></select></div><div><label>Contact</label><select id="todoContact"></select></div></div>
+      <div class="row"><div><label>Due Date</label><input id="todoDate" type="date"></div><div><label>Time</label><input id="todoTime" type="time"></div></div>
+      <label>What needs to be done?</label><input id="todoTask" placeholder="Send pricing, call for decision, text appointment options...">
+      <label>Notes</label><textarea id="todoNotes" rows="4"></textarea>
+      <button id="saveTodoItem" class="primary" style="margin-top:10px">Save To-Do</button>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><div><h2 style="margin:0">Planned Meetings</h2><div class="mini">Next 14 days, with follow-up dates kept visible.</div></div></div>
+      <div id="plannerMeetingList"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><div><h2 style="margin:0">To-Do Command Center</h2><div class="mini">Calls, emails, texts, quotes, meeting prep, and customer follow-up.</div></div>
+        <select id="todoFilter" style="max-width:170px"><option value="open">Open</option><option value="all">All</option><option value="completed">Completed</option></select>
+      </div>
+      <div id="todoList"></div>
+    </div>
   </section>
 
 
@@ -2150,7 +2265,7 @@ body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
     </div>
 
     <div class="card">
-      <h2>Version 5.5.4 — Export Repair + Business Card Scanner</h2>
+      <h2>Version 5.5.7 — Back Order Revenue + 2-Week Planner</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -2637,6 +2752,7 @@ body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
     <button class="tab" data-view="pipelineView"><strong class="nav-icon">◫</strong>Pipeline</button>
     <button class="tab" data-view="forecastView"><strong class="nav-icon">↗</strong>Forecast</button>
     <button class="tab" data-view="followupsView"><strong class="nav-icon">🎯</strong>Follow-ups</button>
+    <button class="tab" data-view="plannerView"><strong class="nav-icon">▦</strong>Plan</button>
     <button class="tab" data-view="intelligenceView"><strong class="nav-icon nav-emerald">♦</strong>Intel</button>
     <button class="tab" data-view="reportsView"><strong class="nav-icon">▤</strong>Reports</button>
     <button class="tab" data-view="aiView"><strong class="nav-icon">✦</strong>AI</button>
@@ -5405,9 +5521,105 @@ function renderForecast(){
   $("forecastGapDeals").innerHTML=gap<=0?"<div class='empty'>Projected sales meet or exceed the monthly goal.</div>":gapDeals.length?gapDeals.map(r=>`<div class="list-card"><div class="list-head"><div><div class="list-title">${esc(r.customer)}</div><div class="mini">${esc(r.title)} · ${esc(r.confidence)} · ${r.probability}%</div></div><strong>${money.format(r.value)}</strong></div><div class="mini" style="margin-top:7px">${r.closeDate?`Expected ${formatDate(r.closeDate)}`:"No expected close date"}</div></div>`).join(""):"<div class='empty'>No deals are forecasted to close in this month yet.</div>";
 }
 
+
+function ensurePlannerSettings(){
+  settings.salesPlannerMeetings=Array.isArray(settings.salesPlannerMeetings)?settings.salesPlannerMeetings:[];
+  settings.salesTodos=Array.isArray(settings.salesTodos)?settings.salesTodos:[];
+}
+function plannerFullAddress(customerId,contactId){
+  const c=customerById(customerId),ct=contactById(customerId,contactId);
+  const src=ct&&(!ct.sameAsCompany)&&(ct.address||ct.city||ct.state||ct.zip)?ct:c;
+  if(!src)return "";
+  return [src.address,[src.city,src.state].filter(Boolean).join(", "),src.zip].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+}
+function plannerFillCustomerOptions(){
+  ensurePlannerSettings();
+  const opts='<option value="">Select customer…</option>'+[...customers].sort((a,b)=>String(a.company||"").localeCompare(String(b.company||""))).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("");
+  if($("plannerCustomer"))$("plannerCustomer").innerHTML=opts;
+  if($("todoCustomer"))$("todoCustomer").innerHTML=opts;
+  plannerFillContacts("planner");plannerFillContacts("todo");
+}
+function plannerFillContacts(kind){
+  const cid=$(kind==="planner"?"plannerCustomer":"todoCustomer")?.value||"";
+  const el=$(kind==="planner"?"plannerContact":"todoContact");if(!el)return;
+  const c=customerById(cid);
+  el.innerHTML='<option value="">No specific contact</option>'+((c?.contacts||[]).map(x=>`<option value="${x.id}">${esc(x.name||"Unnamed Contact")}${x.location?` — ${esc(x.location)}`:""}</option>`).join(""));
+}
+function openPlannerMeeting(id=""){
+  ensurePlannerSettings();plannerFillCustomerOptions();
+  const m=settings.salesPlannerMeetings.find(x=>x.id===id);
+  $("plannerMeetingId").value=m?.id||"";
+  $("plannerMeetingFormTitle").textContent=m?"Edit Customer Meeting":"Add Customer Meeting";
+  $("plannerCustomer").value=m?.customerId||"";plannerFillContacts("planner");$("plannerContact").value=m?.contactId||"";
+  $("plannerDate").value=m?.date||localIsoDate();$("plannerTime").value=m?.time||"09:00";
+  $("plannerPurpose").value=m?.purpose||"Product Expansion";$("plannerOutcome").value=m?.outcome||"Get RFQ";
+  $("plannerTopic").value=m?.topic||"";$("plannerObjection").value=m?.objection||"";$("plannerCommitmentDate").value=m?.commitmentDate||"";
+  $("plannerPrepNotes").value=m?.prepNotes||"";$("plannerAiPrep").value=m?.aiPrep||"";
+  $("plannerAddress").value=m?.address||plannerFullAddress(m?.customerId||"",m?.contactId||"");
+  $("plannerMeetingAiStatus").textContent="";$("plannerMeetingForm").classList.remove("hidden");
+  $("plannerMeetingForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function closePlannerMeetingForm(){$("plannerMeetingForm")?.classList.add("hidden")}
+function savePlannerMeeting(){
+  ensurePlannerSettings();const id=$("plannerMeetingId").value||uid(),customerId=$("plannerCustomer").value;
+  if(!customerId){alert("Choose a customer.");return}if(!$("plannerDate").value){alert("Choose a meeting date.");return}
+  const old=settings.salesPlannerMeetings.find(x=>x.id===id);
+  const rec={id,customerId,contactId:$("plannerContact").value||"",date:$("plannerDate").value,time:$("plannerTime").value||"",
+    address:$("plannerAddress").value.trim(),purpose:$("plannerPurpose").value,outcome:$("plannerOutcome").value,topic:$("plannerTopic").value.trim(),
+    objection:$("plannerObjection").value,commitmentDate:$("plannerCommitmentDate").value,prepNotes:$("plannerPrepNotes").value.trim(),aiPrep:$("plannerAiPrep").value.trim(),
+    completed:!!old?.completed,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+  settings.salesPlannerMeetings=settings.salesPlannerMeetings.filter(x=>x.id!==id);settings.salesPlannerMeetings.push(rec);save();closePlannerMeetingForm();renderPlanner();
+}
+function openTodo(id=""){
+  ensurePlannerSettings();plannerFillCustomerOptions();const t=settings.salesTodos.find(x=>x.id===id);
+  $("todoId").value=t?.id||"";$("todoFormTitle").textContent=t?"Edit To-Do":"Add To-Do";$("todoType").value=t?.type||"Customer Follow-Up";$("todoPriority").value=t?.priority||"Medium";
+  $("todoCustomer").value=t?.customerId||"";plannerFillContacts("todo");$("todoContact").value=t?.contactId||"";
+  $("todoDate").value=t?.date||localIsoDate();$("todoTime").value=t?.time||"";$("todoTask").value=t?.task||"";$("todoNotes").value=t?.notes||"";
+  $("todoForm").classList.remove("hidden");$("todoForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function closeTodoForm(){$("todoForm")?.classList.add("hidden")}
+function saveTodo(){
+  ensurePlannerSettings();const id=$("todoId").value||uid();
+  if(!$("todoTask").value.trim()){alert("Enter what needs to be done.");return}
+  const old=settings.salesTodos.find(x=>x.id===id);
+  const rec={id,type:$("todoType").value,priority:$("todoPriority").value,customerId:$("todoCustomer").value,contactId:$("todoContact").value||"",date:$("todoDate").value,time:$("todoTime").value||"",task:$("todoTask").value.trim(),notes:$("todoNotes").value.trim(),completed:!!old?.completed,completedAt:old?.completedAt||"",createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+  settings.salesTodos=settings.salesTodos.filter(x=>x.id!==id);settings.salesTodos.push(rec);save();closeTodoForm();renderPlanner();
+}
+function plannerDateTime(rec){return rec.date?new Date(`${rec.date}T${rec.time||"12:00"}:00`):new Date(8640000000000000)}
+function renderPlanner(){
+  if(!$("plannerMeetingList"))return;ensurePlannerSettings();plannerFillCustomerOptions();
+  const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),end=new Date(today);end.setDate(end.getDate()+14);end.setHours(23,59,59,999);
+  const meetings=settings.salesPlannerMeetings.filter(m=>{const d=plannerDateTime(m);return !m.completed&&d>=today&&d<=end}).sort((a,b)=>plannerDateTime(a)-plannerDateTime(b));
+  const todos=settings.salesTodos||[],open=todos.filter(t=>!t.completed),overdue=open.filter(t=>t.date&&new Date(t.date+"T23:59:59")<today);
+  $("plannerMeetingCount").textContent=meetings.length;$("plannerTodoCount").textContent=open.length;$("plannerOverdueCount").textContent=overdue.length;$("plannerCommitmentCount").textContent=meetings.filter(m=>m.commitmentDate).length;
+  $("plannerMeetingList").innerHTML=meetings.length?meetings.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="planner-card"><div class="planner-head"><div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${esc(ct?.name||"")}${m.date?` · ${formatDate(m.date)}`:""}${m.time?` · ${esc(m.time)}`:""}</div></div><span class="status blue">${esc(m.purpose||"Meeting")}</span></div><div style="margin-top:8px"><strong>${esc(m.topic||"No topic entered")}</strong></div><div class="mini" style="margin-top:4px">${esc(m.address||"Address not set")}</div>${m.objection?`<div class="mini" style="margin-top:7px"><strong>Likely objection:</strong> ${esc(m.objection)}</div>`:""}${m.commitmentDate?`<div class="mini" style="margin-top:5px"><strong>Hold to follow-up:</strong> ${formatDate(m.commitmentDate)}</div>`:""}${m.aiPrep?`<details style="margin-top:8px"><summary><strong>Meeting Prep</strong></summary><div class="planner-prep">${esc(m.aiPrep)}</div></details>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-plan-edit="${m.id}">Edit / Prepare</button><button class="secondary" data-plan-todo="${m.id}">＋ Follow-Up To-Do</button><button class="secondary" data-plan-complete="${m.id}">✓ Complete</button><button class="danger" data-plan-delete="${m.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No meetings scheduled in the next 14 days yet.</div>";
+  const filter=$("todoFilter")?.value||"open";let shown=todos.slice();if(filter==="open")shown=shown.filter(t=>!t.completed);if(filter==="completed")shown=shown.filter(t=>t.completed);
+  shown.sort((a,b)=>(Number(a.completed)-Number(b.completed))||plannerDateTime(a)-plannerDateTime(b));
+  $("todoList").innerHTML=shown.length?shown.map(t=>{const c=customerById(t.customerId),ct=contactById(t.customerId,t.contactId);return `<div class="planner-card todo-card ${String(t.priority||"").toLowerCase()} ${t.completed?"completed":""}"><div class="planner-head"><div><div class="list-title">${esc(t.task)}</div><div class="mini">${esc(t.type)} · ${esc(t.priority)}${t.date?` · Due ${formatDate(t.date)}`:""}${t.time?` ${esc(t.time)}`:""}</div></div><input class="todo-check" type="checkbox" data-todo-toggle="${t.id}" ${t.completed?"checked":""}></div><div class="mini" style="margin-top:6px">${esc(c?.company||"")}${ct?.name?` · ${esc(ct.name)}`:""}</div>${t.notes?`<div style="margin-top:7px">${esc(t.notes)}</div>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-todo-edit="${t.id}">Edit</button><button class="danger" data-todo-delete="${t.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No to-do items in this view.</div>";
+}
+async function aiPreparePlannerMeeting(){
+  const customerId=$("plannerCustomer").value;if(!customerId){alert("Choose a customer first.");return}
+  const c=customerById(customerId),ct=contactById(customerId,$("plannerContact").value),status=$("plannerMeetingAiStatus");status.textContent="Preparing meeting from CRM history, open business, and customer feedback…";
+  const q=`Prepare me for an in-person sales meeting with ${c?.company||"this customer"}${ct?.name?` and ${ct.name}`:""}. Purpose: ${$("plannerPurpose").value}. Desired outcome: ${$("plannerOutcome").value}. Topic: ${$("plannerTopic").value||"not yet specified"}. Likely objection: ${$("plannerObjection").value||"unknown"}. My notes: ${$("plannerPrepNotes").value||"none"}. Use the CRM history and ABCO Flowline catalog. Give me a concise field-sales brief with: 1) objective, 2) what I should know before walking in, 3) 7 excellent open-ended questions specific to this account, 4) likely objections and professional responses, especially run-around language such as "we like your pricing, we'll call you", 5) a respectful way to secure a specific next follow-up date before I leave, 6) products or expansion opportunities grounded only in CRM/catalog evidence, and 7) the best closing question. Do not invent facts.`;
+  try{const r=await aiAsk(q,{customerId});$("plannerAiPrep").value=r.answer||"";status.textContent="✓ Meeting preparation ready. Edit anything you want, then save the meeting."}catch(e){status.textContent="AI preparation failed: "+e.message}
+}
+async function aiBuildTwoWeekStrategy(){
+  const status=$("plannerAiStatus"),out=$("plannerAiStrategy");status.textContent="Analyzing customers, RFQs, opportunities, back orders, and recent activity…";out.classList.add("hidden");
+  const q=`Build a practical next-14-day territory execution plan for me using my CRM. Prioritize accounts where an in-person visit, lunch, call, email, text, quote, product expansion discussion, market-share discussion, back-order follow-up, or relationship meeting could move business. Pay special attention to customers who keep giving soft responses like "we like your pricing, we'll call you" but have not told me to stop coming. For each priority, tell me why now, recommended meeting/follow-up purpose, topic, best next action, and what commitment/date I should ask the customer for. Keep it field-ready and concise. Do not invent addresses, dates, contacts, or customer facts. I will manually schedule and edit the plan.`;
+  try{const r=await aiAsk(q);out.textContent=r.answer||"No AI recommendation returned.";out.classList.remove("hidden");status.textContent="✓ Strategy ready. Use it to add or adjust meetings and to-dos below."}catch(e){status.textContent="AI planning failed: "+e.message}
+}
+function closeRemainingBackorderToday(){
+  const src=boSourceByActive();if(!src)return;
+  document.querySelectorAll("#backorderEditorItems .bo-line-editor").forEach(row=>{const i=Number(row.dataset.boIndex),item=src.items[i],toggle=row.querySelector("[data-bo-toggle]");if(!item||!toggle)return;const delivered=boDeliveredQty(item);if(toggle.checked){let q=Number(row.querySelector("[data-bo-qty]")?.value)||0;q=Math.max(delivered,Math.min(Number(item.qty)||0,q));item.backorderOriginalQty=q;item.backorderPromiseDate=row.querySelector("[data-bo-promise]")?.value||"";item.backorderDeliveries=item.backorderDeliveries||[]}});
+  const remaining=(src.items||[]).reduce((sum,i)=>sum+boRemainingQty(i),0);if(remaining<=0){alert("There is no remaining back-order quantity to close.");return}
+  if(!confirm(`Close all ${remaining} remaining back-ordered unit(s) as delivered/invoiced today? The held dollar value will be credited to ${new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})}.`))return;
+  const date=localIsoDate();(src.items||[]).forEach(item=>{const rem=boRemainingQty(item);if(rem>0){item.backorderDeliveries=item.backorderDeliveries||[];item.backorderDeliveries.push({qty:rem,date,createdAt:new Date().toISOString(),closedBackorder:true})}});
+  src.updatedAt=new Date().toISOString();save();renderAll();renderBackorderEditorItems(src);alert("Back order closed. Remaining value is now credited on today's date.");
+}
+
 function renderAll(){ensureYearSettings();refreshLinkedOpportunityValues();
   renderBackorders();
-renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderPipeline();renderForecast();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
+renderIntelligence();renderDashboard();renderAi();renderCustomers();renderRfqs();renderOrders();renderProducts();renderActivityLog();renderFollowups();renderPlanner();renderPipeline();renderForecast();renderCustomerOptions();renderCommunications();if(currentViewId==="customerAccountView"&&activeCustomerId)renderCustomerAccount()}
 
 let pendingAck=null;
 let editingOrderId=null;
@@ -7689,7 +7901,7 @@ if($("addContact"))$("addContact").onclick=addNewContactAtTop;
 
 async function exportBackupFile(){
   try{
-    const backup={format:"American Block Sales OS Backup",version:"5.5.4",exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings};
+    const backup={format:"American Block Sales OS Backup",version:"5.5.7",exportedAt:new Date().toISOString(),rfqs,customers,orders,communications,activities,intelligence,settings};
     const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
     const stamp=new Date().toISOString().replace(/[:.]/g,"-");
     const name=`American_Block_Sales_OS_Backup_${stamp}.json`;
@@ -7742,6 +7954,30 @@ if($("rfqSort"))$("rfqSort").onchange=renderRfqs;
 
 if($("goRfqs"))$("goRfqs").onclick=()=>showView("rfqsView",true);
 if($("goFollowups"))$("goFollowups").onclick=()=>showView("followupsView",true);
+
+if($("newPlannerMeeting"))$("newPlannerMeeting").onclick=()=>openPlannerMeeting();
+if($("cancelPlannerMeeting"))$("cancelPlannerMeeting").onclick=closePlannerMeetingForm;
+if($("savePlannerMeeting"))$("savePlannerMeeting").onclick=savePlannerMeeting;
+if($("plannerCustomer"))$("plannerCustomer").onchange=()=>{plannerFillContacts("planner");$("plannerAddress").value=plannerFullAddress($("plannerCustomer").value,$("plannerContact").value)};
+if($("plannerContact"))$("plannerContact").onchange=()=>{$("plannerAddress").value=plannerFullAddress($("plannerCustomer").value,$("plannerContact").value)};
+if($("aiPrepareMeeting"))$("aiPrepareMeeting").onclick=aiPreparePlannerMeeting;
+if($("aiBuildTwoWeekPlan"))$("aiBuildTwoWeekPlan").onclick=aiBuildTwoWeekStrategy;
+if($("newTodoItem"))$("newTodoItem").onclick=()=>openTodo();
+if($("cancelTodoItem"))$("cancelTodoItem").onclick=closeTodoForm;
+if($("saveTodoItem"))$("saveTodoItem").onclick=saveTodo;
+if($("todoCustomer"))$("todoCustomer").onchange=()=>plannerFillContacts("todo");
+if($("todoFilter"))$("todoFilter").onchange=renderPlanner;
+document.addEventListener("click",e=>{
+  const pe=e.target.closest("[data-plan-edit]");if(pe){openPlannerMeeting(pe.dataset.planEdit);return}
+  const pd=e.target.closest("[data-plan-delete]");if(pd){if(confirm("Delete this planned meeting?")){ensurePlannerSettings();settings.salesPlannerMeetings=settings.salesPlannerMeetings.filter(x=>x.id!==pd.dataset.planDelete);save();renderPlanner()}return}
+  const pc=e.target.closest("[data-plan-complete]");if(pc){const m=settings.salesPlannerMeetings.find(x=>x.id===pc.dataset.planComplete);if(m){m.completed=true;m.completedAt=new Date().toISOString();save();renderPlanner()}return}
+  const pt=e.target.closest("[data-plan-todo]");if(pt){const m=settings.salesPlannerMeetings.find(x=>x.id===pt.dataset.planTodo);if(m){openTodo();$("todoCustomer").value=m.customerId||"";plannerFillContacts("todo");$("todoContact").value=m.contactId||"";$("todoType").value="Customer Follow-Up";$("todoDate").value=m.commitmentDate||m.date||localIsoDate();$("todoTask").value=`Follow up after ${m.purpose||"meeting"}: ${m.topic||customerById(m.customerId)?.company||""}`;}return}
+  const te=e.target.closest("[data-todo-edit]");if(te){openTodo(te.dataset.todoEdit);return}
+  const td=e.target.closest("[data-todo-delete]");if(td){if(confirm("Delete this to-do?")){settings.salesTodos=settings.salesTodos.filter(x=>x.id!==td.dataset.todoDelete);save();renderPlanner()}return}
+});
+document.addEventListener("change",e=>{const t=e.target.closest("[data-todo-toggle]");if(!t)return;const rec=settings.salesTodos.find(x=>x.id===t.dataset.todoToggle);if(rec){rec.completed=t.checked;rec.completedAt=t.checked?new Date().toISOString():"";save();renderPlanner()}});
+if($("closeBackorderNow"))$("closeBackorderNow").onclick=closeRemainingBackorderToday;
+
 if($("followupSearch"))$("followupSearch").oninput=renderFollowups;
 if($("followupFilter"))$("followupFilter").onchange=renderFollowups;
 
