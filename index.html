@@ -884,6 +884,16 @@ body[data-skin="midnight-executive"] .bo-credit-note,body[data-skin="oilfield-bl
 #customerList{padding-bottom:110px}
 @media(min-width:760px){#customerList{padding-bottom:150px}.account-list-row:nth-last-child(-n+2) .account-menu{top:auto;bottom:38px}}
 
+/* v5.6.2 source-linked quick event workflow */
+.quick-event-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;padding:16px;z-index:360;backdrop-filter:blur(5px)}
+.quick-event-dialog{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 28px 80px rgba(0,0,0,.32)}
+.quick-event-source{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0 12px}
+.quick-event-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.quick-event-pill{min-height:40px;padding:8px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:800}.quick-event-pill.active{background:var(--accent);color:white;border-color:var(--accent)}
+.source-menu-wrap{position:absolute;right:12px;bottom:12px;z-index:42}.source-menu-wrap .order-menu{z-index:150}
+.meeting-strategy-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.meeting-strategy-box{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}
+body[data-skin="baby-blue"] .quick-event-dialog,body[data-skin="baby-blue"] .quick-event-source,body[data-skin="baby-blue"] .meeting-strategy-box{background:#fff!important;color:#14233a!important;border-color:#a9cfe5!important}
+@media(max-width:700px){.meeting-strategy-grid{grid-template-columns:1fr}.quick-event-dialog{max-height:91vh;padding:14px}}
+
 
 
 /* v5.1.4 Currency inputs + iOS-style Money Wheel */
@@ -1357,7 +1367,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.0 Weekly Territory Planner</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.2 Source-Linked Event Planner</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1946,7 +1956,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
           <option>Back Order / Delivery</option><option>Relationship / Check-In</option><option>New Account Introduction</option>
           <option>Pricing Review</option><option>Technical / Product Fit</option><option>QBR / Business Review</option><option>Other</option>
         </select></div>
-        <div><label>Desired Outcome</label><select id="plannerOutcome">
+        <div><label>Meeting Objective</label><select id="plannerOutcome">
           <option>Get RFQ</option><option>Win Order</option><option>Expand Product Mix</option><option>Increase Share of Wallet</option>
           <option>Secure Trial Order</option><option>Resolve Issue</option><option>Set Next Meeting</option><option>Strengthen Relationship</option><option>Other</option>
         </select></div>
@@ -1960,6 +1970,12 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
           <option>Freight / delivery is the issue.</option><option>We need stock availability first.</option><option>Other</option>
         </select></div>
         <div><label>Next Follow-Up Commitment</label><input id="plannerCommitmentDate" type="date"></div>
+      </div>
+      <div id="plannerSourceContext" class="quick-event-source hidden"></div>
+      <div class="meeting-strategy-grid">
+        <div class="meeting-strategy-box"><label>Customer Value</label><textarea id="plannerCustomerValue" rows="3" placeholder="Why should this matter to the customer?"></textarea></div>
+        <div class="meeting-strategy-box"><label>Next Commitment</label><textarea id="plannerNextCommitment" rows="3" placeholder="What specific action do you want before you leave?"></textarea></div>
+        <div class="meeting-strategy-box"><label>Objection Strategy Notes</label><textarea id="plannerObjectionNotes" rows="3" placeholder="How will you respond to the likely objection?"></textarea></div>
       </div>
       <label>Meeting Preparation / Notes</label><textarea id="plannerPrepNotes" rows="5" placeholder="Products, pricing, recent activity, customer issues, people involved, what you need to accomplish..."></textarea>
       <div class="toolbar" style="margin-top:10px">
@@ -2332,7 +2348,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
     </div>
 
     <div class="card">
-      <h2>Version 5.5.9 — Mobile Calendar Refinement</h2>
+      <h2>Version 5.6.2 — Source-Linked Event Planner</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -2545,6 +2561,20 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
     </div>
   </section>
 
+
+  <div id="quickEventModal" class="quick-event-backdrop hidden" role="dialog" aria-modal="true" aria-label="Create sales event">
+    <div class="quick-event-dialog">
+      <div class="section-head" style="margin:0 0 8px"><div><div class="kicker">Quick Schedule</div><h2 id="quickEventTitle" style="margin:3px 0">Create Event</h2></div><button id="quickEventClose" class="secondary" type="button">✕</button></div>
+      <div id="quickEventSource" class="quick-event-source"></div>
+      <label>Day</label><div class="quick-event-pills" id="quickEventDayPills"><button type="button" class="quick-event-pill" data-qe-day="today">Today</button><button type="button" class="quick-event-pill" data-qe-day="tomorrow">Tomorrow</button><button type="button" class="quick-event-pill" data-qe-day="next-business">Next Business Day</button></div>
+      <input id="quickEventDate" type="date" style="margin-top:8px">
+      <div class="row" style="margin-top:8px"><div><label>Start Time</label><select id="quickEventTime"></select></div><div><label>Duration</label><select id="quickEventDuration"><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option><option value="240">4 hours</option><option value="90" data-lunch="1">Lunch (90 min)</option></select></div></div>
+      <label>Event Type</label><select id="quickEventPurpose"><option>RFQ / Quote Review</option><option>Order Follow-Up</option><option>Product Expansion</option><option>Market Share</option><option>Lunch</option><option>Relationship / Check-In</option><option>Problem Resolution</option><option>Back Order / Delivery</option><option>New Opportunity</option><option>Technical / Product Fit</option><option>Other</option></select>
+      <label>Location</label><input id="quickEventAddress" placeholder="Contact/company address; edit if meeting elsewhere">
+      <label>Notes</label><textarea id="quickEventNotes" rows="3" placeholder="What do you want to accomplish or discuss?"></textarea>
+      <div class="toolbar" style="margin-top:12px"><button id="quickEventCreate" class="primary" type="button">Create Event</button><button id="quickEventCancel" class="secondary" type="button">Cancel</button></div><div id="quickEventStatus" class="mini" style="margin-top:8px"></div>
+    </div>
+  </div>
 
   <div id="quickRfqStatusModal" class="quick-status-backdrop hidden" role="dialog" aria-modal="true">
     <div class="quick-status-dialog">
@@ -3623,8 +3653,8 @@ function renderRfqs(){
         <button type="button" class="secondary" data-rfq-contact-action="Call" data-rfq-id="${esc(r.id)}" ${actionContact?.phone?"":"disabled"}>☎ Call</button>
         <button type="button" class="secondary" data-rfq-contact-action="Email" data-rfq-id="${esc(r.id)}" ${actionContact?.email?"":"disabled"}>✉ Email</button>
         <button type="button" class="secondary" data-rfq-contact-action="Text" data-rfq-id="${esc(r.id)}" ${actionContact?.phone?"":"disabled"}>💬 Text</button>
-      </div>`;
-      div.onclick=e=>{if(e.target.closest("[data-quick-rfq-status],[data-rfq-contact-action]"))return;editRfq(r.id)};holder.appendChild(div);
+      </div><div class="source-menu-wrap"><button class="menu-btn" type="button" data-source-menu="rfq:${esc(r.id)}" aria-label="RFQ actions">⋮</button><div class="order-menu hidden" data-source-menu-panel="rfq:${esc(r.id)}"><button type="button" data-create-event-source="rfq" data-create-event-id="${esc(r.id)}">▦ Create Event</button></div></div>`;
+      div.onclick=e=>{if(e.target.closest("[data-quick-rfq-status],[data-rfq-contact-action],[data-source-menu],.order-menu"))return;editRfq(r.id)};holder.appendChild(div);
     });
     $("rfqList").appendChild(wrap);
   });
@@ -3996,14 +4026,14 @@ function renderOrders(){
         <div class="money">${money.format(Number(o.total)||0)}</div>
         ${boHasBackorder(o)?`<div class="mini" style="margin-top:4px"><span class="status yellow" style="min-height:26px;padding:5px 9px">${boOpenLineCount(o)} BACK ORDER LINE${boOpenLineCount(o)===1?"":"S"}</span> · Open value ${money.format(boOpenValue(o))}</div>`:""}
         <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"Order")}</div>
-        ${o.synthetic?`<div class="report-hint">Automatically shown from Closed Won RFQ. Backordered quantities are withheld from credited sales until delivery.</div><div class="toolbar" style="margin-top:8px"><button class="secondary" data-manage-backorder-rfq="${o.sourceRfqId}">Manage Back Order</button></div>`:
-        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-manage-backorder-order="${o.id}">↻ Manage Back Order</button><button data-order-edit="${o.id}">✏️ Edit Order</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
+        ${o.synthetic?`<div class="report-hint">Automatically shown from Closed Won RFQ. Backordered quantities are withheld from credited sales until delivery.</div><div class="toolbar" style="margin-top:8px"><button class="secondary" data-manage-backorder-rfq="${o.sourceRfqId}">Manage Back Order</button><button class="secondary" data-create-event-source="rfq" data-create-event-id="${o.sourceRfqId}">▦ Create Event</button></div>`:
+        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-create-event-source="order" data-create-event-id="${o.id}">▦ Create Event</button><button data-manage-backorder-order="${o.id}">↻ Manage Back Order</button><button data-order-edit="${o.id}">✏️ Edit Order</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(details);
   });
   document.querySelectorAll("[data-order-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-order-menu]")||e.target.closest(".order-menu")||e.target.closest("[data-manage-backorder-order]"))return;editImportedOrder(card.dataset.orderOpen)});
-  document.querySelectorAll("[data-r-fq-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-manage-backorder-rfq]"))return;editRfq(card.dataset.rFqOpen)});
+  document.querySelectorAll("[data-r-fq-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-manage-backorder-rfq],[data-create-event-source]"))return;editRfq(card.dataset.rFqOpen)});
   document.querySelectorAll("[data-order-menu]").forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.orderMenu;document.querySelectorAll(".order-menu").forEach(m=>{if(m.dataset.orderMenuPanel!==id)m.classList.add("hidden")});document.querySelector(`[data-order-menu-panel="${id}"]`)?.classList.toggle("hidden")});
   document.querySelectorAll("[data-manage-backorder-order]").forEach(b=>b.onclick=e=>{e.stopPropagation();openBackorderEditor("order",b.dataset.manageBackorderOrder)});
   document.querySelectorAll("[data-manage-backorder-rfq]").forEach(b=>b.onclick=e=>{e.stopPropagation();openBackorderEditor("rfq",b.dataset.manageBackorderRfq)});
@@ -5546,7 +5576,7 @@ function renderPipeline(){
       <div><label>Win Probability</label><select data-pipeline-field="forecastProbability" data-pipeline-kind="${r.kind}" data-pipeline-id="${esc(r.id)}">${[0,10,20,25,30,40,50,60,70,80,90,100].map(n=>`<option value="${n}" ${n===r.probability?"selected":""}>${n}%</option>`).join("")}</select></div>
       <div><label>Forecast Confidence</label><select data-pipeline-field="forecastConfidence" data-pipeline-kind="${r.kind}" data-pipeline-id="${esc(r.id)}">${PIPELINE_CONFIDENCE.map(x=>`<option ${x===r.confidence?"selected":""}>${x}</option>`).join("")}</select></div>
       <div><label>Expected Close Date</label><input type="date" value="${esc(r.closeDate||"")}" data-pipeline-field="expectedCloseDate" data-pipeline-kind="${r.kind}" data-pipeline-id="${esc(r.id)}"></div>
-    </div>
+    </div><div class="source-menu-wrap"><button class="menu-btn" type="button" data-source-menu="${r.kind}:${esc(r.id)}" aria-label="Pipeline actions">⋮</button><div class="order-menu hidden" data-source-menu-panel="${r.kind}:${esc(r.id)}"><button type="button" data-create-event-source="${r.kind}" data-create-event-id="${esc(r.id)}">▦ Create Event</button></div></div>
   </div>`).join(""):"<div class='empty'>No pipeline records match this filter.</div>";
 
   document.querySelectorAll("[data-pipeline-field]").forEach(el=>el.onchange=()=>updatePipelineRecord(el.dataset.pipelineKind,el.dataset.pipelineId,el.dataset.pipelineField,el.value));
@@ -5589,6 +5619,13 @@ function renderForecast(){
 }
 
 
+let quickEventContext=null;
+function quickEventSourceRecord(type,id){if(type==="rfq"){const r=rfqs.find(x=>String(x.id)===String(id));if(!r)return null;return {type,id:r.id,customerId:r.customerId,contactId:r.contactId||"",title:r.quoteNo||"RFQ",value:total(r),topic:rfqItemDescriptionList(r.items),purpose:"RFQ / Quote Review",notes:r.nextAction||r.feedback||""}}if(type==="opportunity"){const a=activities.find(x=>String(x.id)===String(id));if(!a)return null;return {type,id:a.id,customerId:a.customerId,contactId:a.contactId||"",title:a.opportunityTitle||"Opportunity",value:Number(a.opportunityValue)||0,topic:a.opportunityDetails||a.comments||"",purpose:"New Opportunity",notes:a.nextAction||a.comments||""}}if(type==="order"){const o=orders.find(x=>String(x.id)===String(id));if(!o)return null;let contactId=o.contactId||"";if(!contactId&&o.contactName){const c=customerById(o.customerId);contactId=(c?.contacts||[]).find(x=>String(x.name||"").trim().toLowerCase()===String(o.contactName||"").trim().toLowerCase())?.id||""}return {type,id:o.id,customerId:o.customerId,contactId,title:o.salesOrder?`SO ${o.salesOrder}`:"Order",value:Number(o.total)||0,topic:(o.items||[]).map(i=>`${i.qty||""} ${i.product||i.part||""}`.trim()).filter(Boolean).join("; "),purpose:"Order Follow-Up",notes:""}}return null}
+function fillQuickEventTimes(){const el=$("quickEventTime");if(!el)return;let html="";for(let h=7;h<=17;h++){for(const m of [0,30]){if(h===17&&m===30)continue;const v=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`,label=new Date(2000,0,1,h,m).toLocaleTimeString("en-US",{hour:"numeric",minute:m?"2-digit":undefined});html+=`<option value="${v}">${label}</option>`}}el.innerHTML=html;el.value="09:00"}
+function nextBusinessDate(date){let d=new Date(`${date}T12:00:00`);do{d.setDate(d.getDate()+1)}while([0,6].includes(d.getDay()));return calISO(d)}
+function openQuickEvent(type,id){ensurePlannerSettings();const rec=quickEventSourceRecord(type,id);if(!rec){alert("Could not load this record for scheduling.");return}quickEventContext=rec;fillQuickEventTimes();const c=customerById(rec.customerId);$("quickEventTitle").textContent=`Create Event — ${c?.company||"Customer"}`;$("quickEventSource").innerHTML=`<strong>${esc(type==="rfq"?"RFQ":type==="order"?"Closed Order":"Opportunity")} · ${esc(rec.title)}</strong><div class="mini">${rec.value?money.format(rec.value)+" · ":""}${esc((rec.topic||"").slice(0,180))}</div>`;$("quickEventDate").value=localIsoDate();$("quickEventTime").value="09:00";$("quickEventDuration").selectedIndex=2;$("quickEventPurpose").value=rec.purpose;$("quickEventAddress").value=plannerFullAddress(rec.customerId,rec.contactId);$("quickEventNotes").value=rec.notes||rec.topic||"";$("quickEventStatus").textContent="";document.querySelectorAll("[data-qe-day]").forEach(b=>b.classList.remove("active"));$("quickEventModal").classList.remove("hidden")}
+function closeQuickEvent(){$("quickEventModal")?.classList.add("hidden");quickEventContext=null}
+function createQuickEvent(){if(!quickEventContext)return;const date=$("quickEventDate").value;if(!date){$("quickEventStatus").textContent="Choose a date.";return}const purpose=$("quickEventPurpose").value,notes=$("quickEventNotes").value.trim();settings.salesPlannerMeetings.push({id:uid(),customerId:quickEventContext.customerId,contactId:quickEventContext.contactId||"",date,time:$("quickEventTime").value||"09:00",durationMinutes:Number($("quickEventDuration").value)||60,address:$("quickEventAddress").value.trim(),purpose,outcome:quickEventContext.type==="order"?"Expand Product Mix":quickEventContext.type==="rfq"?"Win Order":"Advance Account",topic:notes||quickEventContext.topic||quickEventContext.title,objection:"",commitmentDate:"",customerValue:"",nextCommitment:"",objectionNotes:"",prepNotes:notes,aiPrep:"",completed:false,sourceType:quickEventContext.type,sourceId:quickEventContext.id,sourceTitle:quickEventContext.title,sourceValue:Number(quickEventContext.value)||0,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});save();closeQuickEvent();renderPlanner();showView("plannerView");setTimeout(()=>{settings.plannerCalendarAnchor=date;settings.plannerCalendarMode="workweek";save();renderPlannerCalendar()},0)}
 function ensurePlannerSettings(){
   settings.salesPlannerMeetings=Array.isArray(settings.salesPlannerMeetings)?settings.salesPlannerMeetings:[];
   settings.salesTodos=Array.isArray(settings.salesTodos)?settings.salesTodos:[];
@@ -5621,7 +5658,9 @@ function openPlannerMeeting(id=""){
   $("plannerDate").value=m?.date||localIsoDate();$("plannerTime").value=m?.time||"09:00";
   $("plannerPurpose").value=m?.purpose||"Product Expansion";$("plannerOutcome").value=m?.outcome||"Get RFQ";
   $("plannerTopic").value=m?.topic||"";$("plannerObjection").value=m?.objection||"";$("plannerCommitmentDate").value=m?.commitmentDate||"";
+  $("plannerCustomerValue").value=m?.customerValue||"";$("plannerNextCommitment").value=m?.nextCommitment||"";$("plannerObjectionNotes").value=m?.objectionNotes||"";
   $("plannerPrepNotes").value=m?.prepNotes||"";$("plannerAiPrep").value=m?.aiPrep||"";
+  const src=$("plannerSourceContext");if(m?.sourceType&&m?.sourceId){src.classList.remove("hidden");src.innerHTML=`<strong>Linked ${esc(String(m.sourceType).toUpperCase())}</strong><div class="mini">${esc(m.sourceTitle||m.sourceId)}${m.sourceValue?` · ${money.format(Number(m.sourceValue)||0)}`:""}</div>`}else{src.classList.add("hidden");src.innerHTML=""}
   $("plannerAddress").value=m?.address||plannerFullAddress(m?.customerId||"",m?.contactId||"");
   $("plannerMeetingAiStatus").textContent="";$("plannerMeetingForm").classList.remove("hidden");
   $("plannerMeetingForm").scrollIntoView({behavior:"smooth",block:"start"});
@@ -5633,7 +5672,8 @@ function savePlannerMeeting(){
   const old=settings.salesPlannerMeetings.find(x=>x.id===id);
   const rec={id,customerId,contactId:$("plannerContact").value||"",date:$("plannerDate").value,time:$("plannerTime").value||"",
     address:$("plannerAddress").value.trim(),purpose:$("plannerPurpose").value,outcome:$("plannerOutcome").value,topic:$("plannerTopic").value.trim(),
-    objection:$("plannerObjection").value,commitmentDate:$("plannerCommitmentDate").value,prepNotes:$("plannerPrepNotes").value.trim(),aiPrep:$("plannerAiPrep").value.trim(),
+    objection:$("plannerObjection").value,commitmentDate:$("plannerCommitmentDate").value,customerValue:$("plannerCustomerValue").value.trim(),nextCommitment:$("plannerNextCommitment").value.trim(),objectionNotes:$("plannerObjectionNotes").value.trim(),prepNotes:$("plannerPrepNotes").value.trim(),aiPrep:$("plannerAiPrep").value.trim(),
+    durationMinutes:old?.durationMinutes||60,sourceType:old?.sourceType||"",sourceId:old?.sourceId||"",sourceTitle:old?.sourceTitle||"",sourceValue:Number(old?.sourceValue)||0,
     completed:!!old?.completed,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
   settings.salesPlannerMeetings=settings.salesPlannerMeetings.filter(x=>x.id!==id);settings.salesPlannerMeetings.push(rec);save();closePlannerMeetingForm();renderPlanner();
 }
@@ -5695,7 +5735,7 @@ function renderPlannerCalendar(){
 function shiftPlannerCalendar(dir){const st=plannerCalendarState(),step=st.mode==='day'?1:st.mode==='workweek'?7:14;settings.plannerCalendarAnchor=calAddDays(st.anchor,dir*step);save();renderPlannerCalendar()}
 function setPlannerCalendarMode(mode){settings.plannerCalendarMode=mode;if(mode==='agenda'&&!settings.plannerCalendarAnchor)settings.plannerCalendarAnchor=localIsoDate();save();renderPlannerCalendar()}
 function escICS(v){return String(v||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;')}
-function plannerICS(meetings){let s='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//American Block Sales OS//Planner//EN\r\nCALSCALE:GREGORIAN\r\n';for(const m of meetings){const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId),t=(m.time||'09:00').replace(':',''),start=(m.date||localIsoDate()).replaceAll('-','')+'T'+t+'00',endDate=new Date(`${m.date||localIsoDate()}T${m.time||'09:00'}:00`);endDate.setMinutes(endDate.getMinutes()+60);const end=calISO(endDate).replaceAll('-','')+'T'+String(endDate.getHours()).padStart(2,'0')+String(endDate.getMinutes()).padStart(2,'0')+'00';s+=`BEGIN:VEVENT\r\nUID:${escICS(m.id)}@american-block-sales-os\r\nDTSTART:${start}\r\nDTEND:${end}\r\nSUMMARY:${escICS((c?.company||'Customer')+' — '+(m.purpose||'Sales Meeting'))}\r\nLOCATION:${escICS(m.address||'')}\r\nDESCRIPTION:${escICS([ct?.name,m.topic,m.outcome?`Desired outcome: ${m.outcome}`:'',m.objection?`Anticipated objection: ${m.objection}`:'',m.commitmentDate?`Follow-up commitment: ${m.commitmentDate}`:''].filter(Boolean).join('\n'))}\r\nEND:VEVENT\r\n`}return s+'END:VCALENDAR\r\n'}
+function plannerICS(meetings){let s='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//American Block Sales OS//Planner//EN\r\nCALSCALE:GREGORIAN\r\n';for(const m of meetings){const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId),t=(m.time||'09:00').replace(':',''),start=(m.date||localIsoDate()).replaceAll('-','')+'T'+t+'00',endDate=new Date(`${m.date||localIsoDate()}T${m.time||'09:00'}:00`);endDate.setMinutes(endDate.getMinutes()+(Number(m.durationMinutes)||60));const end=calISO(endDate).replaceAll('-','')+'T'+String(endDate.getHours()).padStart(2,'0')+String(endDate.getMinutes()).padStart(2,'0')+'00';s+=`BEGIN:VEVENT\r\nUID:${escICS(m.id)}@american-block-sales-os\r\nDTSTART:${start}\r\nDTEND:${end}\r\nSUMMARY:${escICS((c?.company||'Customer')+' — '+(m.purpose||'Sales Meeting'))}\r\nLOCATION:${escICS(m.address||'')}\r\nDESCRIPTION:${escICS([ct?.name,m.topic,m.outcome?`Desired outcome: ${m.outcome}`:'',m.objection?`Anticipated objection: ${m.objection}`:'',m.commitmentDate?`Follow-up commitment: ${m.commitmentDate}`:''].filter(Boolean).join('\n'))}\r\nEND:VEVENT\r\n`}return s+'END:VCALENDAR\r\n'}
 function downloadPlannerICS(singleId){ensurePlannerSettings();const today=localIsoDate(),end=calAddDays(today,13);let ms=settings.salesPlannerMeetings.filter(m=>!m.completed&&m.date>=today&&m.date<=end);if(singleId)ms=ms.filter(m=>m.id===singleId);if(!ms.length){alert('No planned meetings to export.');return}const blob=new Blob([plannerICS(ms)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=singleId?'Sales_Meeting.ics':'ABCO_Next_14_Days.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 
 function renderPlanner(){
@@ -5704,7 +5744,7 @@ function renderPlanner(){
   const meetings=settings.salesPlannerMeetings.filter(m=>{const d=plannerDateTime(m);return !m.completed&&d>=today&&d<=end}).sort((a,b)=>plannerDateTime(a)-plannerDateTime(b));
   const todos=settings.salesTodos||[],open=todos.filter(t=>!t.completed),overdue=open.filter(t=>t.date&&new Date(t.date+"T23:59:59")<today);
   $("plannerMeetingCount").textContent=meetings.length;$("plannerTodoCount").textContent=open.length;$("plannerOverdueCount").textContent=overdue.length;$("plannerCommitmentCount").textContent=meetings.filter(m=>m.commitmentDate).length;
-  $("plannerMeetingList").innerHTML=meetings.length?meetings.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="planner-card"><div class="planner-head"><div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${esc(ct?.name||"")}${m.date?` · ${formatDate(m.date)}`:""}${m.time?` · ${esc(m.time)}`:""}</div></div><span class="status blue">${esc(m.purpose||"Meeting")}</span></div><div style="margin-top:8px"><strong>${esc(m.topic||"No topic entered")}</strong></div><div class="mini" style="margin-top:4px">${esc(m.address||"Address not set")}</div>${m.objection?`<div class="mini" style="margin-top:7px"><strong>Likely objection:</strong> ${esc(m.objection)}</div>`:""}${m.commitmentDate?`<div class="mini" style="margin-top:5px"><strong>Hold to follow-up:</strong> ${formatDate(m.commitmentDate)}</div>`:""}${m.aiPrep?`<details style="margin-top:8px"><summary><strong>Meeting Prep</strong></summary><div class="planner-prep">${esc(m.aiPrep)}</div></details>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-plan-edit="${m.id}">Edit / Prepare</button><button class="secondary" data-plan-calendar="${m.id}">Add to Calendar</button><button class="secondary" data-plan-todo="${m.id}">＋ Follow-Up To-Do</button><button class="secondary" data-plan-complete="${m.id}">✓ Complete</button><button class="danger" data-plan-delete="${m.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No meetings scheduled in the next 14 days yet.</div>";
+  $("plannerMeetingList").innerHTML=meetings.length?meetings.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="planner-card"><div class="planner-head"><div><div class="list-title">${esc(c?.company||"Unknown Customer")}</div><div class="mini">${esc(ct?.name||"")}${m.date?` · ${formatDate(m.date)}`:""}${m.time?` · ${esc(m.time)}`:""}</div></div><span class="status blue">${esc(m.purpose||"Meeting")}</span></div><div style="margin-top:8px"><strong>${esc(m.topic||"No topic entered")}</strong></div><div class="mini" style="margin-top:4px">${esc(m.address||"Address not set")}</div>${m.sourceType?`<div class="mini" style="margin-top:5px"><strong>Linked ${esc(String(m.sourceType).toUpperCase())}:</strong> ${esc(m.sourceTitle||m.sourceId||"")}</div>`:""}${m.customerValue?`<div class="mini" style="margin-top:5px"><strong>Customer value:</strong> ${esc(m.customerValue)}</div>`:""}${m.nextCommitment?`<div class="mini" style="margin-top:5px"><strong>Next commitment:</strong> ${esc(m.nextCommitment)}</div>`:""}${m.objection?`<div class="mini" style="margin-top:7px"><strong>Likely objection:</strong> ${esc(m.objection)}</div>`:""}${m.commitmentDate?`<div class="mini" style="margin-top:5px"><strong>Hold to follow-up:</strong> ${formatDate(m.commitmentDate)}</div>`:""}${m.aiPrep?`<details style="margin-top:8px"><summary><strong>Meeting Prep</strong></summary><div class="planner-prep">${esc(m.aiPrep)}</div></details>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-plan-edit="${m.id}">Edit / Prepare</button><button class="secondary" data-plan-calendar="${m.id}">Add to Calendar</button><button class="secondary" data-plan-todo="${m.id}">＋ Follow-Up To-Do</button><button class="secondary" data-plan-complete="${m.id}">✓ Complete</button><button class="danger" data-plan-delete="${m.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No meetings scheduled in the next 14 days yet.</div>";
   const filter=$("todoFilter")?.value||"open";let shown=todos.slice();if(filter==="open")shown=shown.filter(t=>!t.completed);if(filter==="completed")shown=shown.filter(t=>t.completed);
   shown.sort((a,b)=>(Number(a.completed)-Number(b.completed))||plannerDateTime(a)-plannerDateTime(b));
   $("todoList").innerHTML=shown.length?shown.map(t=>{const c=customerById(t.customerId),ct=contactById(t.customerId,t.contactId);return `<div class="planner-card todo-card ${String(t.priority||"").toLowerCase()} ${t.completed?"completed":""}"><div class="planner-head"><div><div class="list-title">${esc(t.task)}</div><div class="mini">${esc(t.type)} · ${esc(t.priority)}${t.date?` · Due ${formatDate(t.date)}`:""}${t.time?` ${esc(t.time)}`:""}</div></div><input class="todo-check" type="checkbox" data-todo-toggle="${t.id}" ${t.completed?"checked":""}></div><div class="mini" style="margin-top:6px">${esc(c?.company||"")}${ct?.name?` · ${esc(ct.name)}`:""}</div>${t.notes?`<div style="margin-top:7px">${esc(t.notes)}</div>`:""}<div class="toolbar" style="margin-top:9px"><button class="secondary" data-todo-edit="${t.id}">Edit</button><button class="danger" data-todo-delete="${t.id}">Delete</button></div></div>`}).join(""):"<div class='empty'>No to-do items in this view.</div>";
@@ -5712,16 +5752,17 @@ function renderPlanner(){
 async function aiPreparePlannerMeeting(){
   const customerId=$("plannerCustomer").value;if(!customerId){alert("Choose a customer first.");return}
   const c=customerById(customerId),ct=contactById(customerId,$("plannerContact").value),status=$("plannerMeetingAiStatus");status.textContent="Preparing meeting from CRM history, open business, and customer feedback…";
-  const q=`Prepare me for an in-person sales meeting with ${c?.company||"this customer"}${ct?.name?` and ${ct.name}`:""}. Purpose: ${$("plannerPurpose").value}. Desired outcome: ${$("plannerOutcome").value}. Topic: ${$("plannerTopic").value||"not yet specified"}. Likely objection: ${$("plannerObjection").value||"unknown"}. My notes: ${$("plannerPrepNotes").value||"none"}. Use the CRM history and ABCO Flowline catalog. Give me a concise field-sales brief with: 1) objective, 2) what I should know before walking in, 3) 7 excellent open-ended questions specific to this account, 4) likely objections and professional responses, especially run-around language such as "we like your pricing, we'll call you", 5) a respectful way to secure a specific next follow-up date before I leave, 6) products or expansion opportunities grounded only in CRM/catalog evidence, and 7) the best closing question. Do not invent facts.`;
+  const q=`Prepare me for an in-person sales meeting with ${c?.company||"this customer"}${ct?.name?` and ${ct.name}`:""}. Purpose: ${$("plannerPurpose").value}. Meeting objective: ${$("plannerOutcome").value}. Customer value: ${$("plannerCustomerValue").value||"not yet defined"}. Next commitment wanted: ${$("plannerNextCommitment").value||"not yet defined"}. Objection strategy notes: ${$("plannerObjectionNotes").value||"none"}. Topic: ${$("plannerTopic").value||"not yet specified"}. Likely objection: ${$("plannerObjection").value||"unknown"}. My notes: ${$("plannerPrepNotes").value||"none"}. Use the CRM history and ABCO Flowline catalog. Give me a concise field-sales brief with: 1) objective, 2) what I should know before walking in, 3) 7 excellent open-ended questions specific to this account, 4) likely objections and professional responses, especially run-around language such as "we like your pricing, we'll call you", 5) a respectful way to secure a specific next follow-up date before I leave, 6) products or expansion opportunities grounded only in CRM/catalog evidence, and 7) the best closing question. Do not invent facts.`;
   try{const r=await aiAsk(q,{customerId});$("plannerAiPrep").value=r.answer||"";status.textContent="✓ Meeting preparation ready. Edit anything you want, then save the meeting."}catch(e){status.textContent="AI preparation failed: "+e.message}
 }
+function extractPlannerJson(text){const src=String(text||"").trim(),fenced=src.match(/```(?:json)?\s*([\s\S]*?)```/i),candidates=[];if(fenced?.[1])candidates.push(fenced[1].trim());candidates.push(src);for(const cand of candidates){try{return JSON.parse(cand)}catch{}let start=-1,depth=0,inStr=false,escaped=false;for(let i=0;i<cand.length;i++){const ch=cand[i];if(inStr){if(escaped){escaped=false;continue}if(ch==="\\"){escaped=true;continue}if(ch==='"')inStr=false;continue}if(ch==='"'){inStr=true;continue}if(ch==='{'){if(depth===0)start=i;depth++}else if(ch==='}'&&depth>0){depth--;if(depth===0&&start>=0){try{return JSON.parse(cand.slice(start,i+1))}catch{start=-1}}}}}throw new Error("AI did not return a valid weekly planner object.")}
 async function aiBuildTwoWeekStrategy(){
   ensurePlannerSettings();const status=$("plannerAiStatus");
   const anchor=plannerCalendarState().anchor||localIsoDate(),monday=calStartMonday(anchor),friday=calAddDays(monday,4);
   status.textContent=`AI is building a geographic baseline for ${formatDate(monday)} – ${formatDate(friday)}…`;
   const q=`Plan ONE work week only, Monday through Friday, ${monday} through ${friday}, for my outside-sales territory. Your job is to create a BASELINE/F​​OUNDATION, not fill every hour. Optimize for three goals: (1) be more effective and efficient, (2) make the best use of driving/time, and (3) focus on accounts with the highest realistic growth potential. Group each day geographically so I am not zig-zagging across the territory. Use actual CRM customer/contact addresses, recent activity, RFQs, orders, lost opportunities, follow-ups, and growth potential. A useful pattern can look like Monday western Oklahoma, Tuesday south-central Oklahoma, Wednesday an overnight/out-of-state route such as Gainesville TX, Thursday continuing the nearby Texas route such as Bridgeport/Decatur, Friday returning toward central/western Oklahoma — but this is an EXAMPLE, not a fixed rule. Choose the route from CRM evidence. Schedule only the strongest anchor stops needed to create the week's foundation; leave open space for calls, prospecting, travel, and manual additions. Do not invent customers, addresses, contacts, or facts. Return ONLY valid JSON with this exact shape: {"weekSummary":"short explanation","meetings":[{"date":"YYYY-MM-DD","time":"HH:MM","company":"exact CRM company name","contact":"exact CRM contact name or empty","purpose":"Product Expansion|Market Share|Lunch|Relationship|Follow-Up|Quote Review|Prospecting","topic":"specific reason for visit","desiredOutcome":"specific outcome","reason":"why this account and geography make sense"}]}. Use no markdown.`;
   try{
-    const r=await aiAsk(q,{mode:"planner",writePolicy:"readonly"});let raw=String(r.answer||'').trim().replace(/^```json\s*/i,'').replace(/```$/,'').trim(),plan=JSON.parse(raw);
+    const r=await aiAsk(q,{mode:"planner",writePolicy:"readonly"});const plan=extractPlannerJson(r.answer||'');
     const created=[];for(const x of (Array.isArray(plan.meetings)?plan.meetings:[])){
       if(!x.date||x.date<monday||x.date>friday)continue;const cname=String(x.company||'').trim().toLowerCase();const c=customers.find(z=>String(z.company||'').trim().toLowerCase()===cname);if(!c)continue;
       const ct=(c.contacts||[]).find(z=>String(z.name||'').trim().toLowerCase()===String(x.contact||'').trim().toLowerCase())||null;
@@ -8089,6 +8130,10 @@ if($("goFollowups"))$("goFollowups").onclick=()=>showView("followupsView",true);
 if($("newPlannerMeeting"))$("newPlannerMeeting").onclick=()=>openPlannerMeeting();
 if($("cancelPlannerMeeting"))$("cancelPlannerMeeting").onclick=closePlannerMeetingForm;
 if($("savePlannerMeeting"))$("savePlannerMeeting").onclick=savePlannerMeeting;
+document.addEventListener("click",e=>{const sm=e.target.closest("[data-source-menu]");if(sm){e.preventDefault();e.stopPropagation();const key=sm.dataset.sourceMenu;document.querySelectorAll("[data-source-menu-panel]").forEach(m=>{if(m.dataset.sourceMenuPanel!==key)m.classList.add("hidden")});document.querySelectorAll("[data-source-menu-panel]").forEach(m=>{if(m.dataset.sourceMenuPanel===key)m.classList.toggle("hidden")});return}const ce=e.target.closest("[data-create-event-source]");if(ce){e.preventDefault();e.stopPropagation();document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));openQuickEvent(ce.dataset.createEventSource,ce.dataset.createEventId)}});
+if($("quickEventClose"))$("quickEventClose").onclick=closeQuickEvent;if($("quickEventCancel"))$("quickEventCancel").onclick=closeQuickEvent;if($("quickEventCreate"))$("quickEventCreate").onclick=createQuickEvent;if($("quickEventModal"))$("quickEventModal").onclick=e=>{if(e.target===$("quickEventModal"))closeQuickEvent()};
+if($("quickEventDayPills"))$("quickEventDayPills").onclick=e=>{const b=e.target.closest("[data-qe-day]");if(!b)return;let d=localIsoDate();if(b.dataset.qeDay==="tomorrow")d=calAddDays(d,1);if(b.dataset.qeDay==="next-business")d=nextBusinessDate(d);$("quickEventDate").value=d;document.querySelectorAll("[data-qe-day]").forEach(x=>x.classList.toggle("active",x===b))};
+if($("quickEventDuration"))$("quickEventDuration").onchange=()=>{const opt=$("quickEventDuration").selectedOptions[0];if(opt?.dataset.lunch){$("quickEventPurpose").value="Lunch";$("quickEventTime").value="11:30"}};
 if($("plannerCustomer"))$("plannerCustomer").onchange=()=>{plannerFillContacts("planner");$("plannerAddress").value=plannerFullAddress($("plannerCustomer").value,$("plannerContact").value)};
 if($("plannerContact"))$("plannerContact").onchange=()=>{$("plannerAddress").value=plannerFullAddress($("plannerCustomer").value,$("plannerContact").value)};
 if($("aiPrepareMeeting"))$("aiPrepareMeeting").onclick=aiPreparePlannerMeeting;
