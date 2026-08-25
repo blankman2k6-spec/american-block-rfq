@@ -1321,6 +1321,11 @@ body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
 .calendar-event{left:2px;right:2px;top:3px;min-height:44px;padding:4px 5px;border-radius:7px}.calendar-event .ev-time{font-size:9px}.calendar-event .ev-title{font-size:10px}.calendar-event .ev-sub{font-size:9px}
 .calendar-shell[data-mobile-mode="twoweek"] .calendar-scroll{max-height:none}.calendar-shell[data-mobile-mode="twoweek"] .calendar-grid{grid-template-columns:46px repeat(7,minmax(86px,1fr));min-width:648px}
 }
+.two-week-board{display:grid;grid-template-columns:repeat(7,minmax(105px,1fr));gap:1px;background:var(--line);min-width:735px}
+.two-week-day{background:var(--panel);min-height:150px;padding:8px}
+.two-week-day-head{font-weight:800;text-align:center;padding-bottom:7px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.two-week-event{border:1px solid var(--line);border-radius:8px;padding:6px;margin-top:5px;background:var(--panel2);font-size:11px;cursor:pointer}
+@media(max-width:700px){.two-week-board{grid-template-columns:repeat(7,minmax(86px,1fr));min-width:602px}.two-week-day{min-height:135px;padding:5px}.two-week-day-head{font-size:11px}.two-week-event{font-size:9px;padding:4px}}
 body[data-skin="baby-blue"] .calendar-shell,body[data-skin="baby-blue"] .connect-card{background:#fff!important;border-color:#afd3e8!important}body[data-skin="baby-blue"] .calendar-toolbar,body[data-skin="baby-blue"] .calendar-head-cell{background:#eef8fe!important;color:#14233a!important}
 
 /* v5.5.7 Two-Week Planner + To-Do Center */
@@ -1351,7 +1356,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.5.9 Mobile Calendar</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.0 Weekly Territory Planner</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1889,12 +1894,12 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
         <div class="metric"><small>Follow-Up Commitments</small><strong id="plannerCommitmentCount">0</strong></div>
       </div>
       <div class="toolbar" style="margin-top:12px">
-        <button id="aiBuildTwoWeekPlan" class="primary">✦ AI: Analyze My Next 2 Weeks</button>
+        <button id="aiBuildTwoWeekPlan" class="primary">✦ AI: Build My Week</button>
         <button id="newPlannerMeeting" class="secondary">＋ Meeting</button>
         <button id="newTodoItem" class="secondary">＋ To-Do</button>
       </div>
       <div id="plannerAiStatus" class="mini" style="margin-top:8px"></div>
-      <div id="plannerAiStrategy" class="planner-prep hidden"></div>
+      
     </div>
 
 
@@ -5676,6 +5681,11 @@ function renderPlannerCalendar(){
     agenda.innerHTML=dates.map(d=>{const list=meetings.filter(m=>!m.completed&&m.date===d).sort((a,b)=>(a.time||'').localeCompare(b.time||''));if(!list.length)return '';return `<div class="calendar-day-group"><h3>${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>${list.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="calendar-agenda-item" data-cal-event="${m.id}"><strong>${esc(m.time||'All day')} · ${esc(c?.company||'Customer')}</strong><div class="mini">${esc(ct?.name||'')}${m.purpose?` · ${esc(m.purpose)}`:''}</div><div>${esc(m.topic||'No topic entered')}</div><div class="mini">${esc(m.address||'')}</div></div>`}).join('')}</div>`}).join('')||"<div class='empty'>No meetings in this period.</div>";return;
   }
   board.classList.remove('hidden');agenda.classList.remove('active');agenda.innerHTML='';
+  if(st.mode==='twoweek'){
+    $('calendarGrid').style.removeProperty('--cal-days');$('calendarGrid').className='two-week-board';
+    $('calendarGrid').innerHTML=dates.map(d=>{const list=meetings.filter(m=>!m.completed&&m.date===d).sort((a,b)=>(a.time||'').localeCompare(b.time||''));return `<div class="two-week-day" data-cal-date="${d}"><div class="two-week-day-head">${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})}</div>${list.map(m=>{const c=customerById(m.customerId);return `<div class="two-week-event" data-cal-event="${m.id}"><strong>${esc(m.time||'')}</strong><br>${esc(c?.company||'Customer')}</div>`}).join('')}</div>`}).join('');return;
+  }
+  $('calendarGrid').className='calendar-grid';
   const hours=Array.from({length:13},(_,i)=>i+6);$('calendarGrid').style.setProperty('--cal-days',dates.length);
   let out=`<div class="calendar-head-cell"></div>${dates.map(d=>`<div class="calendar-head-cell">${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})}</div>`).join('')}`;
   for(const h of hours){out+=`<div class="calendar-time">${new Date(2000,0,1,h).toLocaleTimeString('en-US',{hour:'numeric'})}</div>`;for(const d of dates){const list=meetings.filter(m=>!m.completed&&m.date===d&&(parseInt((m.time||'09:00').split(':')[0],10)||9)===h);out+=`<div class="calendar-slot" data-cal-date="${d}" data-cal-hour="${h}">${list.map((m,idx)=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="calendar-event ${plannerEventClass(m)}" data-cal-event="${m.id}" style="top:${4+idx*5}px"><div class="ev-time">${esc(m.time||'')}</div><div class="ev-title">${esc(c?.company||'Customer')}</div><div class="ev-sub">${esc(ct?.name||m.purpose||'Meeting')}</div></div>`}).join('')}</div>`}}
@@ -5705,9 +5715,20 @@ async function aiPreparePlannerMeeting(){
   try{const r=await aiAsk(q,{customerId});$("plannerAiPrep").value=r.answer||"";status.textContent="✓ Meeting preparation ready. Edit anything you want, then save the meeting."}catch(e){status.textContent="AI preparation failed: "+e.message}
 }
 async function aiBuildTwoWeekStrategy(){
-  const status=$("plannerAiStatus"),out=$("plannerAiStrategy");status.textContent="Analyzing customers, RFQs, opportunities, back orders, and recent activity…";out.classList.add("hidden");
-  const q=`Build a practical next-14-day territory execution plan for me using my CRM. Prioritize accounts where an in-person visit, lunch, call, email, text, quote, product expansion discussion, market-share discussion, back-order follow-up, or relationship meeting could move business. Pay special attention to customers who keep giving soft responses like "we like your pricing, we'll call you" but have not told me to stop coming. For each priority, tell me why now, recommended meeting/follow-up purpose, topic, best next action, and what commitment/date I should ask the customer for. Keep it field-ready and concise. Do not invent addresses, dates, contacts, or customer facts. I will manually schedule and edit the plan.`;
-  try{const r=await aiAsk(q);out.textContent=r.answer||"No AI recommendation returned.";out.classList.remove("hidden");status.textContent="✓ Strategy ready. Use it to add or adjust meetings and to-dos below."}catch(e){status.textContent="AI planning failed: "+e.message}
+  ensurePlannerSettings();const status=$("plannerAiStatus");
+  const anchor=plannerCalendarState().anchor||localIsoDate(),monday=calStartMonday(anchor),friday=calAddDays(monday,4);
+  status.textContent=`AI is building a geographic baseline for ${formatDate(monday)} – ${formatDate(friday)}…`;
+  const q=`Plan ONE work week only, Monday through Friday, ${monday} through ${friday}, for my outside-sales territory. Your job is to create a BASELINE/F​​OUNDATION, not fill every hour. Optimize for three goals: (1) be more effective and efficient, (2) make the best use of driving/time, and (3) focus on accounts with the highest realistic growth potential. Group each day geographically so I am not zig-zagging across the territory. Use actual CRM customer/contact addresses, recent activity, RFQs, orders, lost opportunities, follow-ups, and growth potential. A useful pattern can look like Monday western Oklahoma, Tuesday south-central Oklahoma, Wednesday an overnight/out-of-state route such as Gainesville TX, Thursday continuing the nearby Texas route such as Bridgeport/Decatur, Friday returning toward central/western Oklahoma — but this is an EXAMPLE, not a fixed rule. Choose the route from CRM evidence. Schedule only the strongest anchor stops needed to create the week's foundation; leave open space for calls, prospecting, travel, and manual additions. Do not invent customers, addresses, contacts, or facts. Return ONLY valid JSON with this exact shape: {"weekSummary":"short explanation","meetings":[{"date":"YYYY-MM-DD","time":"HH:MM","company":"exact CRM company name","contact":"exact CRM contact name or empty","purpose":"Product Expansion|Market Share|Lunch|Relationship|Follow-Up|Quote Review|Prospecting","topic":"specific reason for visit","desiredOutcome":"specific outcome","reason":"why this account and geography make sense"}]}. Use no markdown.`;
+  try{
+    const r=await aiAsk(q);let raw=String(r.answer||'').trim().replace(/^```json\s*/i,'').replace(/```$/,'').trim(),plan=JSON.parse(raw);
+    const created=[];for(const x of (Array.isArray(plan.meetings)?plan.meetings:[])){
+      if(!x.date||x.date<monday||x.date>friday)continue;const cname=String(x.company||'').trim().toLowerCase();const c=customers.find(z=>String(z.company||'').trim().toLowerCase()===cname);if(!c)continue;
+      const ct=(c.contacts||[]).find(z=>String(z.name||'').trim().toLowerCase()===String(x.contact||'').trim().toLowerCase())||null;
+      const duplicate=settings.salesPlannerMeetings.some(m=>!m.completed&&m.date===x.date&&m.customerId===c.id);if(duplicate)continue;
+      settings.salesPlannerMeetings.push({id:uid(),customerId:c.id,contactId:ct?.id||'',date:x.date,time:x.time||'09:00',address:plannerFullAddress(c.id,ct?.id||''),purpose:x.purpose||'Product Expansion',outcome:x.desiredOutcome||'Advance Account',topic:x.topic||x.reason||'Account growth discussion',objection:'',commitmentDate:'',prepNotes:x.reason||'',aiPrep:'',completed:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),source:'AI Weekly Territory Baseline'});created.push(x);
+    }
+    save();renderPlanner();status.textContent=created.length?`✓ AI added ${created.length} anchor stop${created.length===1?'':'s'} directly to this week. Build around them or edit anything you want.`:`AI completed the analysis but did not find new CRM-backed anchor stops to add for this week.`;
+  }catch(e){status.textContent='AI weekly planning failed: '+e.message+' No calendar items were changed.'}
 }
 function closeRemainingBackorderToday(){
   const src=boSourceByActive();if(!src)return;
