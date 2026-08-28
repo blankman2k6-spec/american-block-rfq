@@ -2866,8 +2866,8 @@ if(recoveryQuery.get("ab_recovery")==="1"){
 // not share the Home Screen app's localStorage. Always restore the known public
 // Supabase endpoint/key when either value is missing, so recovery requests never
 // fall through to the Vercel origin (which would produce a 404).
-if(!String(cloud.url||"").trim()) cloud.url=BUILTIN_CLOUD.url;
-if(!String(cloud.anonKey||"").trim()) cloud.anonKey=BUILTIN_CLOUD.anonKey;
+cloud.url=BUILTIN_CLOUD.url;
+cloud.anonKey=BUILTIN_CLOUD.anonKey;
 localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
 let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false,cloudRecoveryMode=false;
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
