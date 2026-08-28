@@ -7636,7 +7636,7 @@ if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
       cache:"no-store",
       credentials:"omit",
       headers:{
-        apikey:cloudKey(),
+        apikey:BUILTIN_CLOUD.anonKey,
         Authorization:`Bearer ${token}`,
         "Content-Type":"application/json"
       },
