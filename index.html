@@ -2841,7 +2841,7 @@ const KEYS={rfqs:"abSalesOS_rfqs_v2",customers:"abSalesOS_customers_v2",orders:"
 // to be embedded in browser apps; Row Level Security protects the CRM data.
 const BUILTIN_CLOUD={
   url:"https://wrkoimfczpavsxdpxftn.supabase.co",
-  anonKey:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indya29pbWZjenBhdnN4ZHB4ZnRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjUxMTksImV4cCI6MjEwMTY0MTExOX0.cDNQNjubiNmLqkL-3dcSQbmcXW7SII86csLh82q_PhM"
+  anonKey:"sb_publishable_0S-KmHmkHU8LyPBoaJIBCw_odheFCJt"
 };
 let rfqs=JSON.parse(localStorage.getItem(KEYS.rfqs)||"null");
 let customers=JSON.parse(localStorage.getItem(KEYS.customers)||"null");
@@ -7636,7 +7636,7 @@ if($("cloudChangePassword"))$("cloudChangePassword").onclick=async()=>{
       cache:"no-store",
       credentials:"omit",
       headers:{
-        apikey:BUILTIN_CLOUD.anonKey,
+        apikey:cloudKey(),
         Authorization:`Bearer ${token}`,
         "Content-Type":"application/json"
       },
@@ -7951,7 +7951,7 @@ if($("refreshApp"))$("refreshApp").onclick=refreshCrmView;
 applySkin(settings.skin||"midnight-executive");
 applyLayoutMode(layoutMode);
 
-if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js"));
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js?v=authfix-20260827"));
 document.querySelectorAll("[data-intel-form]").forEach(b=>b.onclick=()=>openIntelForm(b.dataset.intelForm));
 document.querySelectorAll("[data-intel-report]").forEach(b=>b.onclick=()=>renderIntelReport(b.dataset.intelReport));
 document.querySelectorAll("[data-report-center]").forEach(b=>b.onclick=()=>renderReportCenter(b.dataset.reportCenter));
