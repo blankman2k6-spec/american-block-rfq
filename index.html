@@ -8089,6 +8089,62 @@ async function exportBackupFile(){
     const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
   }catch(e){alert("Backup export failed: "+e.message)}
 }
+async function importBackupFile(file){
+  if(!file)return;
+
+  try{
+    const text=await file.text();
+    const backup=JSON.parse(text);
+
+    if(!backup||typeof backup!=="object"){
+      throw new Error("This file does not contain a valid backup.");
+    }
+
+    if(backup.format!=="American Block Sales OS Backup"){
+      throw new Error("This does not appear to be an American Block Sales OS backup.");
+    }
+
+    const hasData=
+      Array.isArray(backup.rfqs) ||
+      Array.isArray(backup.customers) ||
+      Array.isArray(backup.orders) ||
+      Array.isArray(backup.communications) ||
+      Array.isArray(backup.activities) ||
+      Array.isArray(backup.intelligence);
+
+    if(!hasData){
+      throw new Error("The backup does not contain recognizable Sales OS data.");
+    }
+
+    const ok=confirm(
+      "Restore this American Block Sales OS backup?\n\n" +
+      "This will replace the data currently stored on this device with the data contained in the backup."
+    );
+
+    if(!ok)return;
+
+    if(Array.isArray(backup.rfqs))rfqs=backup.rfqs;
+    if(Array.isArray(backup.customers))customers=backup.customers;
+    if(Array.isArray(backup.orders))orders=backup.orders;
+    if(Array.isArray(backup.communications))communications=backup.communications;
+    if(Array.isArray(backup.activities))activities=backup.activities;
+    if(Array.isArray(backup.intelligence))intelligence=backup.intelligence;
+
+    if(backup.settings&&typeof backup.settings==="object"){
+      settings=backup.settings;
+    }
+
+    ensureYearSettings();
+    save();
+
+    alert("Backup restored successfully. The app will now reload.");
+    location.reload();
+
+  }catch(e){
+    console.error("Backup import failed:",e);
+    alert("Backup import failed: "+(e?.message||"Unknown error"));
+  }
+}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(r.error||new Error("Could not read image."));r.readAsDataURL(file)})}
 async function scanBusinessCard(file){
   if(!file)return;
@@ -8113,6 +8169,8 @@ if($("scanBusinessCardBtn"))$("scanBusinessCardBtn").onclick=()=>$("businessCard
 if($("businessCardInput"))$("businessCardInput").onchange=e=>scanBusinessCard(e.target.files?.[0]);
 if($("exportBackup"))$("exportBackup").onclick=exportBackupFile;
 if($("settingsExport"))$("settingsExport").onclick=exportBackupFile;
+if($("settingsImport"))$("settingsImport").onclick=()=>$("settingsImportFile").click();
+if($("settingsImportFile"))$("settingsImportFile").onchange=async e=>{await importBackupFile(e.target.files?.[0]);e.target.value="";};
 if($("backFromCustomer"))$("backFromCustomer").onclick=()=>showView("customersView",true);
 if($("cancelCustomer"))$("cancelCustomer").onclick=()=>showView("customersView",true);
 
