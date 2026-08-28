@@ -2858,7 +2858,7 @@ const recoveryQuery=new URLSearchParams(window.location.search);
 if(recoveryQuery.get("ab_recovery")==="1"){
   const qUrl=String(recoveryQuery.get("sb_url")||"").trim().replace(/\/$/,"");
   const qKey=String(recoveryQuery.get("sb_key")||"").trim();
-  if(/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(qUrl)&&qKey.startsWith("sb_publishable_")){
+  if(/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(qUrl)&&(qKey.startsWith("sb_publishable_")||qKey.startsWith("eyJ"))){
     cloud.url=qUrl; cloud.anonKey=qKey;
   }
 }
