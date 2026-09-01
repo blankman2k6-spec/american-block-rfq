@@ -1396,7 +1396,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.6 Account Merge + Website Research Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.7 Management Report Evidence Upgrade</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -5173,19 +5173,45 @@ function trTerritoryOverviewHtml(){
  const sections=[["Texas Panhandle",o.texasPanhandle],["Western Oklahoma",o.westernOklahoma],["Southern Oklahoma",o.southernOklahoma]];
  return `<div class="tr-section"><h2>Territory Overview</h2>${sections.map(([name,text])=>`<h3>${name}</h3>${trBulletText(text).length?`<ul>${trBulletText(text).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p class="missing">No current market notes documented.</p>`}`).join("")}</div>`
 }
-function trAccountManagement(a){
- const contact=trContact(a),open=trOpenRfqs(a),top=a.top;
- const about=a.c.businessDescription||a.c.notes||"Not documented in CRM.";
- const supplier=a.c.knownSuppliers|| (a.competitors.length?a.competitors.map(x=>x.name).join(", "):"Not documented in CRM.");
- const why=a.c.buyingDrivers|| (a.competitors.length?a.competitors.map(x=>x.reason).filter(Boolean).join("; "):"Not documented in CRM.");
- const wishlist=Array.isArray(a.c.wishlist)?a.c.wishlist:trBulletText(a.c.wishlist||"");
- const sold=a.products.slice(0,8);
- const openHtml=open.map(r=>{const items=r.items||[],rt=total(r);return `<div class="opp"><p><strong>Open RFQ${r.quoteNo?` — ${esc(r.quoteNo)}`:""}: ${trMoney(rt)}</strong></p>${items.length?`<ul>${items.map(i=>`<li>${Number(i.qty)||0} pcs — ${esc(i.part||i.product||"Product")}${i.product&&i.part?` — ${esc(i.product)}`:""} @ ${trMoney(i.price)} each = <strong>${trMoney(trRfqLineTotal(i))}</strong></li>`).join("")}</ul>`:`<p class="missing">Line items are not documented.</p>`}<ul><li><strong>Customer feedback / status:</strong> ${esc(trRfqReason(r))}</li>${r.nextAction?`<li><strong>Next action:</strong> ${esc(r.nextAction)}</li>`:""}</ul></div>`}).join("");
- const opps=a.acts.filter(x=>x.opportunityValue&&x.opportunityTitle&&!x.opportunityRfqId&&!/closed|lost/i.test(x.opportunityStage||"")).slice(0,8);
- const recent=a.acts.slice(0,6);
- return `<div class="account"><h2>${esc(a.c.company)}${a.c.isNewAccount?` <span style="font-size:8pt;border:1px solid #777;border-radius:10px;padding:2px 6px">NEW ACCOUNT</span>`:""}</h2><p class="small">${esc(a.c.marketRegion||"Territory not assigned")}${a.c.city?` · ${esc(a.c.city)}`:""}</p><ul><li><strong>What they do:</strong> ${esc(about)}</li><li><strong>Primary contact:</strong> ${esc(contact.name||"Not documented")}</li><li><strong>Purchasing drivers / competition:</strong> ${esc(why)}${supplier?` | ${esc(supplier)}`:""}</li></ul>${sold.length?`<p><strong>Items Sold — primary to least purchased:</strong></p><ul>${sold.map(x=>`<li>${esc(x.part||x.product)} — ${Math.round(x.qty)} units / ${trMoney(x.revenue)}</li>`).join("")}</ul>`:`<p><strong>Items Sold:</strong> No completed order history documented.</p>`}${wishlist.length?`<p><strong>Customer Wishlist:</strong></p><ul>${wishlist.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${recent.length?`<p><strong>Account Activity Summary:</strong></p><ul>${(()=>{const all=recent.map(x=>trCleanActivityText(x.comments||x.opportunityDetails||"")).join(" "),b=[];if(/order|po\b|closed won|moving forward|purchased|delivered/i.test(all))b.push("Products won / sales activity is documented in the account.");if(/prospect|opportunity|credit application|quote|rfq|pricing/i.test(all))b.push("Prospecting and quotation activity is active.");if(/waiting|review|compare|feedback|end user|compet|vendor|price/i.test(all))b.push("Customer feedback / buying decision remains in progress.");if(/back.?order|out of stock|no stock|eta|lead time|availability/i.test(all))b.push("Inventory, backorder, or availability is affecting the account.");return (b.length?b:["Recent account-development activity is documented."]).map(x=>`<li>${esc(x)}</li>`).join("")})()}</ul>`:""}${openHtml||`<p><strong>Open RFQs:</strong> None currently documented.</p>`}${opps.length?`<p><strong>Open Opportunities:</strong></p><ul>${opps.map(x=>`<li><strong>${esc(x.opportunityTitle)}</strong> — ${trMoney(x.opportunityValue)}${x.opportunityDetails?` — ${esc(x.opportunityDetails)}`:""}</li>`).join("")}</ul>`:`<p><strong>Open Opportunities:</strong> None outside RFQs currently documented.</p>`}</div>`
+function trMgmtText(v){return String(v||"").replace(/\s+/g," ").trim()}
+function trMgmtRecentNotes(a,limit=8){
+ return a.acts.slice(0,limit).map(x=>trMgmtText(x.comments||x.opportunityDetails||"")).filter(Boolean)
 }
-
+function trMgmtActionFromNotes(a){
+ const notes=trMgmtRecentNotes(a,12);
+ const action=notes.find(x=>/presented|engineer|engineering|follow.?up|working|quoted|quote|sent|contacted|reached|identified|found|sister company|southwest|scheduled|meeting|visit|checking|submitted|requested/i.test(x));
+ return action||"Action not yet documented in CRM notes."
+}
+function trMgmtWhyFromNotes(a){
+ const notes=trMgmtRecentNotes(a,12);
+ const why=notes.find(x=>/because|so that|opportunity|demand|usage|uses|per day|save|freight|availability|stock|customer|preferred|prefers|competitive|price/i.test(x));
+ return why||"Expected result not yet documented in CRM notes."
+}
+function trMgmtChallenges(a){
+ const notes=trMgmtRecentNotes(a,12), out=[];
+ notes.forEach(n=>{
+   let label="";
+   if(/freight|consolidat|one supplier|combine/i.test(n)) label="Freight / Order Consolidation";
+   else if(/do not manufacture|don't manufacture|does not manufacture|product gap|engineer|engineering/i.test(n)) label="Product Capability / Product Gap";
+   else if(/no stock|out of stock|availability|lead time|back.?order|shortage/i.test(n)) label="Availability / Lead Time";
+   else if(/price|pricing|competitive|undercut/i.test(n)) label="Pricing / Competitive Pressure";
+   else if(/preferred vendor|incumbent|supplier|competitor|buying from/i.test(n)) label="Supplier / Competitive Position";
+   if(label&&!out.some(x=>x.note===n))out.push({label,note:n});
+ });
+ return out.slice(0,3)
+}
+function trMgmtLostRows(a){
+ return a.ins.filter(x=>x.type==="lost").sort((x,y)=>(y.date||"").localeCompare(x.date||""));
+}
+function trAccountManagement(a){
+ const contact=trContact(a),open=trOpenRfqs(a),sold=a.products.slice(0,6),notes=trMgmtRecentNotes(a,6),challenges=trMgmtChallenges(a),lostRows=trMgmtLostRows(a);
+ const about=trMgmtText(a.c.businessDescription||a.c.notes)||"Not documented in CRM.";
+ const action=trMgmtActionFromNotes(a),expected=trMgmtWhyFromNotes(a);
+ const openHtml=open.map(r=>{const items=r.items||[];return `<div class="opp"><p><strong>Open RFQ${r.quoteNo?` — ${esc(r.quoteNo)}`:""}: ${trMoney(total(r))}</strong></p><ul>${items.slice(0,8).map(i=>`<li>${Number(i.qty)||0} pcs — ${esc(i.part||i.product||"Product")} — <strong>${trMoney(trRfqLineTotal(i))}</strong></li>`).join("")}${r.nextAction?`<li><strong>Next action:</strong> ${esc(r.nextAction)}</li>`:""}</ul></div>`}).join("");
+ const lostHtml=lostRows.length?`<div class="mgmt-block"><h3>Lost Sales</h3><ul>${lostRows.map(x=>`<li><strong>${esc(x.product||x.part||x.reference||"Documented lost business")} — ${trMoney(x.amount)}</strong><ul><li><strong>Why:</strong> ${esc(trMgmtText(x.reason||x.notes)||"Reason not documented.")}</li><li><strong>Response:</strong> ${esc(action)}</li><li><strong>Why this can help:</strong> ${esc(expected)}</li></ul></li>`).join("")}</ul></div>`:"";
+ const challengeHtml=challenges.length?`<div class="mgmt-block"><h3>Current Challenges & Response</h3><ul>${challenges.map(x=>`<li><strong>${esc(x.label)}</strong><ul><li><strong>What is causing it:</strong> ${esc(x.note)}</li><li><strong>What I am doing:</strong> ${esc(action)}</li><li><strong>Why I believe it can work:</strong> ${esc(expected)}</li></ul></li>`).join("")}</ul></div>`:"";
+ return `<div class="account"><h2>${esc(a.c.company)}${a.c.isNewAccount?` <span class="new-account">NEW ACCOUNT</span>`:""}</h2><p class="small">${esc(a.c.marketRegion||"Territory not assigned")}${a.c.city?` · ${esc(a.c.city)}`:""}</p><ul><li><strong>Account:</strong> ${esc(about)}</li><li><strong>Primary contact:</strong> ${esc(contact.name||"Not documented")}</li>${sold.length?`<li><strong>Products purchased:</strong> ${sold.map(x=>`${esc(x.part||x.product)} — ${Math.round(x.qty)} units`).join("; ")}</li>`:""}</ul>${lostHtml}${challengeHtml}${notes.length?`<div class="mgmt-block"><h3>Key Account Developments</h3><ul>${notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>`:""}${openHtml}</div>`
+}
 const TERRITORY_SECTIONS=["Texas/Oklahoma Panhandle Territory","Oklahoma Northwest Territory","Oklahoma City Metropolitan Territory","Oklahoma Northeastern Territory","Oklahoma Southern Territory","Oklahoma Western Territory","Oklahoma Eastern Territory","Oklahoma Northern Territory","Kansas Western Territory","Kansas Eastern Territory","Wichita Kansas Territory","Arkansas Territory","Dallas/FW Territory","Ohio Territory","New Mexico Territory","Colorado Territory"];
 function trTerritoryAccountData(data,territory){return data.accounts.filter(a=>(a.c.marketRegion||"")===territory)}
 function trTerritoryAllCustomerIds(territory){return new Set(customers.filter(c=>c.marketRegion===territory).map(c=>String(c.id)))}
@@ -5216,49 +5242,18 @@ function trCleanActivityText(text){
  return t;
 }
 function trTerritoryActivityBrief(s){
- const byCustomer=new Map();
- s.recentActs.forEach(a=>{const name=customerName({customerId:a.customerId})||"Account";let x=byCustomer.get(name)||[];x.push(trCleanActivityText(a.comments||a.opportunityDetails||""));byCustomer.set(name,x)});
- const bullets=[];
- for(const [name,notes] of byCustomer){
-   const all=notes.join(" "), points=[];
-   if(/order|po\b|closed won|moving forward|purchased|delivered/i.test(all)) points.push("sales/order activity documented");
-   if(/prospect|opportunity|credit application|quote|rfq|pricing/i.test(all)) points.push("active prospecting/quotation activity");
-   if(/waiting|review|compare|feedback|end user|compet|vendor|price/i.test(all)) points.push("customer feedback or buying decision remains in progress");
-   if(/back.?order|out of stock|no stock|eta|lead time|availability/i.test(all)) points.push("inventory/availability requires attention");
-   if(!points.length) points.push("recent account development activity documented");
-   bullets.push(`<li><strong>${esc(name)}:</strong> ${esc([...new Set(points)].join("; "))}.</li>`);
- }
- return bullets.length?`<li><strong>Recent market development:</strong><ul>${bullets.slice(0,4).join("")}</ul></li>`:"";
+ const rows=s.recentActs.map(a=>({name:customerName({customerId:a.customerId})||"Account",note:trMgmtText(a.comments||a.opportunityDetails||"")})).filter(x=>x.note);
+ return rows.length?`<li><strong>Recent documented customer activity:</strong><ul>${rows.slice(0,5).map(x=>`<li><strong>${esc(x.name)}:</strong> ${esc(x.note)}</li>`).join("")}</ul></li>`:"";
 }
 function trTerritorySummaryHtml(s){
- const majorOpen=s.open.slice().sort((a,b)=>total(b)-total(a)).slice(0,4);
  const newAccounts=customers.filter(c=>c.marketRegion===s.territory&&c.isNewAccount);
- const direction=s.openValue>0?`The territory currently carries ${trMoney(s.openValue)} in open RFQs and opportunities, with ${s.activeCustomerCount||0} accounts/prospects showing documented activity.`:`The territory has ${s.activeCustomerCount||0} accounts/prospects with documented activity, but no open RFQ value is currently recorded.`;
- return `<div class="territory-summary"><h2>${esc(s.territory)}</h2><p>${direction}${newAccounts.length?` New-account development includes ${newAccounts.map(c=>esc(c.company)).join(", ")}.`:""}</p><ul>
- <li><strong>Active accounts / prospects:</strong> ${s.activeCustomerCount||0}</li>
- ${newAccounts.length?`<li><strong>New accounts:</strong> ${newAccounts.map(c=>esc(c.company)).join("; ")}</li>`:""}
- ${s.topSold.length?`<li><strong>Primary products being purchased:</strong> ${s.topSold.map(x=>`${esc(x.part||x.product)} — ${Math.round(x.qty)} units / ${trMoney(x.value)}`).join("; ")}</li>`:""}
- ${s.topReq.length?`<li><strong>Most requested products:</strong> ${s.topReq.map(x=>`${esc(x.part||x.product)} — ${Math.round(x.qty)} requested units / ${x.lines} RFQ line${x.lines===1?"":"s"}`).join("; ")}</li>`:""}
- <li><strong>Open opportunities:</strong> ${trMoney(s.openValue)}${majorOpen.length?` — ${majorOpen.map(r=>`${esc(customerName(r))}: ${trMoney(total(r))}`).join("; ")}`:""}</li>
- ${s.backValue?`<li><strong>Open back orders:</strong> ${trMoney(s.backValue)} not yet credited.</li>`:""}
- ${s.lost?`<li><strong>Documented lost sales:</strong> ${trMoney(s.lost)}.</li>`:""}
- ${s.comps.length?`<li><strong>Competitive landscape:</strong> ${s.comps.slice(0,5).map(c=>`${esc(c.name)} (${c.count} account${c.count===1?"":"s"})`).join("; ")}</li>`:""}
- ${s.purchasing.length?`<li><strong>Documented purchasing / obstacle themes:</strong> ${s.purchasing.map(([r,n])=>`${esc(r)} (${n})`).join("; ")}</li>`:""}
- ${trTerritoryActivityBrief(s)}
- </ul></div>`
+ return `<div class="territory-summary"><h2>${esc(s.territory)}</h2><ul><li><strong>Active accounts / prospects:</strong> ${s.activeCustomerCount||0}</li>${newAccounts.length?`<li><strong>New accounts:</strong> ${newAccounts.map(c=>esc(c.company)).join("; ")}</li>`:""}${s.topSold.length?`<li><strong>Primary products purchased:</strong> ${s.topSold.map(x=>`${esc(x.part||x.product)} — ${Math.round(x.qty)} units`).join("; ")}</li>`:""}${s.backValue?`<li><strong>Open back orders:</strong> ${trMoney(s.backValue)} not yet credited.</li>`:""}${s.lost?`<li><strong>Documented lost sales:</strong> ${trMoney(s.lost)}</li>`:""}${trTerritoryActivityBrief(s)}</ul></div>`
 }
 function trManagementHtml(data){
- const territoryBlocks=TERRITORY_SECTIONS.map(t=>{
-   const s=trTerritorySummary(data,t);
-   if(!s.accs.length&&!s.open.length&&!s.activeCustomerCount)return "";
-   return `${trTerritorySummaryHtml(s)}${s.accs.map(trAccountManagement).join("")}`;
- }).join("");
+ const territoryBlocks=TERRITORY_SECTIONS.map(t=>{const s=trTerritorySummary(data,t);if(!s.accs.length&&!s.activeCustomerCount)return "";return `${trTerritorySummaryHtml(s)}${s.accs.map(trAccountManagement).join("")}`}).join("");
  const unassigned=data.accounts.filter(a=>!TERRITORY_SECTIONS.includes(a.c.marketRegion||""));
- const unassignedBlock=unassigned.length?`<div class="territory-summary"><h2>Unassigned Territory</h2><p class="missing">These accounts need a Territory Section selected in the customer record.</p></div>${unassigned.map(trAccountManagement).join("")}`:"";
- const needs=[];
- data.accounts.forEach(a=>{(Array.isArray(a.c.wishlist)?a.c.wishlist:[]).forEach(x=>needs.push(`${a.c.company}: wishlist — ${x}`));a.rs.filter(isOpen).forEach(r=>{const n=r.nextAction||r.feedback;if(n)needs.push(`${a.c.company}: ${n}`)});a.feedback.slice(0,1).forEach(f=>{if(f.need||f.category)needs.push(`${a.c.company}: ${f.need||f.category}`)})});
- const close=`<div class="territory-summary"><h2>What We Need to Win</h2><p>This section converts the account data above into the clearest actions, support needs, and decisions required to move business forward.</p>${needs.length?`<ul>${[...new Set(needs)].slice(0,15).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p class="missing">No specific customer support needs are documented yet.</p>`}<h3>Management Decisions / Support Needed</h3><ul><li>Prioritize inventory and product-support gaps tied to repeated RFQ demand or customer wishlists.</li><li>Resolve pricing, lead-time, delivery, or product-capability obstacles that are holding open RFQs.</li><li>Focus follow-up resources on the highest-value open RFQs and opportunities with a documented next action.</li></ul></div>`;
- return `${territoryBlocks}${unassignedBlock}${close}`
+ const unassignedBlock=unassigned.length?`<div class="territory-summary"><h2>Unassigned Territory</h2><p class="missing">Territory assignment not documented.</p></div>${unassigned.map(trAccountManagement).join("")}`:"";
+ return `${territoryBlocks}${unassignedBlock}`
 }
 
 function trSayOpportunity(r){
@@ -5282,7 +5277,7 @@ function trPrintDocument(kind){
  const data=buildTerritoryReviewData(),management=kind==="management",body=management?trManagementHtml(data):trPresenterHtml(data);
  const title=management?"Monthly Territory & Account Review":"Oklahoma Territory — Presenter Narrative & Q&A";
  const w=window.open("","_blank");if(!w){alert("Allow pop-ups to generate the PDF.");return}
- w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:letter;margin:.62in}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5pt;line-height:1.35}h1{font-size:19pt;margin:0 0 4px}h2{font-size:13pt;margin:16px 0 5px}h3{font-size:11pt;margin:11px 0 4px}p{margin:4px 0}ul{margin:4px 0 8px 20px;padding:0}li{margin:2px 0}.header{border-bottom:1px solid #777;padding-bottom:8px;margin-bottom:12px}.small,.missing{font-size:8.5pt;color:#666}.account,.script-account{break-inside:auto}.opp{margin:8px 0}.script{font-size:11pt;line-height:1.5}.qa{margin:9px 0;padding-left:10px;border-left:2px solid #777}.qa p{margin-top:3px}strong{font-weight:700}</style></head><body><div class="header"><h1>${title}</h1><div class="small">Data as of ${data.generatedAt.toLocaleString()}</div></div>${body}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:letter;margin:.65in}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10pt;line-height:1.42}h1{font-size:19pt;margin:0;color:#111}h2{font-size:13pt;margin:18px 0 7px;color:#111;font-weight:800}h3{font-size:10.5pt;margin:12px 0 5px;color:#174a7e;font-weight:800}p{margin:5px 0}ul{margin:5px 0 10px 20px;padding:0}ul ul{margin:5px 0 8px 18px}li{margin:4px 0}.header{border-bottom:3px solid #174a7e;padding-bottom:9px;margin-bottom:16px}.territory-summary{margin:18px 0 10px;padding:9px 11px;border-left:5px solid #174a7e;background:#f7f9fb;break-inside:avoid}.territory-summary h2{color:#174a7e;margin:0 0 6px;font-size:14pt;font-weight:900}.account{margin:12px 0 20px;padding-bottom:12px;border-bottom:1px solid #d6dce2}.account h2{margin:0 0 2px;font-weight:800}.mgmt-block{margin:10px 0}.small,.missing{font-size:8.5pt;color:#555}.opp{margin:10px 0}.new-account{font-size:8pt;border:1px solid #174a7e;color:#174a7e;border-radius:10px;padding:2px 6px}.script{font-size:11pt;line-height:1.5}.qa{margin:9px 0;padding-left:10px;border-left:2px solid #174a7e}.qa p{margin-top:3px}strong{font-weight:800;color:#111}</style></head><body><div class="header"><h1>${title}</h1></div>${body}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()
 }
 function renderIntelligence(){if(!$("intelligenceView"))return;populateIntelCustomers();let lost=intelligence.filter(r=>r.type==="lost"),d=intelligence.filter(r=>r.type==="discount"),dv=intelligence.filter(r=>r.type==="delivery"),f=intelligence.filter(r=>r.type==="feedback");$("intelLostTotal").textContent=intelMoney(lost.reduce((s,r)=>s+(+r.amount||0),0));$("intelLostCount").textContent=lost.length+" records";$("intelSavingsTotal").textContent=intelMoney(orders.reduce((s,o)=>s+(Number(o.savingsTotal)||0),0));$("intelDeliveryTotal").textContent=intelMoney(dv.reduce((s,r)=>s+(+r.amount||0),0));$("intelFeedbackTotal").textContent=intelMoney(f.reduce((s,r)=>s+(+r.amount||0),0));$("intelRecordList").innerHTML=intelligence.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30).map(r=>`<div class="intel-record"><div class="intel-record-head"><div><span class="intel-pill">${esc(r.type.toUpperCase())}</span><strong style="display:block;margin-top:5px">${esc(intelName(r.customerId))}</strong><span class="mini">${esc(r.date||"")} · ${esc(r.product||r.need||r.reference||r.category||"")}</span></div><strong>${intelMoney(r.amount)}</strong></div><div class="mini" style="margin-top:6px">${esc(r.reason||r.impactStatus||r.notes||"")}</div><button class="secondary" style="margin-top:7px" onclick="deleteIntel('${r.id}')">Delete</button></div>`).join("")||'<p class="muted">No intelligence records yet.</p>'}
 function deleteIntel(id){if(confirm("Delete this record?")){intelligence=intelligence.filter(r=>r.id!==id);save();renderIntelligence()}}

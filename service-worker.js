@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-6-6-account-merge-website-fix";
+const CACHE="ab-sales-os-v5-6-7-management-report-evidence-upgrade";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
