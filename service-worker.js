@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-6-3-rfq-action-menu-reliability";
+const CACHE="ab-sales-os-v5-6-4-account-intelligence-contacts";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
