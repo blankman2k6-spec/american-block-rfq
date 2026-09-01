@@ -1386,6 +1386,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
 .account-product-top{display:flex;align-items:flex-start;gap:9px}.account-product-main{min-width:0;flex:1}.account-product-name{font-weight:850;color:var(--text)}
 .account-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}.account-product-grid div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 8px;min-width:0}.account-product-grid span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase}.account-product-grid strong{display:block;font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .contacts-directory-head{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.contacts-directory-list{display:grid;gap:9px;margin-top:12px}.contact-directory-card{border:1px solid var(--line);background:var(--panel);border-radius:15px;padding:12px}.contact-directory-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.contact-directory-name{font-size:17px;font-weight:900}.contact-directory-company{font-size:12px;color:var(--accent);font-weight:800;margin-top:2px}.contact-directory-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.contact-directory-actions button{padding:8px 10px}.contact-directory-index{position:sticky;top:74px;z-index:3;background:var(--bg);padding:6px 0 8px;display:flex;gap:5px;overflow-x:auto}.contact-directory-index button{min-width:30px;padding:6px 7px;font-size:10px}.contact-letter{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.08em;margin:13px 2px 5px;text-transform:uppercase}
+.account-merge-box{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}.account-merge-box h3{margin:0 0 4px;font-size:16px}.account-merge-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;margin-top:10px}.account-merge-row select{min-width:0}.account-merge-status{min-height:14px;margin-top:7px}
 @media(max-width:560px){.account-sales-layout{grid-template-columns:132px 1fr;gap:10px}.account-sales-donut{width:128px;height:128px}.account-sales-donut:after{inset:19px}.account-sales-center strong{font-size:18px}.account-sales-stats{grid-template-columns:1fr}.account-sales-stat{padding:7px 9px}.account-sales-stat strong{font-size:15px}.account-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 </style>
@@ -1395,7 +1396,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.4 Account Intelligence + Contacts</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.6 Account Merge + Website Research Fix</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2791,6 +2792,15 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
         <button id="addContact" class="secondary">＋ Contact</button>
       </div>
       <div id="contactRows"></div>
+      <div id="accountMergeBox" class="account-merge-box hidden">
+        <h3>Merge Duplicate Account</h3>
+        <div class="mini">Move every order, RFQ, sold item, activity, communication, contact, and linked account record into another account, then delete this duplicate account. Cloud sync runs automatically after the merge.</div>
+        <div class="account-merge-row">
+          <div><label>Merge this account into</label><select id="mergeTargetCustomer"></select></div>
+          <button id="mergeCustomerBtn" class="danger" type="button">Merge & Delete Duplicate</button>
+        </div>
+        <div id="mergeCustomerStatus" class="mini account-merge-status"></div>
+      </div>
       <div class="toolbar" style="margin-top:14px">
         <button id="saveCustomer" class="primary">Save Customer</button>
         <button id="cancelCustomer" class="secondary">Cancel</button>
@@ -3192,6 +3202,7 @@ function migrate(){
   save();
 }
 migrate();
+if(autoMergeKnownCustomerAliases()){save();}
 
 function showView(id,main=true){
   currentViewId=id;
@@ -3528,6 +3539,72 @@ function renderCustomers(){
 }
 
 
+
+function mergeTextUnique(a,b){
+  const parts=[String(a||"").trim(),String(b||"").trim()].filter(Boolean);
+  return [...new Set(parts)].join("\n\n");
+}
+function mergeCustomerMetadata(target,source){
+  const fill=["city","state","address","zip","accountType","website","businessDescription","marketRegion","knownSuppliers","buyingDrivers","websiteResearchSummary","websiteResearchWhyFit","websiteResearchFullAnalysis","websiteResearchSourceMode","websiteResearchUpdatedAt"];
+  fill.forEach(k=>{if(!target[k]&&source[k])target[k]=source[k]});
+  target.notes=mergeTextUnique(target.notes,source.notes);
+  target.wishlist=[...new Set([...(Array.isArray(target.wishlist)?target.wishlist:[]),...(Array.isArray(source.wishlist)?source.wishlist:[])].filter(Boolean))];
+  const recs=[...(Array.isArray(target.aiRecommendedProducts)?target.aiRecommendedProducts:[]),...(Array.isArray(source.aiRecommendedProducts)?source.aiRecommendedProducts:[])];
+  const seen=new Set();target.aiRecommendedProducts=recs.filter(r=>{const k=String(r?.product||"").trim().toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true});
+  target.accountYearlyGoals={...(source.accountYearlyGoals||{}),...(target.accountYearlyGoals||{})};
+  target.updatedAt=new Date().toISOString();
+}
+function remapNestedCustomerRefs(value,sourceId,targetId,contactMap){
+  if(!value||typeof value!=="object")return;
+  if(Array.isArray(value)){value.forEach(v=>remapNestedCustomerRefs(v,sourceId,targetId,contactMap));return}
+  const belongs=String(value.customerId||"")===String(sourceId);
+  if(belongs){
+    value.customerId=targetId;
+    if(value.contactId&&contactMap.has(value.contactId))value.contactId=contactMap.get(value.contactId);
+  }
+  Object.values(value).forEach(v=>remapNestedCustomerRefs(v,sourceId,targetId,contactMap));
+}
+function mergeCustomerAccounts(sourceId,targetId,{ask=true,auto=false}={}){
+  if(!sourceId||!targetId||String(sourceId)===String(targetId))return false;
+  const source=customerById(sourceId),target=customerById(targetId);if(!source||!target)return false;
+  const counts={orders:orders.filter(x=>x.customerId===sourceId).length,rfqs:rfqs.filter(x=>x.customerId===sourceId).length,activities:activities.filter(x=>x.customerId===sourceId).length,communications:communications.filter(x=>x.customerId===sourceId).length,contacts:(source.contacts||[]).length};
+  if(ask&&!confirm(`Merge ${source.company} into ${target.company}?\n\nAll linked data will move to ${target.company}:\n• ${counts.orders} orders (including all sold line items)\n• ${counts.rfqs} RFQs\n• ${counts.activities} activities\n• ${counts.communications} communications\n• ${counts.contacts} contacts\n\nThe duplicate account ${source.company} will then be deleted. This cannot be undone.`))return false;
+  const contactMap=new Map();target.contacts=Array.isArray(target.contacts)?target.contacts:[];
+  (source.contacts||[]).forEach(ct=>{
+    const same=target.contacts.find(t=>(ct.email&&t.email&&String(ct.email).trim().toLowerCase()===String(t.email).trim().toLowerCase())||(ct.name&&t.name&&String(ct.name).trim().toLowerCase()===String(t.name).trim().toLowerCase()&&String(ct.phone||"").replace(/\D/g,"")===String(t.phone||"").replace(/\D/g,"")));
+    if(same){contactMap.set(ct.id,same.id);same.role=same.role||ct.role||"";same.phone=same.phone||ct.phone||"";same.email=same.email||ct.email||"";same.location=same.location||ct.location||"";same.address=same.address||ct.address||"";same.city=same.city||ct.city||"";same.state=same.state||ct.state||"";same.zip=same.zip||ct.zip||"";same.primary=!!(same.primary||ct.primary)}
+    else{target.contacts.push({...ct});contactMap.set(ct.id,ct.id)}
+  });
+  mergeCustomerMetadata(target,source);
+  [rfqs,orders,activities,communications,intelligence].forEach(arr=>arr.forEach(rec=>{
+    if(String(rec.customerId||"")===String(sourceId)){
+      rec.customerId=targetId;
+      if(rec.contactId&&contactMap.has(rec.contactId))rec.contactId=contactMap.get(rec.contactId);
+      if("company" in rec)rec.company=target.company;
+      if("customerName" in rec)rec.customerName=target.company;
+    }
+  }));
+  remapNestedCustomerRefs(settings,sourceId,targetId,contactMap);
+  customers=customers.filter(c=>String(c.id)!==String(sourceId));
+  if(activeCustomerId===sourceId)activeCustomerId=targetId;
+  if(editingCustomerId===sourceId)editingCustomerId=targetId;
+  save();
+  if(!auto){renderAll();activeCustomerId=targetId;renderCustomerAccount();showView("customerAccountView",false)}
+  return true;
+}
+function autoMergeKnownCustomerAliases(){
+  const preferred=customers.find(c=>normalizeCompany(c.company)===normalizeCompany("LTR FASTENER & SUPPLY"));
+  const duplicate=customers.find(c=>normalizeCompany(c.company)===normalizeCompany("LTR FASTENER & SUPPL Y, L.L.C."));
+  if(preferred&&duplicate&&preferred.id!==duplicate.id)return mergeCustomerAccounts(duplicate.id,preferred.id,{ask:false,auto:true});
+  return false;
+}
+function populateMergeTargetOptions(){
+  const box=$("accountMergeBox"),sel=$("mergeTargetCustomer");if(!box||!sel)return;
+  if(!editingCustomerId){box.classList.add("hidden");sel.innerHTML="";return}
+  box.classList.remove("hidden");
+  sel.innerHTML='<option value="">Choose the account to keep…</option>'+customers.filter(c=>c.id!==editingCustomerId).sort((a,b)=>String(a.company||"").localeCompare(String(b.company||""))).map(c=>`<option value="${esc(c.id)}">${esc(c.company||"Unnamed Account")}${c.city?` — ${esc(c.city)}${c.state?`, ${esc(c.state)}`:""}`:""}</option>`).join("");
+  if($("mergeCustomerStatus"))$("mergeCustomerStatus").textContent="";
+}
 
 function confirmDeleteCompleteAccount(customerId){
   const c=customerById(customerId);if(!c)return;
@@ -5448,47 +5525,47 @@ async function aiResearchCustomerWebsite(){
   if(!settings.ai?.enabled){alert("Sales AI is disabled. Enable it in Settings first.");return}
   const btn=$("accountResearchWebsite"),out=$("accountWebsiteResearch");
   if(btn){btn.disabled=true;btn.textContent="Researching…"}
-  if(out)out.innerHTML="<div class='ai-data-note'>Researching the company website and matching services to the ABCO Flowline catalog…</div>";
+  if(out)out.innerHTML="<div class='ai-data-note'>Researching the company and matching verified services to the ABCO Flowline catalog…</div>";
+  const company=String(c.company||"").trim(),location=[c.city,c.state].filter(Boolean).join(", ");
+  const analysisRules=`Return research prose only. IMPORTANT: do not propose CRM actions, function calls, tool payloads, structured action objects, or JSON. Use exactly these headings: Company Summary, Why They Fit ABCO, Best ABCO Opportunities, Evidence / Sources. Under Best ABCO Opportunities, put each product family on its own bullet in the format "Product Family — reason/application". Use only ABCO Flowline catalog-grounded products and do not invent customer needs, inventory, pricing, services, or facts.`;
+  let r=null,usedFallback=false,directError=null;
   try{
-    const directQ=`Research the official company website ${website}. Identify the company's documented services, operations, equipment and markets relevant to American Block. Compare documented facts to the ABCO Flowline catalog in CRM context. Return a concise analysis and propose exactly one update_customer_profile action for this customer. In that action payload include: businessDescription (1-2 sentence factual summary), websiteFitSummary (1 concise sentence explaining why ABCO Flowline is relevant), and recommendedProducts (3-8 catalog-grounded product families, each with product, reason, and application when supported). Do not invent products, services, inventory, prices or customer needs.`;
     const isRestrictedSocial=/facebook\.com|instagram\.com|linkedin\.com/i.test(website);
-    let r=isRestrictedSocial?{answer:"",actions:[]}:await aiAsk(directQ,{customerId:c.id,mode:"website_research",website});
-    let usedFallback=isRestrictedSocial;
-
-    if(isRestrictedSocial||websiteResearchNeedsFallback(r.answer)){
+    if(!isRestrictedSocial){
+      try{
+        const directQ=`Research the official company website ${website} for ${company}${location?` in ${location}`:""}. Identify documented services, operations, equipment, and markets relevant to American Block. Compare only verified facts to the ABCO Flowline catalog supplied in CRM context. ${analysisRules}`;
+        r=await aiAsk(directQ,{customerId:c.id,mode:"website_research",website});
+      }catch(e){directError=e;usedFallback=true}
+    }else usedFallback=true;
+    if(!r||websiteResearchNeedsFallback(r.answer)){
       usedFallback=true;
-      if(out)out.innerHTML="<div class='ai-data-note'>Direct website access is restricted. Searching reliable public web sources for this company instead…</div>";
-      const company=String(c.company||"").trim();
-      const location=[c.city,c.state].filter(Boolean).join(", ");
-      const fallbackQ=`The saved website ${website} could not be read directly. Research ${company}${location?` in ${location}`:""} using the public web without restricting the search to the saved domain. Prefer the official website when indexed, then use reliable public sources such as search-indexed company pages, manufacturer/distributor pages, business directories, trade/industry pages, and other sources that clearly refer to this same company. Do not rely on unrelated companies with similar names. Clearly distinguish verified public-web facts from CRM context. Identify documented services, operations, equipment and markets relevant to American Block, then map only supported needs/applications to the ABCO Flowline catalog supplied in CRM context. Return a concise useful analysis instead of a fetch-error message. Use these headings in the answer: Company Summary, Why They Fit ABCO, Best ABCO Opportunities, Evidence / Sources. When structured CRM actions are supported, propose one update_customer_profile action with businessDescription, websiteFitSummary, and 3-8 catalog-grounded recommendedProducts. Do not invent facts, products, inventory, pricing, or customer needs.`;
-      // Deliberately pass an empty website to remove the Edge Function's exact-domain filter.
-      // This lets the existing deployed function use unrestricted web search without requiring a redeploy.
-      r=await aiAsk(fallbackQ,{customerId:c.id,mode:isRestrictedSocial?"chat":"website_research",website:""});
+      if(out)out.innerHTML="<div class='ai-data-note'>Direct website access was unavailable. Searching reliable public web sources for this same company instead…</div>";
+      const fallbackQ=`Research ${company}${location?` in ${location}`:""} using the public web. The saved website is ${website}, but do not require direct access to that domain. Prefer the official website when indexed, then reliable company, manufacturer/distributor, business-directory, and industry sources that clearly refer to this same company. Distinguish verified public-web facts from CRM context. ${analysisRules}`;
+      r=await aiAsk(fallbackQ,{customerId:c.id,mode:"chat",website:""});
     }
-
-    const profileAction=(r.actions||[]).find(a=>a.type==="update_customer_profile");
-    const p=profileAction?.payload||{};
-    const recs=Array.isArray(p.recommendedProducts)?p.recommendedProducts.map(x=>({
-      product:String(x.product||x.family||"").trim(),
-      reason:String(x.reason||"").trim(),
-      application:String(x.application||"").trim()
-    })).filter(x=>x.product):[];
-
+    const answer=String(r?.answer||"").trim();if(!answer)throw directError||new Error("No research response was returned.");
+    function section(name,nextNames){
+      const escaped=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const next=nextNames.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+      const re=new RegExp(`(?:^|\\n)\\s*(?:#+\\s*)?${escaped}\\s*:?\\s*\\n?([\\s\\S]*?)(?=\\n\\s*(?:#+\\s*)?(?:${next})\\s*:?|$)`,`i`);
+      return (answer.match(re)?.[1]||"").trim();
+    }
+    const summary=section("Company Summary",["Why They Fit ABCO","Best ABCO Opportunities","Evidence / Sources"]);
+    const why=section("Why They Fit ABCO",["Best ABCO Opportunities","Evidence / Sources"]);
+    const oppText=section("Best ABCO Opportunities",["Evidence / Sources"]);
+    const recs=oppText.split(/\n+/).map(line=>line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,"").trim()).filter(Boolean).map(line=>{
+      const parts=line.split(/\s+[—–-]\s+|:\s+/);return {product:String(parts.shift()||"").trim(),reason:parts.join(" — ").trim(),application:""};
+    }).filter(x=>x.product&&x.product.length<120).slice(0,8);
     if(recs.length)c.aiRecommendedProducts=recs;
-    c.websiteResearchSummary=String(p.businessDescription||"").trim()||
-      String(r.answer||"").split(/\n\n|How that maps|Sales opportunity/i)[0].replace(/^Research summary[^:]*:\s*/i,"").trim();
-    c.websiteResearchWhyFit=String(p.websiteFitSummary||profileAction?.reason||"").trim();
-    c.websiteResearchFullAnalysis=(usedFallback?"Direct website access was restricted, so public web research was used.\n\n":"")+String(r.answer||"").trim();
+    c.websiteResearchSummary=summary||answer.split(/\n\n+/)[0].replace(/^#+\s*/,"").trim();
+    c.websiteResearchWhyFit=why;
+    c.websiteResearchFullAnalysis=(usedFallback?"Public-web fallback was used because direct website access was unavailable.\n\n":"")+answer;
     c.websiteResearchSourceMode=usedFallback?"public_web_fallback":"official_domain";
-    c.websiteResearchUpdatedAt=new Date().toISOString();
-    c.updatedAt=new Date().toISOString();
-    save();
-    renderCustomerAccount();
+    c.websiteResearchUpdatedAt=new Date().toISOString();c.updatedAt=new Date().toISOString();
+    save();renderCustomerAccount();
   }catch(e){
     if(out)out.innerHTML="<div class='ai-data-note'>Research could not be completed. "+esc(e.message)+"</div>";
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent="✦ Research Website"}
-  }
+  }finally{if(btn){btn.disabled=false;btn.textContent="✦ Research Website"}}
 }
 
 function renderAiQueue(){
@@ -6894,8 +6971,8 @@ function syncCompanyAddressToSameLocationContacts(){
     if(row.querySelector('[data-c="sameAsCompany"]')?.value==="yes")syncContactSameAsCompanyRow(row);
   });
 }
-function newCustomer(){customerFormReturnView="customersView";editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cState","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes","cWishlist"].forEach(id=>$(id).value="");$("cIsNewAccount").checked=false;$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false)}
-function editCustomer(id){const c=customerById(id);if(!c)return;customerFormReturnView=currentViewId==="customerAccountView"?"customerAccountView":"customersView";editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cState").value=c.state||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cIsNewAccount").checked=!!c.isNewAccount;$("cWishlist").value=Array.isArray(c.wishlist)?c.wishlist.join("\n"):(c.wishlist||"");$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false)}
+function newCustomer(){customerFormReturnView="customersView";editingCustomerId=null;$("customerFormTitle").textContent="New Customer";["cCompany","cCity","cState","cAddress","cZip","cWebsite","cBusiness","cSuppliers","cBuyingWhy","cNotes","cWishlist"].forEach(id=>$(id).value="");$("cIsNewAccount").checked=false;$("cAccountType").value="";$("cMarket").value="";$("contactRows").innerHTML="";addContactRow();showView("customerFormView",false);populateMergeTargetOptions()}
+function editCustomer(id){const c=customerById(id);if(!c)return;customerFormReturnView=currentViewId==="customerAccountView"?"customerAccountView":"customersView";editingCustomerId=id;$("customerFormTitle").textContent="Edit Customer";$("cCompany").value=c.company||"";$("cCity").value=c.city||"";$("cState").value=c.state||"";$("cAddress").value=c.address||"";$("cZip").value=c.zip||"";$("cAccountType").value=c.accountType||"";$("cWebsite").value=c.website||"";$("cIsNewAccount").checked=!!c.isNewAccount;$("cWishlist").value=Array.isArray(c.wishlist)?c.wishlist.join("\n"):(c.wishlist||"");$("cBusiness").value=c.businessDescription||"";$("cMarket").value=c.marketRegion||"";$("cSuppliers").value=c.knownSuppliers||"";$("cBuyingWhy").value=c.buyingDrivers||"";$("cNotes").value=c.notes||"";$("contactRows").innerHTML="";(c.contacts||[]).forEach(addContactRow);if(!(c.contacts||[]).length)addContactRow();showView("customerFormView",false);populateMergeTargetOptions()}
 
 
 
@@ -7057,6 +7134,12 @@ $("saveRfq").onclick=()=>{
   save();showView("rfqsView",true)
 }
 ["cAddress","cCity","cState","cZip"].forEach(id=>{if($(id))$(id).addEventListener("input",syncCompanyAddressToSameLocationContacts)});
+if($("mergeCustomerBtn"))$("mergeCustomerBtn").onclick=()=>{
+  const targetId=$("mergeTargetCustomer")?.value||"";
+  if(!editingCustomerId){return}
+  if(!targetId){if($("mergeCustomerStatus"))$("mergeCustomerStatus").textContent="Choose the account you want to keep.";return}
+  mergeCustomerAccounts(editingCustomerId,targetId,{ask:true});
+};
 $("saveCustomer").onclick=()=>{const company=$("cCompany").value.trim();if(!company){$("customerMessage").textContent="Enter a company name.";return}let contacts=getContactRows();const old=customerById(editingCustomerId);const rec={id:editingCustomerId||uid(),company,city:$("cCity").value.trim(),state:$("cState").value.trim(),address:$("cAddress").value.trim(),zip:$("cZip").value.trim(),website:$("cWebsite").value.trim(),accountType:$("cAccountType").value,businessDescription:$("cBusiness").value.trim(),marketRegion:$("cMarket").value,knownSuppliers:$("cSuppliers").value.trim(),buyingDrivers:$("cBuyingWhy").value.trim(),notes:$("cNotes").value.trim(),contacts,isNewAccount:!!$("cIsNewAccount").checked,wishlist:$("cWishlist").value.split(/\n+/).map(x=>x.trim()).filter(Boolean),aiRecommendedProducts:old?.aiRecommendedProducts||[],websiteResearchUpdatedAt:old?.websiteResearchUpdatedAt||"",websiteResearchSummary:old?.websiteResearchSummary||"",websiteResearchWhyFit:old?.websiteResearchWhyFit||"",websiteResearchFullAnalysis:old?.websiteResearchFullAnalysis||"",accountYearlyGoals:old?.accountYearlyGoals||{},createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(editingCustomerId){customers=customers.map(c=>c.id===editingCustomerId?rec:c);rfqs.filter(r=>r.customerId===editingCustomerId).forEach(r=>r.company=company)}else customers.push(rec);save();migrate();if(customerFormReturnView==="customerAccountView"&&editingCustomerId){activeCustomerId=rec.id;renderCustomerAccount();showView("customerAccountView",false)}else showView("customersView",true)}
 $("saveGoal").onclick=()=>{
   ensureMonthlySalesAdjustments();
@@ -7466,6 +7549,7 @@ function cloudSnapshot(){
 }
 function applyCloudSnapshot(state){
   if(!state||typeof state!=="object")throw new Error("Cloud state is empty or invalid.");
+  let aliasMerged=false;
   applyingCloudState=true;
   try{
     rfqs=Array.isArray(state.rfqs)?state.rfqs:[];
@@ -7478,13 +7562,12 @@ function applyCloudSnapshot(state){
     if(!settings.skin)settings.skin="midnight-executive";
     if(state.preferences?.dailyGoalMin)localStorage.setItem("abSalesOS_dailyGoalMin",String(state.preferences.dailyGoalMin));
     if(state.preferences?.dailyGoalMax)localStorage.setItem("abSalesOS_dailyGoalMax",String(state.preferences.dailyGoalMax));
-    save(false);
-    applySkin(settings.skin||"midnight-executive");
-    renderAll();
-  }finally{
-    applyingCloudState=false;
-  }
+    aliasMerged=autoMergeKnownCustomerAliases();
+    save(false);applySkin(settings.skin||"midnight-executive");renderAll();
+  }finally{applyingCloudState=false}
+  if(aliasMerged)save(true);
 }
+
 function localHasCrmData(){
   return customers.length>0||rfqs.length>0||orders.length>0||activities.length>0||communications.length>0;
 }
