@@ -1407,7 +1407,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.6.9 AI Executive Territory Review</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.0 Report Center Export Upgrade</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2281,7 +2281,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
     </div></div>
     <div class="card"><h2>Sales Performance</h2><div class="intel-actions"><button class="secondary" data-report-center="product">Product Mix & Ranking</button><button class="secondary" data-report-center="lost">Lost RFQs</button><button class="secondary" data-report-center="inventory">Inventory / Stock Opportunity</button><button class="secondary" data-report-center="geo">Territory / Geography</button><button class="secondary" data-report-center="activity">Activity & Effort</button><button class="secondary" data-report-center="newaccounts">New Account Development</button></div></div>
     <div class="card"><h2>Customer-Facing</h2><p class="muted">Reports designed to help review value, purchases, open business, and next steps with an account.</p><label>Customer</label><select id="reportsCustomer"></select><div class="intel-actions" style="margin-top:10px"><button class="secondary" data-report-center="qbr">Customer QBR / Value Review</button><button class="secondary" data-report-center="customer">Customer Account Summary</button></div></div>
-    <div class="card"><h2>Report Preview</h2><div id="reportsOutput" class="muted">Choose a report above.</div></div>
+    <div class="card"><div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">Report Preview</h2><button id="exportSelectedReport" class="secondary" type="button">Export PDF</button></div><div id="reportsOutput" class="muted">Choose a report above.</div></div>
   </section>
 
   <section id="aiView" class="view">
@@ -4553,7 +4553,7 @@ function reportShell(title,subtitle,body){
   d.write(`<!doctype html><html><head><meta charset="utf-8"><title>${reportEscape(title)}</title><style>
   *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#172033;margin:0;background:#fff}.page{max-width:980px;margin:auto;padding:34px}
   h1{font-size:28px;margin:0}h2{font-size:18px;margin:22px 0 10px}.sub{color:#667085;margin-top:5px}.brand{font-size:12px;font-weight:800;letter-spacing:.12em;color:#356fb4;text-transform:uppercase}
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.metric{border:1px solid #d9e1ec;border-radius:12px;padding:12px}.metric small{color:#667085}.metric strong{display:block;font-size:21px;margin-top:5px}
+  .grid,.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.metric{border:1px solid #d9e1ec;border-radius:12px;padding:12px}.metric small,.metric span{display:block;color:#667085;font-size:10px}.metric strong{display:block;font-size:21px;margin-top:5px}.muted{color:#667085}.kicker{font-size:10px;font-weight:800;letter-spacing:.08em;color:#356fb4;text-transform:uppercase}ul{padding-left:20px}li{margin:6px 0}h2{color:#172033}.intel-table{width:100%;border-collapse:collapse}
   table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}th{background:#eaf1fb;text-align:left;padding:8px;border:1px solid #ccd6e4}td{padding:8px;border:1px solid #dde4ee;vertical-align:top}
   .rbar{display:grid;grid-template-columns:180px 1fr 110px;gap:10px;align-items:center;margin:8px 0;font-size:11px}.rtrack{height:12px;background:#edf1f6;border-radius:999px;overflow:hidden}.rtrack i{display:block;height:100%;background:#4c84d9;border-radius:999px}
   .donut{width:180px;height:180px;border-radius:50%;margin:15px auto;position:relative}.donut:after{content:"";position:absolute;inset:40px;background:#fff;border-radius:50%}.legend{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;font-size:11px}
@@ -4573,6 +4573,7 @@ function productReportData(){
 }
 function exportCurrentViewPDF(){
   const view=currentViewId||lastMainView;
+  if(view==="reportsView")return exportReportCenterPDF();
   if(view==="dashboardView"){
     const goal=Number(settings.goal)||0,sales=(Number(settings.sales)||0)+currentMonthSalesTotal(),remaining=Math.max(0,goal-sales),days=businessDaysLeft(),daily=days?remaining/days:remaining;
     const max=Math.max(goal,1);
@@ -5326,18 +5327,51 @@ if(t==="inventory"){
 if(t==="product"){if(typeof renderProducts==="function"){showView("productsView",true);return}$("intelReportOutput").innerHTML='<p>Use the Products page for product mix.</p>';return}
 if(t==="qbr"){let cid=$("meetingCustomer").value;if(!cid){$("intelReportOutput").innerHTML='<p class="muted">Choose a customer above first.</p>';return}let rs=intelligence.filter(r=>String(r.customerId)===String(cid)),s=customerOrderSavings(cid),d=rs.filter(r=>r.type==="delivery").reduce((a,r)=>a+(+r.amount||0),0);$("intelReportOutput").innerHTML=`<h2>${esc(intelName(cid))} — QBR Value</h2><div class="metrics"><div class="metric"><span>Product Savings</span><strong>${intelMoney(s)}</strong><div class="sub">Captured from actual orders</div></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(d)}</strong></div><div class="metric"><span>Total Documented Value</span><strong>${intelMoney(s+d)}</strong></div></div>`}}
 let intelReportTarget="intelReportOutput";
+let currentReportCenterType="monthly";
 function reportTable(title,desc,heads,rows){const el=$(intelReportTarget)||$("intelReportOutput");el.innerHTML=`<h2>${title}</h2><p class="muted">${desc}</p><table class="intel-table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`}
 function populateReportsCustomers(){if(!$("reportsCustomer"))return;$("reportsCustomer").innerHTML='<option value="">Select customer</option>'+customers.slice().sort((a,b)=>a.company.localeCompare(b.company)).map(c=>`<option value="${c.id}">${esc(c.company)}</option>`).join("")}
+function setActiveReportCenterButton(t){
+  document.querySelectorAll("[data-report-center]").forEach(b=>{
+    const active=b.dataset.reportCenter===t;
+    b.classList.toggle("primary",active);
+    b.classList.toggle("secondary",!active);
+    b.setAttribute("aria-pressed",active?"true":"false");
+  });
+}
+function reportCenterTitle(t){return ({monthly:"Monthly Territory & Account Review",pipeline:"Pipeline Summary",forecast:"Forecast Summary",business:"Business Case / Support Needs",product:"Product Mix & Ranking",lost:"Lost RFQs",inventory:"Inventory / Stock Opportunity",geo:"Territory / Geography",activity:"Activity & Effort",newaccounts:"New Account Development",qbr:"Customer QBR / Value Review",customer:"Customer Account Summary"})[t]||"Sales Report"}
+function reportCenterProductHtml(){
+  const data=aggregateProducts(),rows=data.rows.slice().sort((a,b)=>b.revenue-a.revenue);
+  return `<h2>Product Mix & Ranking</h2><p class="muted">Actual sold units and revenue from CRM orders.</p><div class="metrics"><div class="metric"><span>Products Sold</span><strong>${rows.length}</strong></div><div class="metric"><span>Units Sold</span><strong>${Math.round(data.units).toLocaleString()}</strong></div><div class="metric"><span>Product Revenue</span><strong>${trMoney(data.revenue)}</strong></div><div class="metric"><span>Buying Accounts</span><strong>${data.customers}</strong></div></div><table class="intel-table"><thead><tr><th>Product</th><th>Part</th><th>Units</th><th>Revenue</th><th>Accounts</th></tr></thead><tbody>${rows.slice(0,40).map(r=>`<tr><td>${esc(r.product)}</td><td>${esc(r.part||"—")}</td><td>${Math.round(r.qty).toLocaleString()}</td><td>${trMoney(r.revenue)}</td><td>${r.customers.size}</td></tr>`).join("")||'<tr><td colspan="5">No product sales recorded.</td></tr>'}</tbody></table>`;
+}
+function reportCenterForecastHtml(){
+  const month=$("forecastMonth")?.value||salesAdjustmentMonthKey(),goal=Number(settings.goal)||0;
+  const all=openPipelineRecords().filter(r=>(r.closeDate||"").slice(0,7)===month);
+  const sumConfidence=name=>all.filter(r=>r.confidence===name).reduce((s,r)=>s+r.value,0);
+  const commit=sumConfidence("Commit"),likely=sumConfidence("Likely"),upside=sumConfidence("Upside"),weighted=all.reduce((s,r)=>s+pipelineWeightedValue(r),0);
+  const actual=reconciledSalesForPeriod(month),projected=actual+weighted,gap=Math.max(0,goal-projected),coverage=goal?projected/goal*100:0;
+  return `<h2>Forecast Summary</h2><p class="muted">${esc(month)} forecast using CRM pipeline confidence and expected close dates.</p><div class="metrics"><div class="metric"><span>Actual Sales</span><strong>${trMoney(actual)}</strong></div><div class="metric"><span>Weighted Pipeline</span><strong>${trMoney(weighted)}</strong></div><div class="metric"><span>Projected</span><strong>${trMoney(projected)}</strong></div><div class="metric"><span>Goal Coverage</span><strong>${coverage.toFixed(0)}%</strong></div></div><table class="intel-table"><thead><tr><th>Confidence</th><th>Value</th><th>Deals</th></tr></thead><tbody>${["Commit","Likely","Upside"].map(name=>`<tr><td>${name}</td><td>${trMoney(sumConfidence(name))}</td><td>${all.filter(r=>r.confidence===name).length}</td></tr>`).join("")}<tr><td><strong>Gap to Goal</strong></td><td><strong>${trMoney(gap)}</strong></td><td>${all.length} total</td></tr></tbody></table>`;
+}
 function renderReportCenter(t){
+ currentReportCenterType=t||"monthly";setActiveReportCenterButton(currentReportCenterType);
  intelReportTarget="reportsOutput"; const out=$("reportsOutput");
- if(t==="monthly"){lastTerritoryReview=buildTerritoryReviewData();out.innerHTML=`<div class="kicker">Management Preview</div>${trManagementHtml(lastTerritoryReview,lastManagementAi)}${lastManagementAi?"":`<p class="report-hint" style="margin-top:10px">Use Territory Intelligence → Build AI Territory Review for the full AI management analysis.</p>`}`;return}
- if(t==="pipeline"){const open=rfqs.filter(isOpen),v=open.reduce((s,r)=>s+total(r),0);out.innerHTML=`<h2>Pipeline Summary</h2><div class="metrics"><div class="metric"><span>Open RFQs</span><strong>${open.length}</strong></div><div class="metric"><span>Open RFQ Value</span><strong>${trMoney(v)}</strong></div></div><ul>${open.sort((a,b)=>total(b)-total(a)).slice(0,15).map(r=>`<li><strong>${esc(customerName(r))}</strong> — ${trMoney(total(r))} — ${esc(r.status||"Open")}</li>`).join("")}</ul>`;return}
- if(t==="forecast"){showView("forecastView",true);intelReportTarget="intelReportOutput";return}
- if(t==="activity"){const recent=activities.slice().sort((a,b)=>trDate(b.date)-trDate(a.date)),types=new Map();recent.forEach(a=>types.set(a.type||"Activity",(types.get(a.type||"Activity")||0)+1));out.innerHTML=`<h2>Activity & Effort Report</h2><p class="muted">Quantifies documented field activity without printing every CRM note.</p><div class="metrics">${[...types.entries()].slice(0,8).map(([k,v])=>`<div class="metric"><span>${esc(k)}</span><strong>${v}</strong></div>`).join("")}</div>`;return}
- if(t==="newaccounts"){const cs=customers.filter(c=>c.isNewAccount);out.innerHTML=`<h2>New Account Development</h2><p class="muted">Only accounts explicitly marked New Account are included.</p><ul>${cs.map(c=>{const a=trAccountSummary(c);return `<li><strong>${esc(c.company)}</strong> — ${esc(c.marketRegion||"Territory not assigned")} — YTD ${trMoney(a.ytd)} — Open ${trMoney(a.open)}</li>`}).join("")||"<li>No accounts are currently marked New Account.</li>"}</ul>`;return}
+ if(t==="monthly"){lastTerritoryReview=buildTerritoryReviewData();out.innerHTML=`<div class="kicker">Management Preview</div>${trManagementHtml(lastTerritoryReview,lastManagementAi)}${lastManagementAi?"":`<p class="report-hint" style="margin-top:10px">AI analysis will be generated automatically when you export the Management PDF.</p>`}`;return}
+ if(t==="pipeline"){const open=rfqs.filter(isOpen),v=open.reduce((s,r)=>s+total(r),0);out.innerHTML=`<h2>Pipeline Summary</h2><div class="metrics"><div class="metric"><span>Open RFQs</span><strong>${open.length}</strong></div><div class="metric"><span>Open RFQ Value</span><strong>${trMoney(v)}</strong></div></div><ul>${open.sort((a,b)=>total(b)-total(a)).slice(0,25).map(r=>`<li><strong>${esc(customerName(r))}</strong> — ${trMoney(total(r))} — ${esc(r.status||"Open")}</li>`).join("")||"<li>No open RFQs.</li>"}</ul>`;return}
+ if(t==="forecast"){out.innerHTML=reportCenterForecastHtml();return}
+ if(t==="activity"){const recent=activities.slice().sort((a,b)=>trDate(b.date)-trDate(a.date)),types=new Map();recent.forEach(a=>types.set(a.type||"Activity",(types.get(a.type||"Activity")||0)+1));out.innerHTML=`<h2>Activity & Effort Report</h2><p class="muted">Documented field activity by type.</p><div class="metrics">${[...types.entries()].slice(0,12).map(([k,v])=>`<div class="metric"><span>${esc(k)}</span><strong>${v}</strong></div>`).join("")}</div>`;return}
+ if(t==="newaccounts"){const cs=customers.filter(c=>c.isNewAccount);out.innerHTML=`<h2>New Account Development</h2><p class="muted">Accounts explicitly marked New Account.</p><ul>${cs.map(c=>{const a=trAccountSummary(c);return `<li><strong>${esc(c.company)}</strong> — ${esc(c.marketRegion||"Territory not assigned")} — YTD ${trMoney(a.ytd)}</li>`}).join("")||"<li>No accounts are currently marked New Account.</li>"}</ul>`;return}
+ if(t==="product"){out.innerHTML=reportCenterProductHtml();return}
  if(t==="business"){renderIntelReport("feedback");intelReportTarget="intelReportOutput";return}
- if(["lost","inventory","geo","product"].includes(t)){renderIntelReport(t);intelReportTarget="intelReportOutput";return}
- if(t==="qbr"||t==="customer"){const cid=$("reportsCustomer").value;if(!cid){out.innerHTML='<p class="muted">Select a customer first.</p>';return}const c=customerById(cid),a=trAccountSummary(c);if(t==="qbr"){const old=$("meetingCustomer").value;$("meetingCustomer").value=cid;renderIntelReport("qbr");$("meetingCustomer").value=old;intelReportTarget="intelReportOutput";return}out.innerHTML=`<h2>${esc(c.company)} — Account Summary</h2>${trAccountManagement(a)}`;return}
+ if(["lost","inventory","geo"].includes(t)){renderIntelReport(t);intelReportTarget="intelReportOutput";return}
+ if(t==="qbr"||t==="customer"){const cid=$("reportsCustomer").value;if(!cid){out.innerHTML='<p class="muted">Select a customer first.</p>';return}const c=customerById(cid),a=trAccountSummary(c);if(t==="qbr"){const rs=intelligence.filter(r=>String(r.customerId)===String(cid)),savings=customerOrderSavings(cid),delivery=rs.filter(r=>r.type==="delivery").reduce((sum,r)=>sum+(+r.amount||0),0);out.innerHTML=`<h2>${esc(c.company)} — QBR / Value Review</h2><div class="metrics"><div class="metric"><span>YTD Sales</span><strong>${trMoney(a.ytd)}</strong></div><div class="metric"><span>Units Sold</span><strong>${Math.round(a.units||0).toLocaleString()}</strong></div><div class="metric"><span>Product Savings</span><strong>${intelMoney(savings)}</strong></div><div class="metric"><span>Delivery Value</span><strong>${intelMoney(delivery)}</strong></div></div>${trAccountManagement(a)}`;return}out.innerHTML=`<h2>${esc(c.company)} — Account Summary</h2>${trAccountManagement(a)}`;return}
+}
+async function exportReportCenterPDF(){
+  const t=currentReportCenterType||"monthly";
+  if(t==="monthly")return await trPrintDocument("management");
+  const out=$("reportsOutput");
+  if(!out||!out.innerHTML.trim()||/Choose a report above/.test(out.textContent||""))renderReportCenter(t);
+  if((t==="qbr"||t==="customer")&&!$("reportsCustomer")?.value){alert("Select a customer first.");return}
+  const title=reportCenterTitle(t);
+  return reportShell(title,"American Block Sales OS",out.innerHTML);
 }
 function meetingContact(){
   const c=intelCust($("meetingCustomer")?.value);
@@ -8252,7 +8286,7 @@ applyLayoutMode(layoutMode);
 
 if("serviceWorker" in navigator)window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.6.9");
+    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.7.0");
     await reg.update();
     // Force a newly deployed worker to take control without leaving iPhone/PWA users on an older report build.
     if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
@@ -8261,7 +8295,10 @@ if("serviceWorker" in navigator)window.addEventListener("load",async()=>{
 document.querySelectorAll("[data-intel-form]").forEach(b=>b.onclick=()=>openIntelForm(b.dataset.intelForm));
 document.querySelectorAll("[data-intel-report]").forEach(b=>b.onclick=()=>renderIntelReport(b.dataset.intelReport));
 document.querySelectorAll("[data-report-center]").forEach(b=>b.onclick=()=>renderReportCenter(b.dataset.reportCenter));
+if($("exportSelectedReport"))$("exportSelectedReport").onclick=exportReportCenterPDF;
 populateReportsCustomers();
+if($("reportsCustomer"))$("reportsCustomer").onchange=()=>{if(["qbr","customer"].includes(currentReportCenterType))renderReportCenter(currentReportCenterType)};
+setActiveReportCenterButton(currentReportCenterType);
 if($("closeIntelForm"))$("closeIntelForm").onclick=()=>$("intelFormCard").classList.add("hidden");
 if($("saveIntelRecord"))$("saveIntelRecord").onclick=saveIntelRecord;
 if($("generateMeetingTemplates"))$("generateMeetingTemplates").onclick=generateMeetingTemplates;
