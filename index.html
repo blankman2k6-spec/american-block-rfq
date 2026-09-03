@@ -820,12 +820,13 @@ body[data-skin="oilfield-black"] .goal-pie::after{background:var(--panel)}
 .bo-line-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .bo-switch-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:10px}
 .bo-switch{
-  appearance:none;-webkit-appearance:none;width:54px!important;height:31px;border-radius:999px!important;padding:0!important;
-  background:#cbd5e1!important;border:1px solid #94a3b8!important;position:relative;transition:.2s
+  appearance:none;-webkit-appearance:none;width:46px!important;height:26px!important;min-height:26px!important;border-radius:999px!important;padding:0!important;
+  background:#d7e0e8!important;border:1px solid #b5c3cf!important;position:relative;transition:background .18s ease,border-color .18s ease;box-shadow:inset 0 1px 2px rgba(15,23,42,.08);cursor:pointer
 }
-.bo-switch:before{content:"";position:absolute;width:25px;height:25px;left:2px;top:2px;border-radius:50%;background:white;box-shadow:0 2px 5px rgba(0,0,0,.22);transition:.2s}
-.bo-switch:checked{background:#f59e0b!important;border-color:#d97706!important}
-.bo-switch:checked:before{transform:translateX(23px)}
+.bo-switch:before{content:"";position:absolute;width:20px;height:20px;left:2px;top:2px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.24);transition:transform .18s ease}
+.bo-switch:checked{background:#2f8fca!important;border-color:#2f8fca!important}
+.bo-switch:checked:before{transform:translateX(20px)}
+.bo-switch:focus-visible{outline:3px solid rgba(47,143,202,.22);outline-offset:3px}
 .bo-details.hidden{display:none}
 .bo-history{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
 .bo-history-row{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:4px 0}
@@ -953,6 +954,19 @@ body[data-skin="classic-office"] .customer-health-card .sub{color:#171717!import
   border:1px solid var(--line);border-radius:13px;background:var(--panel2);
   color:var(--text);font-weight:800
 }
+#monthlySalesPeriod.compact-month-picker{width:210px!important;max-width:100%;min-height:46px;padding:10px 12px;display:block}
+@media(max-width:620px){#monthlySalesPeriod.compact-month-picker{width:210px!important}}
+.bo-open-action{cursor:pointer;min-height:36px;padding:7px 12px!important;font:inherit}
+.bo-open-action:active{transform:scale(.97)}
+.bo-close-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;padding:16px;z-index:390;backdrop-filter:blur(5px)}
+.bo-close-dialog{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 28px 80px rgba(0,0,0,.32)}
+.bo-close-ticket{font-size:11px;color:var(--muted);margin:2px 0 10px}
+.bo-close-lines{display:grid;gap:8px;margin:10px 0}
+.bo-close-line{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:11px}
+.bo-close-line input{width:20px!important;height:20px!important;min-height:20px!important;margin:0}
+.bo-close-line strong{display:block}.bo-close-line .mini{margin-top:2px}.bo-close-qty{font-weight:900;white-space:nowrap}
+.bo-close-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+@media(max-width:520px){.bo-close-actions{grid-template-columns:1fr}.bo-close-line{grid-template-columns:auto 1fr}.bo-close-qty{grid-column:2}}
 @media(max-width:620px){
   .sales-adjustment-period-row{grid-template-columns:1fr}
 }
@@ -1409,7 +1423,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.1 Management Review + Report Intel</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.2 UI Polish + Back Order Quick Close</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1491,7 +1505,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
       <div class="row sales-adjustment-period-row" style="margin-top:10px">
         <div>
           <label>Adjustment Month / Year</label>
-          <input id="monthlySalesPeriod" type="month">
+          <input id="monthlySalesPeriod" class="compact-month-picker" type="month">
         </div>
         <div class="sales-adjustment-period-summary">
           <label>Selected Period</label>
@@ -2666,6 +2680,26 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
     </div>
   </section>
 
+
+
+  <div id="backorderQuickCloseModal" class="bo-close-backdrop hidden" role="dialog" aria-modal="true" aria-label="Close back orders on ticket">
+    <div class="bo-close-dialog">
+      <div class="section-head" style="margin:0 0 6px">
+        <div><div class="kicker">Back Order</div><h2 id="boQuickCloseTitle" style="margin:3px 0">Close Back Orders</h2></div>
+        <button id="boQuickCloseX" class="secondary" type="button">✕</button>
+      </div>
+      <div id="boQuickCloseMeta" class="bo-close-ticket"></div>
+      <div class="mini">Choose the lines that have been delivered/invoiced. Closing a line credits its remaining held value on the date below.</div>
+      <div id="boQuickCloseLines" class="bo-close-lines"></div>
+      <label>Delivery / Invoice Date</label>
+      <input id="boQuickCloseDate" type="date">
+      <div class="bo-close-actions">
+        <button id="boQuickCloseSelected" class="primary" type="button">Close Selected</button>
+        <button id="boQuickCloseAll" class="secondary" type="button">Close All on Ticket</button>
+      </div>
+      <button id="boQuickCloseCancel" class="secondary" type="button" style="width:100%;margin-top:9px">Cancel</button>
+    </div>
+  </div>
 
   <div id="quickEventModal" class="quick-event-backdrop hidden" role="dialog" aria-modal="true" aria-label="Create sales event">
     <div class="quick-event-dialog">
@@ -4172,6 +4206,53 @@ function saveBackorderEditor(){
   showView("backordersView",true);
   activeBackorderSource=null;
 }
+let quickCloseBackorderSource=null;
+function openBackorderQuickClose(kind,id){
+  const src=kind==="order"?orders.find(o=>o.id===id):rfqs.find(r=>r.id===id);
+  if(!src)return;
+  const openLines=(src.items||[]).map((item,index)=>({item,index,remaining:boRemainingQty(item)})).filter(x=>x.remaining>0);
+  if(!openLines.length){alert("There are no open back orders on this ticket.");return}
+  quickCloseBackorderSource={kind,id};
+  const cust=kind==="order"?orderCustomerName(src):customerName(src);
+  $("boQuickCloseTitle").textContent=`Close Back Orders — ${cust}`;
+  $("boQuickCloseMeta").textContent=kind==="order"
+    ?`PO ${src.poNumber||"—"} · Sales Order ${src.salesOrder||"—"}`
+    :`Closed Won RFQ ${src.quoteNo||"—"}`;
+  $("boQuickCloseDate").value=localIsoDate();
+  $("boQuickCloseLines").innerHTML=openLines.map(({item,index,remaining})=>`<label class="bo-close-line"><input type="checkbox" data-bo-qc-line="${index}" checked><span><strong>${esc(item.part||item.product||`Line ${index+1}`)}</strong><span class="mini">${esc(item.product||"")}</span></span><span class="bo-close-qty">${remaining} open</span></label>`).join("");
+  $("backorderQuickCloseModal").classList.remove("hidden");
+}
+function closeBackorderQuickModal(){
+  $("backorderQuickCloseModal")?.classList.add("hidden");
+  quickCloseBackorderSource=null;
+}
+function applyBackorderQuickClose(closeAll=false){
+  if(!quickCloseBackorderSource)return;
+  const {kind,id}=quickCloseBackorderSource;
+  const src=kind==="order"?orders.find(o=>o.id===id):rfqs.find(r=>r.id===id);
+  if(!src)return closeBackorderQuickModal();
+  const date=$("boQuickCloseDate")?.value||"";
+  if(!date){alert("Choose the delivery / invoice date.");return}
+  let indexes=[];
+  if(closeAll){
+    indexes=(src.items||[]).map((item,index)=>boRemainingQty(item)>0?index:-1).filter(index=>index>=0);
+  }else{
+    indexes=[...document.querySelectorAll("[data-bo-qc-line]:checked")].map(el=>Number(el.dataset.boQcLine));
+  }
+  if(!indexes.length){alert("Select at least one back-order line to close.");return}
+  let units=0;
+  indexes.forEach(index=>{
+    const item=src.items?.[index];if(!item)return;
+    const rem=boRemainingQty(item);if(rem<=0)return;
+    item.backorderDeliveries=item.backorderDeliveries||[];
+    item.backorderDeliveries.push({qty:rem,date,createdAt:new Date().toISOString(),closedBackorder:true,quickClose:true});
+    units+=rem;
+  });
+  if(!units){alert("The selected lines no longer have an open quantity.");renderBackorders();closeBackorderQuickModal();return}
+  src.updatedAt=new Date().toISOString();
+  save();renderAll();closeBackorderQuickModal();
+}
+
 function renderBackorders(){
   if(!$("backorderList"))return;
   let rows=boBackorderRows();
@@ -4193,7 +4274,7 @@ function renderBackorders(){
   $("backorderList").innerHTML=rows.length?"":"<div class='empty'>No matching back orders.</div>";
   rows.forEach(r=>{
     const div=document.createElement("div");div.className="list-card backorder-card"+(r.remainingQty<=0?" completed":"");
-    div.innerHTML=`<div class="backorder-head"><div><div class="list-title">${esc(r.customer)}</div><div class="mini">PO ${esc(r.poNumber||"—")} · SO ${esc(r.salesOrder||"—")}</div></div><span class="status ${r.remainingQty>0?(r.promiseDate&&r.promiseDate<=today?"red":"yellow"):"green"}">${r.remainingQty>0?"OPEN":"COMPLETE"}</span></div>
+    div.innerHTML=`<div class="backorder-head"><div><div class="list-title">${esc(r.customer)}</div><div class="mini">PO ${esc(r.poNumber||"—")} · SO ${esc(r.salesOrder||"—")}</div></div>${r.remainingQty>0?`<button type="button" class="status ${r.promiseDate&&r.promiseDate<=today?"red":"yellow"} bo-open-action" data-bo-quick-close="${r.kind}|${r.sourceId}">OPEN</button>`:`<span class="status green">COMPLETE</span>`}</div>
       <div class="backorder-product">${esc(r.part||r.product||"Product")}</div><div class="mini">${esc(r.product||"")}</div>
       <div class="backorder-grid">
         <div class="backorder-mini"><span>Ordered</span><strong>${r.orderedQty}</strong></div>
@@ -4205,6 +4286,7 @@ function renderBackorders(){
     $("backorderList").appendChild(div);
   });
   document.querySelectorAll("[data-bo-manage]").forEach(b=>b.onclick=()=>{const [kind,id]=b.dataset.boManage.split("|");openBackorderEditor(kind,id)});
+  document.querySelectorAll("[data-bo-quick-close]").forEach(b=>b.onclick=()=>{const [kind,id]=b.dataset.boQuickClose.split("|");openBackorderQuickClose(kind,id)});
 }
 
 function currentMonthClosedWonSales(){
@@ -8583,6 +8665,11 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{const t=e.target.closest("[data-todo-toggle]");if(!t)return;const rec=settings.salesTodos.find(x=>x.id===t.dataset.todoToggle);if(rec){rec.completed=t.checked;rec.completedAt=t.checked?new Date().toISOString():"";save();renderPlanner()}});
 if($("closeBackorderNow"))$("closeBackorderNow").onclick=closeRemainingBackorderToday;
+if($("boQuickCloseX"))$("boQuickCloseX").onclick=closeBackorderQuickModal;
+if($("boQuickCloseCancel"))$("boQuickCloseCancel").onclick=closeBackorderQuickModal;
+if($("boQuickCloseSelected"))$("boQuickCloseSelected").onclick=()=>applyBackorderQuickClose(false);
+if($("boQuickCloseAll"))$("boQuickCloseAll").onclick=()=>applyBackorderQuickClose(true);
+if($("backorderQuickCloseModal"))$("backorderQuickCloseModal").addEventListener("click",e=>{if(e.target===$("backorderQuickCloseModal"))closeBackorderQuickModal()});
 
 if($("followupSearch"))$("followupSearch").oninput=renderFollowups;
 if($("followupFilter"))$("followupFilter").onchange=renderFollowups;
