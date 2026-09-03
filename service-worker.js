@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-7-2-ui-polish-backorder-quick-close";
+const CACHE="ab-sales-os-v5-7-3-ui-fit-number-polish";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{

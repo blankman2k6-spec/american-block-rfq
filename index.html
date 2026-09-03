@@ -1416,6 +1416,36 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
 #territoryReviewPreview .mgmt-block h3,#reportsOutput .mgmt-block h3{color:#174a7e;font-weight:900}
 #territoryReviewPreview .analysis-list>li>strong,#territoryReviewPreview .executive-list>li>strong,#reportsOutput .analysis-list>li>strong,#reportsOutput .executive-list>li>strong{color:#174a7e}
 #territoryReviewPreview li,#reportsOutput li{color:#111;margin:5px 0}
+
+
+/* v5.7.3 — mobile fit + metric readability polish */
+.row > div,.section-head > div,.metric{min-width:0}
+.metric > span,.metric > small{display:block}
+.metric > strong{display:block;margin-top:6px;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+#reportsOutput .metrics,#intelView .metrics{gap:10px}
+#reportsOutput .metric,#intelView .metric{padding:14px 16px;min-height:96px}
+#reportsOutput .metric > span,#intelView .metric > span{font-size:12px;font-weight:800;letter-spacing:.045em;text-transform:uppercase;color:var(--muted);line-height:1.25}
+#reportsOutput .metric > strong,#intelView .metric > strong{font-size:28px;margin-top:8px;overflow-wrap:anywhere}
+#reportsOutput .metric > small,#intelView .metric > small{margin-top:6px;font-size:12px;line-height:1.3;color:var(--muted)}
+
+/* iOS date/month controls: keep them compact and inside their cards/modals */
+input[type="date"],input[type="month"]{box-sizing:border-box;min-width:0;max-width:100%}
+body[data-layout="mobile"] input[type="date"]{width:min(100%,220px)!important;max-width:220px!important;display:block}
+body[data-layout="mobile"] input[type="month"]{width:min(100%,210px)!important;max-width:210px!important;display:block}
+body[data-layout="mobile"] #monthlySalesPeriod{width:190px!important;max-width:190px!important}
+body[data-layout="mobile"] #reportIntelDate{width:190px!important;max-width:190px!important}
+body[data-layout="mobile"] #boQuickCloseDate{width:190px!important;max-width:190px!important}
+body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px!important}
+.bo-close-dialog{overflow-x:hidden}
+.bo-close-dialog input,.bo-close-dialog select,.bo-close-dialog textarea{max-width:100%;box-sizing:border-box}
+.bo-close-dialog #boQuickCloseDate{margin-top:4px}
+
+@media(max-width:560px){
+  #reportsOutput .metrics,#intelView .metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #reportsOutput .metric,#intelView .metric{border-radius:16px}
+  #reportsOutput .metric > strong,#intelView .metric > strong{font-size:26px}
+}
+
 </style>
 </head>
 <body>
@@ -1423,7 +1453,7 @@ body[data-skin="baby-blue"] .planner-hero{background:#eef8fe!important;color:#14
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.2 UI Polish + Back Order Quick Close</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.3 UI Fit & Number Polish</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
