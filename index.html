@@ -1465,7 +1465,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.4 Business Card → Existing Account</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.5 Image Import for Orders + RFQs</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1737,11 +1737,14 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
     </div>
     <div class="toolbar" style="margin-top:12px">
       <button id="importAck" class="primary">＋ Import Acknowledgment PDF</button>
+      <button id="importRfqImage" class="secondary">＋ Import RFQ Image</button>
       <button id="teamPdf" class="secondary">Team PDF</button>
       <button id="exportBackup" class="secondary">Export Backup</button>
       <button id="importBackup" class="secondary">Import Backup</button>
       <input id="importFile" type="file" class="hidden" accept=".json,application/json">
       <input id="ackFile" type="file" class="hidden" accept="application/pdf,.pdf">
+      <input id="rfqImageFile" type="file" class="hidden" accept="image/*">
+      <input id="orderImageFile" type="file" class="hidden" accept="image/*">
     </div>
     <div id="rfqList" style="margin-top:10px"></div>
   </section>
@@ -1753,6 +1756,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
       <div class="toolbar">
         <button id="manualOrderBtn" class="secondary">＋ Manual Order</button>
         <button id="importAckOrders" class="primary">＋ Import PDF</button>
+        <button id="importOrderImage" class="secondary">＋ Import Image</button>
       </div>
     </div>
     <div class="row">
@@ -6865,7 +6869,78 @@ async function importAcknowledgment(file){
     alert("I could not read this acknowledgment automatically. "+(err?.message||""));
   }
 }
+async function readSalesDocumentImage(file,target){
+  const endpoint=aiEndpoint();
+  if(!endpoint)throw new Error("Sales AI endpoint is not configured.");
+  const imageDataUrl=await fileToDataUrl(file);
+  const res=await fetch(endpoint,{method:"POST",headers:aiAuthHeaders(),body:JSON.stringify({mode:"sales_document_image",target,imageDataUrl})});
+  const raw=await res.text();let payload=null;try{payload=JSON.parse(raw)}catch{}
+  if(!res.ok)throw new Error(payload?.error||raw||`HTTP ${res.status}`);
+  if(!payload?.document)throw new Error("The image did not return structured sales data.");
+  return payload.document;
+}
+function normalizeImportedDate(v){
+  const x=String(v||"").trim();if(!x)return localIsoDate();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(x))return x;
+  const d=new Date(x);return isNaN(d)?localIsoDate():localIsoDate(d);
+}
+async function importOrderImage(file){
+  if(!file)return;
+  const btn=$("importOrderImage"),old=btn?.textContent||"＋ Import Image";
+  if(btn){btn.disabled=true;btn.textContent="Reading Image…"}
+  try{
+    const doc=await readSalesDocumentImage(file,"order");
+    editingOrderId=null;ackVerificationRequired=true;
+    if(currentAckSourceUrl)try{URL.revokeObjectURL(currentAckSourceUrl)}catch{}
+    currentAckSourceUrl=URL.createObjectURL(file);
+    $("sourcePdfFrame").src=currentAckSourceUrl;$("sourcePdfFrame").classList.add("hidden");
+    $("toggleSourcePdf").textContent="Show Source Here";
+    $("ackReviewTitle").textContent="Verify Image Import";$("confirmAck").textContent="Confirm & Import Order";
+    pendingAck={fileName:file.name||"Order image",imageImport:true};
+    $("ackFileName").textContent=file.name||"Order Image";
+    $("ackCompany").value=doc.company||"";$("ackCustomerName").value=doc.company||"";$("ackParsedContact").value=doc.contactName||"";
+    $("ackSalesOrder").value=doc.salesOrder||doc.documentNumber||"";$("ackPO").value=doc.poNumber||"";$("ackOrderDate").value=normalizeImportedDate(doc.date);
+    $("ackShipping").value=Number(doc.shipping||0).toFixed(2);$("ackTax").value=Number(doc.tax||0).toFixed(2);
+    const items=Array.isArray(doc.items)?doc.items.map(i=>({part:i.part||"",product:i.product||"",qty:Number(i.qty)||0,price:Number(i.price)||0,verified:false})):[];
+    const calc=items.reduce((a,i)=>a+i.qty*i.price,0)+Number(doc.shipping||0)+Number(doc.tax||0);
+    $("ackTotal").value=Number(doc.total||calc||0).toFixed(2);
+    refreshAckCustomerDropdown();
+    const match=bestCustomerMatch(doc.company||"");
+    if(match){$("ackCustomer").value=match.id;$("ackCustomerName").value=match.company;fillAckContactOptions();}
+    else{$("ackCustomer").value="__new__";fillAckContactOptions();}
+    renderAckItems(items.length?items:[{part:"",product:"",qty:1,price:0,verified:false}]);
+    fillAckRfqMatches();updateAckVerificationState();
+    $("ackWarnings").textContent=match?"Image scan matched an existing account. Verify every field against the image before importing.":"Image scan complete. Choose an existing customer or create a new one, then verify every field before importing.";
+    showView("ackReviewView",false);
+  }catch(err){alert("I could not read this order image automatically. "+(err?.message||""))}
+  finally{if(btn){btn.disabled=false;btn.textContent=old}}
+}
+async function importRfqImage(file){
+  if(!file)return;
+  const btn=$("importRfqImage"),old=btn?.textContent||"＋ Import RFQ Image";
+  if(btn){btn.disabled=true;btn.textContent="Reading Image…"}
+  try{
+    const doc=await readSalesDocumentImage(file,"rfq");
+    if(!customers.length){alert("Add a customer first, then import the RFQ image.");return}
+    newRfq();
+    const match=bestCustomerMatch(doc.company||"");
+    if(match){$("rfqCustomer").value=match.id;renderContactOptions();}
+    $("rfqNumber").value=doc.documentNumber||doc.quoteNumber||$("rfqNumber").value;
+    $("rfqDate").value=normalizeImportedDate(doc.date);
+    $("rfqShipping").value=Number(doc.shipping||0).toFixed(2);$("rfqTax").value=Number(doc.tax||0).toFixed(2);
+    $("rfqItems").innerHTML="";
+    const items=Array.isArray(doc.items)?doc.items:[];
+    (items.length?items:[{part:"",product:"",qty:1,price:0}]).forEach(i=>addItem({part:i.part||"",product:i.product||"",qty:Number(i.qty)||0,price:Number(i.price)||0}));
+    if(doc.notes)$("rfqFeedback").value=doc.notes;
+    if(!match&&doc.company){$("rfqMessage").textContent=`Image scan found “${doc.company}”. Select the correct customer before saving.`;}
+    else $("rfqMessage").textContent="Image scan complete. Review the customer, items, quantities and pricing before saving.";
+    updateDraft();
+  }catch(err){alert("I could not read this RFQ image automatically. "+(err?.message||""))}
+  finally{if(btn){btn.disabled=false;btn.textContent=old}}
+}
 function chooseAckFile(){$("ackFile").value="";$("ackFile").click()}
+function chooseOrderImage(){$("orderImageFile").value="";$("orderImageFile").click()}
+function chooseRfqImage(){$("rfqImageFile").value="";$("rfqImageFile").click()}
 
 
 function addItem(data={part:"",product:"",qty:1,price:0},placement="bottom"){
@@ -7452,7 +7527,11 @@ $("teamPdf").onclick=teamReport;
 $("manualOrderBtn").onclick=newManualOrder;
 $("importAck").onclick=chooseAckFile;
 $("importAckOrders").onclick=chooseAckFile;
+$("importOrderImage").onclick=chooseOrderImage;
+$("importRfqImage").onclick=chooseRfqImage;
 $("ackFile").onchange=e=>{const f=e.target.files?.[0];if(f)importAcknowledgment(f)};
+$("orderImageFile").onchange=e=>{const f=e.target.files?.[0];if(f)importOrderImage(f)};
+$("rfqImageFile").onchange=e=>{const f=e.target.files?.[0];if(f)importRfqImage(f)};
 $("ackCustomer").onchange=()=>{
   if($("ackCustomer").value==="__new__"){
     $("ackCustomerName").focus();
@@ -7472,9 +7551,9 @@ $("ackTax").oninput=()=>{fillAckRfqMatches();updateAckCalculatedTotal();updateAc
 $("addAckItem").onclick=()=>{addAckItemRow();updateAckCalculatedTotal()};
 $("openSourcePdf").onclick=openCurrentAckPdf;
 $("toggleSourcePdf").onclick=()=>{
-  if(!currentAckSourceUrl){alert("No source PDF is attached to this review.");return}
+  if(!currentAckSourceUrl){alert("No source file is attached to this review.");return}
   const hidden=$("sourcePdfFrame").classList.toggle("hidden");
-  $("toggleSourcePdf").textContent=hidden?"Show PDF Here":"Hide PDF";
+  $("toggleSourcePdf").textContent=hidden?"Show Source Here":"Hide Source";
 };
 
 $("useCalculatedAckTotal").onclick=()=>{
