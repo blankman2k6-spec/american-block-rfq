@@ -1465,7 +1465,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.5 Image Import for Orders + RFQs</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.6 Image Import for Orders + RFQs</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -4414,7 +4414,7 @@ function renderOrders(){
         ${boHasBackorder(o)?`<div class="mini" style="margin-top:4px"><span class="status yellow" style="min-height:26px;padding:5px 9px">${boOpenLineCount(o)} BACK ORDER LINE${boOpenLineCount(o)===1?"":"S"}</span> · Open value ${money.format(boOpenValue(o))}</div>`:""}
         <div class="mini">${formatDate(o.orderDate)} · ${(o.items||[]).length} line item${(o.items||[]).length===1?"":"s"} · ${esc(o.fileName||"Order")}</div>
         ${o.synthetic?`<div class="report-hint">Automatically shown from Closed Won RFQ. Backordered quantities are withheld from credited sales until delivery.</div><div class="toolbar" style="margin-top:8px"><button class="secondary" data-manage-backorder-rfq="${o.sourceRfqId}">Manage Back Order</button><button class="secondary" data-create-event-source="rfq" data-create-event-id="${o.sourceRfqId}">▦ Create Event</button></div>`:
-        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-create-event-source="order" data-create-event-id="${o.id}">▦ Create Event</button><button data-manage-backorder-order="${o.id}">↻ Manage Back Order</button><button data-order-edit="${o.id}">✏️ Edit Order</button><button class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
+        `<div class="order-menu-wrap"><button class="menu-btn" data-order-menu="${o.id}" aria-label="Order actions">⋮</button><div class="order-menu hidden" data-order-menu-panel="${o.id}"><button data-create-event-source="order" data-create-event-id="${o.id}">▦ Create Event</button><button data-manage-backorder-order="${o.id}">↻ Manage Back Order</button><button data-order-edit="${o.id}">✏️ Edit Order</button><button type="button" class="danger-item" data-order-delete="${o.id}">🗑 Delete Order</button></div></div>`}`;
       holder.appendChild(div);
     });
     $("orderList").appendChild(details);
@@ -4429,7 +4429,7 @@ function renderOrders(){
     document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));
     editImportedOrder(b.dataset.orderEdit);
   });
-  document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.stopPropagation();confirmDeleteImportedOrder(b.dataset.orderDelete)});
+  document.querySelectorAll("[data-order-delete]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));confirmDeleteImportedOrder(b.dataset.orderDelete)});
 }
 
 
@@ -8414,6 +8414,18 @@ document.querySelectorAll(".cal-mode").forEach(b=>b.onclick=()=>setPlannerCalend
 if($("exportPlannerIcsApple"))$("exportPlannerIcsApple").onclick=()=>downloadPlannerICS();
 if($("exportPlannerIcsOutlook"))$("exportPlannerIcsOutlook").onclick=()=>downloadPlannerICS();
 
+// v5.7.6: iOS-safe order menu actions. Delete uses pointerup so Safari cannot
+// swallow the tap when the absolutely-positioned menu closes/reflows.
+let orderDeletePointerHandledAt=0;
+document.addEventListener("pointerup",e=>{
+  const del=e.target.closest("[data-order-delete]");
+  if(!del)return;
+  e.preventDefault();e.stopPropagation();
+  orderDeletePointerHandledAt=Date.now();
+  const id=del.dataset.orderDelete;
+  document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));
+  setTimeout(()=>confirmDeleteImportedOrder(id),0);
+},true);
 document.addEventListener("click",e=>{
   const manage=e.target.closest("[data-manage-backorder-order]");
   const edit=e.target.closest("[data-order-edit]");
@@ -8423,7 +8435,7 @@ document.addEventListener("click",e=>{
   document.querySelectorAll(".order-menu").forEach(m=>m.classList.add("hidden"));
   if(manage)return openBackorderEditor("order",manage.dataset.manageBackorderOrder);
   if(edit)return editImportedOrder(edit.dataset.orderEdit);
-  if(del)return confirmDeleteImportedOrder(del.dataset.orderDelete);
+  if(del && Date.now()-orderDeletePointerHandledAt>700)return confirmDeleteImportedOrder(del.dataset.orderDelete);
 },true);
 
 document.addEventListener("click",e=>{
