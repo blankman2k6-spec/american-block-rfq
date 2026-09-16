@@ -95,6 +95,39 @@ Deno.serve(async (req) => {
       try{return json({card:JSON.parse(cardText)})}catch{return json({error:"Business card returned invalid structured output."},502)}
     }
 
+
+    // Image import mode is intentionally separate from the existing PDF acknowledgment parser.
+    // It reads screenshots/photos with vision and returns structured draft data only; the browser
+    // still requires the user to review and save the Order or RFQ.
+    if (body?.mode === "sales_document_image") {
+      const imageDataUrl=String(body?.imageDataUrl||"");
+      const target=String(body?.target||"").toLowerCase()==="rfq"?"rfq":"order";
+      if(!/^data:image\//i.test(imageDataUrl))return json({error:"A screenshot or photo is required."},400);
+      const docSchema={
+        type:"object",additionalProperties:false,
+        required:["company","contactName","documentNumber","quoteNumber","salesOrder","poNumber","date","shipping","tax","total","notes","items"],
+        properties:{
+          company:{type:"string"},contactName:{type:"string"},documentNumber:{type:"string"},quoteNumber:{type:"string"},salesOrder:{type:"string"},poNumber:{type:"string"},date:{type:"string"},shipping:{type:"number"},tax:{type:"number"},total:{type:"number"},notes:{type:"string"},
+          items:{type:"array",items:{type:"object",additionalProperties:false,required:["part","product","qty","price"],properties:{part:{type:"string"},product:{type:"string"},qty:{type:"number"},price:{type:"number"}}}}
+        }
+      };
+      const kindText=target==="rfq"?"RFQ / quote":"order / order acknowledgment";
+      const imageResponse=await fetch("https://api.openai.com/v1/responses",{
+        method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model,
+          instructions:`Read the attached screenshot or photo as a ${kindText}. Extract only facts visibly present. Do not infer or invent missing values. This is a draft import that a salesperson will review before saving. For company, identify the customer/account only when the image clearly supports it; otherwise return an empty string. For date, return YYYY-MM-DD when a clear document/order/quote date is shown, otherwise empty string. For part, preserve the printed part/SKU exactly. For product, preserve or concisely normalize the visible description without adding specifications that are not shown. qty and price must be numeric; use 0 when missing. shipping, tax and total must be numeric; use 0 when missing. Put useful non-line-item context from the image in notes, but do not copy signatures, boilerplate, or unrelated email text. Return JSON only.`,
+          input:[{role:"user",content:[{type:"input_text",text:`Extract this ${kindText} into structured draft fields.`},{type:"input_image",image_url:imageDataUrl}]}],
+          text:{format:{type:"json_schema",name:"sales_document_image",strict:true,schema:docSchema}}
+        })
+      });
+      const rawImage=await imageResponse.text();let imagePayload:any;try{imagePayload=JSON.parse(rawImage)}catch{imagePayload=null}
+      if(!imageResponse.ok)return json({error:imagePayload?.error?.message||rawImage||`OpenAI HTTP ${imageResponse.status}`},502);
+      let imageText=imagePayload?.output_text||"";
+      if(!imageText&&Array.isArray(imagePayload?.output)){for(const item of imagePayload.output){if(item?.type!=="message")continue;for(const c of item?.content||[]){if(c?.type==="output_text"&&c?.text)imageText+=c.text}}}
+      try{return json({document:JSON.parse(imageText),target})}catch{return json({error:"Image import returned invalid structured output."},502)}
+    }
+
     const writePolicy = body?.writePolicy === "readonly" ? "readonly" : "approval";
 
     const instructions = `
