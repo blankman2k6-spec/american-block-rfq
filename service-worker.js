@@ -1,5 +1,5 @@
-const CACHE="ab-sales-os-v5-8-0-quick-document-builder";
-const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
+const CACHE="ab-sales-os-v5-8-2-clean-pdf";
+const ASSETS=["jspdf.umd.min.js","./","index.html","manifest.json","icon-192.png","icon-512.png","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));

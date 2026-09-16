@@ -1480,7 +1480,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.0 Quick Document Builder</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.2 Clean PDF Export</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1799,7 +1799,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
       <div style="margin-top:12px"><label>Notes</label><textarea id="quickDocNotes" placeholder="Special specifications, customer request, delivery location, or other details"></textarea></div>
       <div><label>Sales Representative</label><input id="quickDocRep" value="Alex Cazares | Outside Sales"></div>
       <div id="quickDocFooter" class="quick-doc-note"><strong>Please provide:</strong> Part number, pricing, availability, and lead time.</div>
-      <div class="toolbar" style="margin-top:14px"><button id="quickDocPrint" class="primary">Create PDF / Print</button><button id="quickDocClear" class="secondary">Clear</button></div>
+      <div class="toolbar" style="margin-top:14px"><button id="quickDocPrint" class="primary">Save / Share PDF</button><button id="quickDocClear" class="secondary">Clear</button></div>
     </div>
   </section>
 
@@ -3111,6 +3111,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <button id="globalExportPdf" class="secondary">PDF</button>
 </div>
 
+<script src="jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -6978,13 +6979,52 @@ async function importQuickDocImage(file){
   }catch(err){$("quickDocImageStatus").textContent="Image import failed.";alert("I could not read this image automatically. "+(err?.message||""))}
   finally{btn.disabled=false;btn.textContent=old;$("quickDocImageFile").value=""}
 }
-function printQuickDocument(){
-  const customer=$("quickDocCustomer").value.trim()||"Customer";const date=$("quickDocDate").value||localIsoDate();const contact=$("quickDocContact").value.trim();const due=$("quickDocDue").value.trim();const notes=$("quickDocNotes").value.trim();const rep=$("quickDocRep").value.trim();const items=quickDocItemsData().filter(i=>i.qty||i.part||i.product||i.price||i.availability);const client=quickDocType==="client";
-  const heads=client?["Qty","Part Number","Description","Price","Availability"]:["Qty","Part Number","Description / Specification"];
-  const rows=items.map(i=>`<tr><td>${esc(i.qty)}</td><td>${esc(i.part)}</td><td>${esc(i.product)}</td>${client?`<td>${i.price?esc(i.price.startsWith("$")?i.price:"$"+i.price):""}</td><td>${esc(i.availability)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${heads.length}">No items entered.</td></tr>`;
-  const title=client?"PRICING & AVAILABILITY":"RFQ REQUEST";const flag=client?"NOT A FORMAL QUOTE":"FOR INSIDE SALES";const footer=client?"<b>NOT A FORMAL QUOTE:</b> Pricing and availability are preliminary and subject to final confirmation at the time of order. Freight, taxes, and applicable fees are not included unless specifically stated.":"<b>Please provide:</b> Part number, pricing, availability, and lead time.";
-  const frame=document.createElement("iframe");frame.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(frame);const doc=frame.contentWindow.document;
-  doc.open();doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:letter;margin:.45in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#202124;margin:0;font-size:12px}.head{display:flex;justify-content:space-between;border-bottom:4px solid #b3261e;padding-bottom:12px}.brand{font-size:26px;font-weight:900;color:#b3261e}.sub{font-size:11px;font-weight:800;color:#202124;margin-top:3px}.title{text-align:right;font-size:20px;font-weight:900}.flag{font-size:11px;color:#b3261e;margin-top:4px}.meta{display:grid;grid-template-columns:2fr 1fr;gap:1px;background:#d6d8db;border:1px solid #d6d8db;margin:18px 0}.field{background:#f2f3f4;padding:9px 11px}.field b{display:block;color:#b3261e;font-size:10px;margin-bottom:4px}table{width:100%;border-collapse:collapse}th{background:#202124;color:#fff;text-align:left;padding:9px 7px;font-size:10px}td{border:1px solid #d6d8db;padding:9px 7px;vertical-align:top}tr:nth-child(even) td{background:#fafafa}.notes{margin-top:14px;padding:10px;border:1px solid #d6d8db}.rep{margin-top:18px}.footer{text-align:center;margin-top:20px;color:#555;line-height:1.45}.footer b{color:#b3261e}.flagbox{border:2px solid #b3261e;color:#b3261e;font-weight:900;text-align:center;padding:8px;margin:14px 0 0}</style></head><body><header class="head"><div><div class="brand">AMERICAN BLOCK</div><div class="sub">ABCO FLOWLINE</div></div><div class="title">${title}<div class="flag">${flag}</div></div></header><div class="meta"><div class="field"><b>CUSTOMER</b>${esc(customer)}</div><div class="field"><b>DATE</b>${esc(date)}</div>${!client?`<div class="field"><b>CUSTOMER CONTACT</b>${esc(contact)}</div><div class="field"><b>NEEDED BY</b>${esc(due)}</div>`:""}</div>${client?`<div class="flagbox">PRICING & AVAILABILITY ONLY — NOT A FORMAL QUOTE</div>`:""}<table><thead><tr>${heads.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>${notes?`<div class="notes"><b>NOTES</b><br>${esc(notes).replace(/\n/g,"<br>")}</div>`:""}<div class="rep"><b>Sales Representative:</b> ${esc(rep)}</div><div class="footer">${footer}</div></body></html>`);doc.close();setTimeout(()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(err){alert("Unable to open the PDF print screen. Please try again.")}setTimeout(()=>frame.remove(),1500)},300);
+function buildQuickDocumentPdf(){
+  if(!window.jspdf)throw new Error("PDF support has not loaded. Refresh the app and try again.");
+  const pdf=new window.jspdf.jsPDF({unit:"pt",format:"letter"});
+  const client=quickDocType==="client", margin=32, width=548, bottom=752;
+  const title=client?"PRICING & AVAILABILITY":"RFQ REQUEST";
+  const clean=v=>String(v??"").replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[–—]/g,"-").replace(/\t/g," ");
+  const value=id=>clean($(id).value.trim());
+  let y=0;
+  function text(t,x,at,size=10,bold=false,color=[32,33,36]){pdf.setFont("helvetica",bold?"bold":"normal");pdf.setFontSize(size);pdf.setTextColor(...color);pdf.text(clean(t),x,at)}
+  function header(){text("AMERICAN BLOCK",margin,44,21,true,[179,38,30]);text("ABCO FLOWLINE",margin,59,9,true);text(title,margin,85,14,true);text(client?"NOT A FORMAL QUOTE":"FOR INSIDE SALES",margin,100,9,true,[179,38,30]);text("Customer: "+value("quickDocCustomer"),margin,120,10);text("Date: "+value("quickDocDate"),420,137,9);y=137;if(!client){paragraph("Contact: "+value("quickDocContact"));paragraph("Needed by: "+value("quickDocDue"))}y+=12;}
+  function space(h){if(y+h>bottom){pdf.addPage();header()}}
+  function paragraph(t,bold=false){pdf.setFont("helvetica",bold?"bold":"normal");pdf.setFontSize(9);const lines=pdf.splitTextToSize(clean(t),width);for(const line of lines){space(12);text(line,margin,y,9,bold);y+=12}y+=4;}
+  header();
+  const widths=client?[35,100,225,75,113]:[40,115,393];
+  const heads=client?["Qty","Part Number","Description","Price / Unit","Availability"]:["Qty","Part Number","Description / Specification"];
+  function tableHead(){pdf.setFillColor(32,33,36);pdf.rect(margin,y,width,21,"F");let x=margin;heads.forEach((h,i)=>{text(h,x+5,y+14,8,true,[255,255,255]);x+=widths[i]});y+=21;}
+  tableHead();
+  for(const item of quickDocItemsData().filter(i=>Object.values(i).some(Boolean))){
+    const vals=client?[item.qty,item.part,item.product,item.price,item.availability]:[item.qty,item.part,item.product];
+    pdf.setFont("helvetica","normal");pdf.setFontSize(9);
+    const cells=vals.map((v,i)=>pdf.splitTextToSize(clean(v),widths[i]-10));
+    let offset=0, count=Math.max(...cells.map(c=>c.length),1);
+    while(offset<count){
+      if(y+24>bottom){pdf.addPage();header();tableHead()}
+      const n=Math.min(count-offset,Math.max(1,Math.floor((bottom-y-12)/11)));
+      const h=n*11+12;let x=margin;
+      cells.forEach((lines,i)=>{pdf.setDrawColor(215,218,222);pdf.rect(x,y,widths[i],h);lines.slice(offset,offset+n).forEach((line,j)=>text(line,x+5,y+13+j*11,9));x+=widths[i]});y+=h;offset+=n;
+    }
+  }
+  y+=14;
+  if(value("quickDocNotes")){paragraph("NOTES",true);paragraph(value("quickDocNotes"))}
+  space(65);paragraph("Sales Representative: "+value("quickDocRep"),true);
+  paragraph(client?"NOT A FORMAL QUOTE. Pricing and availability are preliminary and subject to final confirmation at the time of order. Freight, taxes, and applicable fees are not included unless specifically stated.":"Please provide: Part number, pricing, availability, and lead time.");
+  pdf.setProperties({title,author:"American Block",creator:"American Block Sales OS"});
+  return pdf;
+}
+async function printQuickDocument(){
+  try{
+    const pdf=buildQuickDocumentPdf();
+    const name=(quickDocType==="client"?"Pricing_Availability":"RFQ_Request")+"_"+($("quickDocCustomer").value||"Customer").replace(/[^a-z0-9_-]/gi,"_")+".pdf";
+    const file=new File([pdf.output("blob")],name,{type:"application/pdf"});
+    if(navigator.canShare?.({files:[file]})){
+      try{await navigator.share({files:[file],title:"American Block Document"});return}catch(err){if(err.name==="AbortError")return;}
+    }
+    pdf.save(name);
+  }catch(err){alert("Could not create PDF: "+err.message)}
 }
 async function importOrderImage(file){
   if(!file)return;
@@ -8710,7 +8750,7 @@ applyLayoutMode(layoutMode);
 
 if("serviceWorker" in navigator)window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.7.1");
+    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.8.2");
     await reg.update();
     // Force a newly deployed worker to take control without leaving iPhone/PWA users on an older report build.
     if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
