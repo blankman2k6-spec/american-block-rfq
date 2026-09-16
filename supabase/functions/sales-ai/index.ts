@@ -101,22 +101,23 @@ Deno.serve(async (req) => {
     // still requires the user to review and save the Order or RFQ.
     if (body?.mode === "sales_document_image") {
       const imageDataUrl=String(body?.imageDataUrl||"");
-      const target=String(body?.target||"").toLowerCase()==="rfq"?"rfq":"order";
+      const requestedTarget=String(body?.target||"").toLowerCase();
+      const target=requestedTarget==="rfq"?"rfq":requestedTarget==="quick_quote"?"quick_quote":"order";
       if(!/^data:image\//i.test(imageDataUrl))return json({error:"A screenshot or photo is required."},400);
       const docSchema={
         type:"object",additionalProperties:false,
         required:["company","contactName","documentNumber","quoteNumber","salesOrder","poNumber","date","shipping","tax","total","notes","items"],
         properties:{
           company:{type:"string"},contactName:{type:"string"},documentNumber:{type:"string"},quoteNumber:{type:"string"},salesOrder:{type:"string"},poNumber:{type:"string"},date:{type:"string"},shipping:{type:"number"},tax:{type:"number"},total:{type:"number"},notes:{type:"string"},
-          items:{type:"array",items:{type:"object",additionalProperties:false,required:["part","product","qty","price"],properties:{part:{type:"string"},product:{type:"string"},qty:{type:"number"},price:{type:"number"}}}}
+          items:{type:"array",items:{type:"object",additionalProperties:false,required:["part","product","qty","price","availability"],properties:{part:{type:"string"},product:{type:"string"},qty:{type:"number"},price:{type:"number"},availability:{type:"string"}}}}
         }
       };
-      const kindText=target==="rfq"?"RFQ / quote":"order / order acknowledgment";
+      const kindText=target==="rfq"?"RFQ / quote":target==="quick_quote"?"sales request or pricing-and-availability list":"order / order acknowledgment";
       const imageResponse=await fetch("https://api.openai.com/v1/responses",{
         method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},
         body:JSON.stringify({
           model,
-          instructions:`Read the attached screenshot or photo as a ${kindText}. Extract only facts visibly present. Do not infer or invent missing values. This is a draft import that a salesperson will review before saving. For company, identify the customer/account only when the image clearly supports it; otherwise return an empty string. For date, return YYYY-MM-DD when a clear document/order/quote date is shown, otherwise empty string. For part, preserve the printed part/SKU exactly. For product, preserve or concisely normalize the visible description without adding specifications that are not shown. qty and price must be numeric; use 0 when missing. shipping, tax and total must be numeric; use 0 when missing. Put useful non-line-item context from the image in notes, but do not copy signatures, boilerplate, or unrelated email text. Return JSON only.`,
+          instructions:`Read the attached screenshot or photo as a ${kindText}. Extract only facts visibly present. Do not infer or invent missing values. This is a draft import that a salesperson will review before saving or sharing. For company, identify the customer/account only when the image clearly supports it; otherwise return an empty string. For date, return YYYY-MM-DD when a clear document/order/quote date is shown, otherwise empty string. For part, preserve the printed part/SKU exactly. For product, preserve or concisely normalize the visible description without adding specifications that are not shown. qty and price must be numeric; use 0 when missing. For availability, preserve visible stock location, in-stock/out-of-stock status, lead time, or promise date; otherwise return an empty string. shipping, tax and total must be numeric; use 0 when missing. Put useful non-line-item context from the image in notes, but do not copy signatures, boilerplate, or unrelated email text. Return JSON only.`,
           input:[{role:"user",content:[{type:"input_text",text:`Extract this ${kindText} into structured draft fields.`},{type:"input_image",image_url:imageDataUrl}]}],
           text:{format:{type:"json_schema",name:"sales_document_image",strict:true,schema:docSchema}}
         })
