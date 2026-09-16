@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-7-5-image-import-orders-rfqs";
+const CACHE="ab-sales-os-v5-8-0-quick-document-builder";
 const ASSETS=["./","index.html","manifest.json","icon-192.png","icon-512.png","assets/ABCO-FLOWLINE-CATALOG.pdf","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{

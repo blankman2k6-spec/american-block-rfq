@@ -1458,6 +1458,21 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   #reportsOutput .metric > strong,#intelView .metric > strong{font-size:26px}
 }
 
+/* v5.8.0 American Block Quick Document Builder */
+.quick-doc-launch{border-left:5px solid #b3261e;background:linear-gradient(135deg,rgba(179,38,30,.10),rgba(31,78,120,.06))}
+.quick-doc-type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.quick-doc-type{min-height:88px;text-align:left;padding:13px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--text)}
+.quick-doc-type.active{border-color:#b3261e;box-shadow:0 0 0 2px rgba(179,38,30,.14)}
+.quick-doc-type strong,.quick-doc-type span{display:block}.quick-doc-type span{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
+.quick-doc-brand{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:4px solid #b3261e;padding-bottom:12px;margin-bottom:14px}
+.quick-doc-brand-name{font-size:24px;font-weight:900;color:#b3261e;letter-spacing:.02em}.quick-doc-brand-sub{font-size:12px;font-weight:800;margin-top:2px}
+.quick-doc-title{text-align:right}.quick-doc-title strong{font-size:19px}.quick-doc-title span{display:block;font-size:11px;font-weight:900;color:#b3261e;margin-top:3px}
+.quick-doc-meta{display:grid;grid-template-columns:2fr 1fr;gap:10px}.quick-doc-items{display:grid;gap:10px;margin-top:12px}
+.quick-doc-item{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card)}
+.quick-doc-item-grid{display:grid;grid-template-columns:.65fr 1.15fr 2.4fr 1fr 1.25fr;gap:8px}.quick-doc-item-grid.inside{grid-template-columns:.65fr 1.2fr 2.8fr}
+.quick-doc-item-actions{display:flex;justify-content:flex-end;margin-top:8px}.quick-doc-note{padding:11px 12px;border-radius:10px;background:rgba(179,38,30,.08);color:var(--text);font-size:12px;line-height:1.4;margin-top:12px}
+@media(max-width:700px){.quick-doc-type-grid,.quick-doc-meta{grid-template-columns:1fr}.quick-doc-item-grid,.quick-doc-item-grid.inside{grid-template-columns:1fr 1fr}.quick-doc-item-grid>div:nth-child(3){grid-column:1/-1}.quick-doc-brand-name{font-size:20px}.quick-doc-title strong{font-size:15px}}
+
 </style>
 </head>
 <body>
@@ -1465,7 +1480,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.7.7 Image Import Endpoint Fix</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.0 Quick Document Builder</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -1595,6 +1610,13 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
     <div class="card">
       <div class="section-head" style="margin:0 0 10px"><h2 style="margin:0">Largest Open RFQs</h2><button class="secondary" id="goRfqs">View RFQs</button></div>
       <div id="topRfqs" class="list"></div>
+    </div>
+
+    <div class="card quick-doc-launch">
+      <div class="section-head" style="margin:0">
+        <div><div class="kicker">American Block Documents</div><h2 style="margin:4px 0">RFQ / Pricing & Availability</h2><div class="mini">Photograph a request or price list, verify the information, then create a branded PDF.</div></div>
+        <button id="dashboardQuickDoc" class="primary">Open Builder</button>
+      </div>
     </div>
   </section>
 
@@ -1736,6 +1758,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
       <div><label>Sort</label><select id="rfqSort"><option value="newest">Newest First</option><option value="oldest">Oldest First</option><option value="az">A to Z</option><option value="value">Highest Value</option></select></div>
     </div>
     <div class="toolbar" style="margin-top:12px">
+      <button id="rfqQuickDoc" class="primary">Quick Document</button>
       <button id="importAck" class="primary">＋ Import Acknowledgment PDF</button>
       <button id="importRfqImage" class="secondary">＋ Import RFQ Image</button>
       <button id="teamPdf" class="secondary">Team PDF</button>
@@ -1747,6 +1770,37 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
       <input id="orderImageFile" type="file" class="hidden" accept="image/*">
     </div>
     <div id="rfqList" style="margin-top:10px"></div>
+  </section>
+
+  <section id="quickDocView" class="view">
+    <div class="section-head"><button id="backFromQuickDoc" class="secondary">← Back</button><div><div class="kicker">American Block</div><h2 style="margin:4px 0">Quick Document Builder</h2></div></div>
+    <div class="card">
+      <label>Document Type</label>
+      <div class="quick-doc-type-grid">
+        <button type="button" class="quick-doc-type active" data-quick-doc-type="inside"><strong>RFQ to Inside Sales</strong><span>Send a clean customer request internally for part number, pricing, availability, and lead time.</span></button>
+        <button type="button" class="quick-doc-type" data-quick-doc-type="client"><strong>Pricing & Availability to Client</strong><span>Share preliminary pricing and stock information. This is not a formal quote.</span></button>
+      </div>
+      <div class="toolbar">
+        <button id="quickDocChooseImage" class="primary">＋ Choose Photo / Screenshot</button>
+        <input id="quickDocImageFile" type="file" class="hidden" accept="image/*">
+        <span id="quickDocImageStatus" class="mini">Or enter the information manually.</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="quick-doc-brand"><div><div class="quick-doc-brand-name">AMERICAN BLOCK</div><div class="quick-doc-brand-sub">ABCO FLOWLINE</div></div><div class="quick-doc-title"><strong id="quickDocHeading">RFQ REQUEST</strong><span id="quickDocWarning">FOR INSIDE SALES</span></div></div>
+      <div class="quick-doc-meta">
+        <div><label>Customer</label><input id="quickDocCustomer" placeholder="Customer / company name"></div>
+        <div><label>Date</label><input id="quickDocDate" type="date"></div>
+        <div id="quickDocContactWrap"><label>Customer Contact</label><input id="quickDocContact" placeholder="Contact name"></div>
+        <div id="quickDocDueWrap"><label>Needed By</label><input id="quickDocDue" placeholder="Date, time, or priority"></div>
+      </div>
+      <div id="quickDocItems" class="quick-doc-items"></div>
+      <button id="quickDocAddItem" class="secondary" style="margin-top:10px">＋ Add Item</button>
+      <div style="margin-top:12px"><label>Notes</label><textarea id="quickDocNotes" placeholder="Special specifications, customer request, delivery location, or other details"></textarea></div>
+      <div><label>Sales Representative</label><input id="quickDocRep" value="Alex Cazares | Outside Sales"></div>
+      <div id="quickDocFooter" class="quick-doc-note"><strong>Please provide:</strong> Part number, pricing, availability, and lead time.</div>
+      <div class="toolbar" style="margin-top:14px"><button id="quickDocPrint" class="primary">Create PDF / Print</button><button id="quickDocClear" class="secondary">Clear</button></div>
+    </div>
   </section>
 
 
@@ -6884,6 +6938,54 @@ function normalizeImportedDate(v){
   if(/^\d{4}-\d{2}-\d{2}$/.test(x))return x;
   const d=new Date(x);return isNaN(d)?localIsoDate():localIsoDate(d);
 }
+let quickDocType="inside";
+function quickDocItemRow(item={}){
+  const row=document.createElement("div");row.className="quick-doc-item";
+  row.innerHTML=`<div class="quick-doc-item-grid ${quickDocType==="inside"?"inside":""}">
+    <div><label>Quantity</label><input data-qd="qty" type="number" min="0" step="1" value="${esc(item.qty??"")}"></div>
+    <div><label>Part Number</label><input data-qd="part" value="${esc(item.part||"")}" placeholder="If known"></div>
+    <div><label>Description / Specification</label><input data-qd="product" value="${esc(item.product||"")}" placeholder="Product description and specifications"></div>
+    ${quickDocType==="client"?`<div><label>Price</label><input data-qd="price" inputmode="decimal" value="${item.price?Number(item.price).toFixed(2):""}" placeholder="$0.00 ea."></div><div><label>Availability</label><input data-qd="availability" value="${esc(item.availability||"")}" placeholder="In stock / lead time"></div>`:""}
+  </div><div class="quick-doc-item-actions"><button type="button" class="danger" data-qd-remove>Remove</button></div>`;
+  row.querySelector("[data-qd-remove]").onclick=()=>{row.remove();if(!$('quickDocItems').children.length)quickDocAddItem()};
+  return row;
+}
+function quickDocAddItem(item={}){$("quickDocItems").appendChild(quickDocItemRow(item))}
+function setQuickDocType(type,keepItems=false){
+  const oldItems=keepItems?quickDocItemsData():[];quickDocType=type==="client"?"client":"inside";
+  document.querySelectorAll("[data-quick-doc-type]").forEach(b=>b.classList.toggle("active",b.dataset.quickDocType===quickDocType));
+  const client=quickDocType==="client";
+  $("quickDocHeading").textContent=client?"PRICING & AVAILABILITY":"RFQ REQUEST";
+  $("quickDocWarning").textContent=client?"NOT A FORMAL QUOTE":"FOR INSIDE SALES";
+  $("quickDocContactWrap").classList.toggle("hidden",client);$("quickDocDueWrap").classList.toggle("hidden",client);
+  $("quickDocFooter").innerHTML=client?"<strong>NOT A FORMAL QUOTE:</strong> Pricing and availability are preliminary and subject to final confirmation at the time of order. Freight, taxes, and applicable fees are not included unless specifically stated.":"<strong>Please provide:</strong> Part number, pricing, availability, and lead time.";
+  $("quickDocItems").innerHTML="";(oldItems.length?oldItems:[{}]).forEach(quickDocAddItem);
+}
+function quickDocItemsData(){return [...$("quickDocItems").children].map(row=>{const get=k=>row.querySelector(`[data-qd="${k}"]`)?.value?.trim()||"";return{qty:get("qty"),part:get("part"),product:get("product"),price:get("price"),availability:get("availability")}})}
+function openQuickDoc(type="inside"){
+  $("quickDocDate").value=$("quickDocDate").value||localIsoDate();setQuickDocType(type,true);showView("quickDocView",false);
+}
+function clearQuickDoc(){
+  ["quickDocCustomer","quickDocContact","quickDocDue","quickDocNotes"].forEach(id=>$(id).value="");$("quickDocDate").value=localIsoDate();$("quickDocImageStatus").textContent="Or enter the information manually.";$("quickDocItems").innerHTML="";quickDocAddItem();
+}
+async function importQuickDocImage(file){
+  if(!file)return;const btn=$("quickDocChooseImage"),old=btn.textContent;btn.disabled=true;btn.textContent="Reading Image…";$("quickDocImageStatus").textContent=file.name||"Selected image";
+  try{
+    const doc=await readSalesDocumentImage(file,"quick_quote");
+    $("quickDocCustomer").value=doc.company||"";$("quickDocContact").value=doc.contactName||"";$("quickDocDate").value=normalizeImportedDate(doc.date);$("quickDocNotes").value=doc.notes||"";
+    $("quickDocItems").innerHTML="";const items=Array.isArray(doc.items)?doc.items:[];(items.length?items:[{}]).forEach(i=>quickDocAddItem({part:i.part||"",product:i.product||"",qty:Number(i.qty)||"",price:Number(i.price)||"",availability:i.availability||""}));
+    $("quickDocImageStatus").textContent="Image read successfully. Review every field before creating the document.";
+  }catch(err){$("quickDocImageStatus").textContent="Image import failed.";alert("I could not read this image automatically. "+(err?.message||""))}
+  finally{btn.disabled=false;btn.textContent=old;$("quickDocImageFile").value=""}
+}
+function printQuickDocument(){
+  const customer=$("quickDocCustomer").value.trim()||"Customer";const date=$("quickDocDate").value||localIsoDate();const contact=$("quickDocContact").value.trim();const due=$("quickDocDue").value.trim();const notes=$("quickDocNotes").value.trim();const rep=$("quickDocRep").value.trim();const items=quickDocItemsData().filter(i=>i.qty||i.part||i.product||i.price||i.availability);const client=quickDocType==="client";
+  const heads=client?["Qty","Part Number","Description","Price","Availability"]:["Qty","Part Number","Description / Specification"];
+  const rows=items.map(i=>`<tr><td>${esc(i.qty)}</td><td>${esc(i.part)}</td><td>${esc(i.product)}</td>${client?`<td>${i.price?esc(i.price.startsWith("$")?i.price:"$"+i.price):""}</td><td>${esc(i.availability)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${heads.length}">No items entered.</td></tr>`;
+  const title=client?"PRICING & AVAILABILITY":"RFQ REQUEST";const flag=client?"NOT A FORMAL QUOTE":"FOR INSIDE SALES";const footer=client?"<b>NOT A FORMAL QUOTE:</b> Pricing and availability are preliminary and subject to final confirmation at the time of order. Freight, taxes, and applicable fees are not included unless specifically stated.":"<b>Please provide:</b> Part number, pricing, availability, and lead time.";
+  const frame=document.createElement("iframe");frame.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(frame);const doc=frame.contentWindow.document;
+  doc.open();doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:letter;margin:.45in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#202124;margin:0;font-size:12px}.head{display:flex;justify-content:space-between;border-bottom:4px solid #b3261e;padding-bottom:12px}.brand{font-size:26px;font-weight:900;color:#b3261e}.sub{font-size:11px;font-weight:800;color:#202124;margin-top:3px}.title{text-align:right;font-size:20px;font-weight:900}.flag{font-size:11px;color:#b3261e;margin-top:4px}.meta{display:grid;grid-template-columns:2fr 1fr;gap:1px;background:#d6d8db;border:1px solid #d6d8db;margin:18px 0}.field{background:#f2f3f4;padding:9px 11px}.field b{display:block;color:#b3261e;font-size:10px;margin-bottom:4px}table{width:100%;border-collapse:collapse}th{background:#202124;color:#fff;text-align:left;padding:9px 7px;font-size:10px}td{border:1px solid #d6d8db;padding:9px 7px;vertical-align:top}tr:nth-child(even) td{background:#fafafa}.notes{margin-top:14px;padding:10px;border:1px solid #d6d8db}.rep{margin-top:18px}.footer{text-align:center;margin-top:20px;color:#555;line-height:1.45}.footer b{color:#b3261e}.flagbox{border:2px solid #b3261e;color:#b3261e;font-weight:900;text-align:center;padding:8px;margin:14px 0 0}</style></head><body><header class="head"><div><div class="brand">AMERICAN BLOCK</div><div class="sub">ABCO FLOWLINE</div></div><div class="title">${title}<div class="flag">${flag}</div></div></header><div class="meta"><div class="field"><b>CUSTOMER</b>${esc(customer)}</div><div class="field"><b>DATE</b>${esc(date)}</div>${!client?`<div class="field"><b>CUSTOMER CONTACT</b>${esc(contact)}</div><div class="field"><b>NEEDED BY</b>${esc(due)}</div>`:""}</div>${client?`<div class="flagbox">PRICING & AVAILABILITY ONLY — NOT A FORMAL QUOTE</div>`:""}<table><thead><tr>${heads.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>${notes?`<div class="notes"><b>NOTES</b><br>${esc(notes).replace(/\n/g,"<br>")}</div>`:""}<div class="rep"><b>Sales Representative:</b> ${esc(rep)}</div><div class="footer">${footer}</div></body></html>`);doc.close();setTimeout(()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(err){alert("Unable to open the PDF print screen. Please try again.")}setTimeout(()=>frame.remove(),1500)},300);
+}
 async function importOrderImage(file){
   if(!file)return;
   const btn=$("importOrderImage"),old=btn?.textContent||"＋ Import Image";
@@ -7532,6 +7634,16 @@ $("importRfqImage").onclick=chooseRfqImage;
 $("ackFile").onchange=e=>{const f=e.target.files?.[0];if(f)importAcknowledgment(f)};
 $("orderImageFile").onchange=e=>{const f=e.target.files?.[0];if(f)importOrderImage(f)};
 $("rfqImageFile").onchange=e=>{const f=e.target.files?.[0];if(f)importRfqImage(f)};
+if($("dashboardQuickDoc"))$("dashboardQuickDoc").onclick=()=>openQuickDoc("inside");
+if($("rfqQuickDoc"))$("rfqQuickDoc").onclick=()=>openQuickDoc("inside");
+if($("backFromQuickDoc"))$("backFromQuickDoc").onclick=()=>showView("rfqsView",true);
+document.querySelectorAll("[data-quick-doc-type]").forEach(b=>b.onclick=()=>setQuickDocType(b.dataset.quickDocType,true));
+if($("quickDocChooseImage"))$("quickDocChooseImage").onclick=()=>{$("quickDocImageFile").value="";$("quickDocImageFile").click()};
+if($("quickDocImageFile"))$("quickDocImageFile").onchange=e=>{const f=e.target.files?.[0];if(f)importQuickDocImage(f)};
+if($("quickDocAddItem"))$("quickDocAddItem").onclick=()=>quickDocAddItem();
+if($("quickDocPrint"))$("quickDocPrint").onclick=printQuickDocument;
+if($("quickDocClear"))$("quickDocClear").onclick=clearQuickDoc;
+$('quickDocDate').value=localIsoDate();setQuickDocType('inside');
 $("ackCustomer").onchange=()=>{
   if($("ackCustomer").value==="__new__"){
     $("ackCustomerName").focus();
