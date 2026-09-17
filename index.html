@@ -1370,6 +1370,20 @@ body[data-skin="baby-blue"] .rfq-feedback-checks input{accent-color:#2789c7;}
 @media(max-width:700px){.calendar-shell[data-mobile-mode="workweek"] .calendar-grid{grid-template-columns:58px repeat(5,minmax(135px,1fr));min-width:733px}.calendar-shell[data-mobile-mode="workweek"] .calendar-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}}
 body[data-skin="baby-blue"] .calendar-shell,body[data-skin="baby-blue"] .connect-card{background:#fff!important;border-color:#afd3e8!important}body[data-skin="baby-blue"] .calendar-toolbar,body[data-skin="baby-blue"] .calendar-head-cell{background:#eef8fe!important;color:#14233a!important}
 
+/* v5.8.3 Calendar Workbench */
+.calendar-workbench{display:grid;grid-template-columns:minmax(250px,320px) minmax(0,1fr);gap:12px;align-items:start;margin-top:12px}
+.unscheduled-panel{border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden;position:sticky;top:76px;max-height:680px;display:flex;flex-direction:column}
+.unscheduled-head{padding:14px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.unscheduled-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.unscheduled-title-row h3{margin:0;font-size:17px}.unscheduled-count{min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.unscheduled-filters{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:10px}.unscheduled-filters select{min-width:0}
+.unscheduled-list{padding:10px;overflow:auto;display:grid;gap:8px}.unscheduled-card{border:1px solid var(--line);border-radius:14px;padding:11px;background:var(--panel2);cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}.unscheduled-card:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 7px 18px rgba(0,0,0,.08)}.unscheduled-card:active{cursor:grabbing}.unscheduled-card.dragging{opacity:.5;transform:scale(.98)}
+.unscheduled-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.unscheduled-kind{font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:var(--accent)}.unscheduled-company{font-weight:900;margin-top:4px;line-height:1.2}.unscheduled-value{font-size:12px;font-weight:900;white-space:nowrap}.unscheduled-topic{font-size:11px;color:var(--muted);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.unscheduled-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.unscheduled-meta span{font-size:9px;border:1px solid var(--line);border-radius:999px;padding:4px 6px;background:var(--panel)}.unscheduled-schedule{display:none;width:100%;margin-top:9px}
+.calendar-main{min-width:0}.calendar-slot.drag-ready{background:color-mix(in srgb,var(--accent) 10%,var(--panel));outline:2px dashed var(--accent);outline-offset:-3px}.calendar-slot.drop-target{background:color-mix(in srgb,var(--accent) 20%,var(--panel));outline-style:solid}
+.calendar-agenda{background:linear-gradient(180deg,var(--panel2),var(--panel));min-height:220px}.calendar-day-group{position:relative;padding-left:48px;margin:0 0 18px}.calendar-day-group:before{content:"";position:absolute;left:19px;top:36px;bottom:-18px;width:2px;background:var(--line)}.calendar-day-group:last-child:before{display:none}.calendar-day-group h3{position:relative;padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-size:14px}.calendar-day-group h3:before{content:"";position:absolute;left:-36px;top:50%;width:14px;height:14px;transform:translateY(-50%);border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px var(--panel2)}.calendar-agenda-item{position:relative;margin:8px 0;background:var(--panel);box-shadow:0 4px 14px rgba(0,0,0,.05);cursor:pointer}.calendar-agenda-item:before{content:"";position:absolute;left:-30px;top:20px;width:18px;height:2px;background:var(--line)}
+body[data-skin="baby-blue"] .unscheduled-panel,body[data-skin="baby-blue"] .unscheduled-card,body[data-skin="baby-blue"] .calendar-agenda-item{background:#fff!important;border-color:#afd3e8!important}body[data-skin="baby-blue"] .unscheduled-head,body[data-skin="baby-blue"] .calendar-agenda{background:#eef8fe!important}
+@media(max-width:900px){.calendar-workbench{grid-template-columns:1fr}.unscheduled-panel{position:static;max-height:none}.unscheduled-list{grid-template-columns:repeat(2,minmax(0,1fr));max-height:340px}.unscheduled-schedule{display:block}.calendar-slot{cursor:pointer}}
+@media(max-width:600px){.calendar-workbench{margin-top:9px}.unscheduled-panel{border-radius:15px}.unscheduled-list{grid-template-columns:1fr;max-height:320px}.unscheduled-card{cursor:default}.calendar-day-group{padding-left:38px}.calendar-day-group h3:before{left:-29px}.calendar-day-group:before{left:15px}.calendar-agenda-item:before{left:-22px}.unscheduled-filters{grid-template-columns:1fr}}
+
 /* v5.5.7 Two-Week Planner + To-Do Center */
 .planner-hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
 .planner-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -1480,7 +1494,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.2 Clean PDF Export</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.3 Calendar Workbench</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2112,6 +2126,16 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
     </div>
 
 
+    <div class="calendar-workbench">
+      <aside class="unscheduled-panel" aria-label="Unscheduled sales work">
+        <div class="unscheduled-head">
+          <div class="unscheduled-title-row"><div><div class="kicker">Calendar Workbench</div><h3>Unscheduled</h3></div><span id="unscheduledCount" class="unscheduled-count">0</span></div>
+          <div class="mini" style="margin-top:5px">Drag onto a time slot, or tap Schedule on iPhone.</div>
+          <div class="unscheduled-filters"><select id="unscheduledType"><option value="all">RFQs + Opportunities</option><option value="rfq">RFQs only</option><option value="opportunity">Opportunities only</option></select><select id="unscheduledSort"><option value="priority">Priority</option><option value="value">Highest value</option><option value="customer">Customer</option></select></div>
+        </div>
+        <div id="unscheduledList" class="unscheduled-list"></div>
+      </aside>
+      <div class="calendar-main">
     <div class="calendar-shell">
       <div class="calendar-toolbar">
         <div class="seg calendar-nav">
@@ -2129,6 +2153,9 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
       </div>
       <div id="calendarBoard" class="calendar-board calendar-scroll"><div id="calendarGrid" class="calendar-grid"></div></div>
       <div id="calendarAgenda" class="calendar-agenda"></div>
+    </div>
+
+      </div>
     </div>
 
     <div class="calendar-connect">
@@ -6177,12 +6204,25 @@ let quickEventContext=null;
 function quickEventSourceRecord(type,id){if(type==="rfq"){const r=rfqs.find(x=>String(x.id)===String(id));if(!r)return null;return {type,id:r.id,customerId:r.customerId,contactId:r.contactId||"",title:r.quoteNo||"RFQ",value:total(r),topic:rfqItemDescriptionList(r.items),purpose:"RFQ / Quote Review",notes:r.nextAction||r.feedback||""}}if(type==="opportunity"){const a=activities.find(x=>String(x.id)===String(id));if(!a)return null;return {type,id:a.id,customerId:a.customerId,contactId:a.contactId||"",title:a.opportunityTitle||"Opportunity",value:Number(a.opportunityValue)||0,topic:a.opportunityDetails||a.comments||"",purpose:"New Opportunity",notes:a.nextAction||a.comments||""}}if(type==="order"){const o=orders.find(x=>String(x.id)===String(id));if(!o)return null;let contactId=o.contactId||"";if(!contactId&&o.contactName){const c=customerById(o.customerId);contactId=(c?.contacts||[]).find(x=>String(x.name||"").trim().toLowerCase()===String(o.contactName||"").trim().toLowerCase())?.id||""}return {type,id:o.id,customerId:o.customerId,contactId,title:o.salesOrder?`SO ${o.salesOrder}`:"Order",value:Number(o.total)||0,topic:(o.items||[]).map(i=>`${i.qty||""} ${i.product||i.part||""}`.trim()).filter(Boolean).join("; "),purpose:"Order Follow-Up",notes:""}}return null}
 function fillQuickEventTimes(){const el=$("quickEventTime");if(!el)return;let html="";for(let h=7;h<=17;h++){for(const m of [0,30]){if(h===17&&m===30)continue;const v=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`,label=new Date(2000,0,1,h,m).toLocaleTimeString("en-US",{hour:"numeric",minute:m?"2-digit":undefined});html+=`<option value="${v}">${label}</option>`}}el.innerHTML=html;el.value="09:00"}
 function nextBusinessDate(date){let d=new Date(`${date}T12:00:00`);do{d.setDate(d.getDate()+1)}while([0,6].includes(d.getDay()));return calISO(d)}
-function openQuickEvent(type,id){ensurePlannerSettings();const rec=quickEventSourceRecord(type,id);if(!rec){alert("Could not load this record for scheduling.");return}quickEventContext=rec;fillQuickEventTimes();const c=customerById(rec.customerId);$("quickEventTitle").textContent=`Create Event — ${c?.company||"Customer"}`;$("quickEventSource").innerHTML=`<strong>${esc(type==="rfq"?"RFQ":type==="order"?"Closed Order":"Opportunity")} · ${esc(rec.title)}</strong><div class="mini">${rec.value?money.format(rec.value)+" · ":""}${esc((rec.topic||"").slice(0,180))}</div>`;$("quickEventDate").value=localIsoDate();$("quickEventTime").value="09:00";$("quickEventDuration").selectedIndex=2;$("quickEventPurpose").value=rec.purpose;$("quickEventAddress").value=plannerFullAddress(rec.customerId,rec.contactId);$("quickEventNotes").value=rec.notes||rec.topic||"";$("quickEventStatus").textContent="";document.querySelectorAll("[data-qe-day]").forEach(b=>b.classList.remove("active"));$("quickEventModal").classList.remove("hidden")}
+function openQuickEvent(type,id,prefill={}){ensurePlannerSettings();const rec=quickEventSourceRecord(type,id);if(!rec){alert("Could not load this record for scheduling.");return}quickEventContext=rec;fillQuickEventTimes();const c=customerById(rec.customerId);$("quickEventTitle").textContent=`Create Event — ${c?.company||"Customer"}`;$("quickEventSource").innerHTML=`<strong>${esc(type==="rfq"?"RFQ":type==="order"?"Closed Order":"Opportunity")} · ${esc(rec.title)}</strong><div class="mini">${rec.value?money.format(rec.value)+" · ":""}${esc((rec.topic||"").slice(0,180))}</div>`;$("quickEventDate").value=prefill.date||localIsoDate();$("quickEventTime").value=prefill.time||"09:00";$("quickEventDuration").selectedIndex=2;$("quickEventPurpose").value=rec.purpose;$("quickEventAddress").value=plannerFullAddress(rec.customerId,rec.contactId);$("quickEventNotes").value=rec.notes||rec.topic||"";$("quickEventStatus").textContent=prefill.date?"Date and time selected. Review the details, then create the event.":"";document.querySelectorAll("[data-qe-day]").forEach(b=>b.classList.remove("active"));$("quickEventModal").classList.remove("hidden")}
 function closeQuickEvent(){$("quickEventModal")?.classList.add("hidden");quickEventContext=null}
 function createQuickEvent(){if(!quickEventContext)return;const date=$("quickEventDate").value;if(!date){$("quickEventStatus").textContent="Choose a date.";return}const purpose=$("quickEventPurpose").value,notes=$("quickEventNotes").value.trim();settings.salesPlannerMeetings.push({id:uid(),customerId:quickEventContext.customerId,contactId:quickEventContext.contactId||"",date,time:$("quickEventTime").value||"09:00",durationMinutes:Number($("quickEventDuration").value)||60,address:$("quickEventAddress").value.trim(),purpose,outcome:quickEventContext.type==="order"?"Expand Product Mix":quickEventContext.type==="rfq"?"Win Order":"Advance Account",topic:notes||quickEventContext.topic||quickEventContext.title,objection:"",commitmentDate:"",customerValue:"",nextCommitment:"",objectionNotes:"",prepNotes:notes,aiPrep:"",completed:false,sourceType:quickEventContext.type,sourceId:quickEventContext.id,sourceTitle:quickEventContext.title,sourceValue:Number(quickEventContext.value)||0,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});save();closeQuickEvent();renderPlanner();showView("plannerView");setTimeout(()=>{settings.plannerCalendarAnchor=date;settings.plannerCalendarMode="workweek";save();renderPlannerCalendar()},0)}
 function ensurePlannerSettings(){
   settings.salesPlannerMeetings=Array.isArray(settings.salesPlannerMeetings)?settings.salesPlannerMeetings:[];
   settings.salesTodos=Array.isArray(settings.salesTodos)?settings.salesTodos:[];
+}
+function plannerUnscheduledRecords(){
+  ensurePlannerSettings();
+  const linked=new Set(settings.salesPlannerMeetings.filter(m=>m.sourceType&&m.sourceId).map(m=>`${m.sourceType}:${String(m.sourceId)}`));
+  return openPipelineRecords().filter(r=>!linked.has(`${r.kind}:${String(r.id)}`));
+}
+function renderPlannerUnscheduled(){
+  const holder=$("unscheduledList");if(!holder)return;
+  const type=$("unscheduledType")?.value||"all",sort=$("unscheduledSort")?.value||"priority";
+  let rows=plannerUnscheduledRecords().filter(r=>type==="all"||r.kind===type);
+  rows.sort((a,b)=>sort==="customer"?a.customer.localeCompare(b.customer):sort==="value"?b.value-a.value:(b.probability-a.probability)||(b.value-a.value));
+  $("unscheduledCount").textContent=rows.length;
+  holder.innerHTML=rows.length?rows.map(r=>`<article class="unscheduled-card" draggable="true" data-unscheduled-kind="${r.kind}" data-unscheduled-id="${esc(r.id)}" tabindex="0"><div class="unscheduled-card-top"><div><div class="unscheduled-kind">${r.kind==="rfq"?"RFQ":"Opportunity"}</div><div class="unscheduled-company">${esc(r.customer)}</div></div><div class="unscheduled-value">${r.value?money.format(r.value):"—"}</div></div><div class="mini" style="margin-top:4px"><strong>${esc(r.title)}</strong> · ${esc(r.stage)}</div><div class="unscheduled-topic">${esc(r.details||"No details entered")}</div><div class="unscheduled-meta"><span>${r.probability}% probability</span><span>${esc(r.confidence)}</span>${r.closeDate?`<span>${formatDate(r.closeDate)}</span>`:""}</div><button type="button" class="primary unscheduled-schedule" data-unscheduled-schedule="${r.kind}:${esc(r.id)}">Schedule</button></article>`).join(""):"<div class='empty'><strong>Everything is scheduled.</strong><br>Open RFQs and pre-RFQ opportunities will appear here when they need calendar time.</div>";
 }
 function plannerFullAddress(customerId,contactId){
   const c=customerById(customerId),ct=contactById(customerId,contactId);
@@ -6273,7 +6313,7 @@ function renderPlannerCalendar(){
   const board=$('calendarBoard'),agenda=$('calendarAgenda');
   if(st.mode==='agenda'){
     board.classList.add('hidden');agenda.classList.add('active');
-    agenda.innerHTML=dates.map(d=>{const list=meetings.filter(m=>!m.completed&&m.date===d).sort((a,b)=>(a.time||'').localeCompare(b.time||''));if(!list.length)return '';return `<div class="calendar-day-group"><h3>${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>${list.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="calendar-agenda-item" data-cal-event="${m.id}"><strong>${esc(m.time||'All day')} · ${esc(c?.company||'Customer')}</strong><div class="mini">${esc(ct?.name||'')}${m.purpose?` · ${esc(m.purpose)}`:''}</div><div>${esc(m.topic||'No topic entered')}</div><div class="mini">${esc(m.address||'')}</div></div>`}).join('')}</div>`}).join('')||"<div class='empty'>No meetings in this period.</div>";return;
+    agenda.innerHTML=dates.map(d=>{const list=meetings.filter(m=>!m.completed&&m.date===d).sort((a,b)=>(a.time||'').localeCompare(b.time||''));if(!list.length)return '';return `<div class="calendar-day-group" data-cal-date="${d}"><h3>${new Date(d+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>${list.map(m=>{const c=customerById(m.customerId),ct=contactById(m.customerId,m.contactId);return `<div class="calendar-agenda-item" data-cal-event="${m.id}"><strong>${esc(m.time||'All day')} · ${esc(c?.company||'Customer')}</strong><div class="mini">${esc(ct?.name||'')}${m.purpose?` · ${esc(m.purpose)}`:''}</div><div>${esc(m.topic||'No topic entered')}</div><div class="mini">${esc(m.address||'')}</div></div>`}).join('')}</div>`}).join('')||"<div class='empty'>No meetings in this period.</div>";return;
   }
   board.classList.remove('hidden');agenda.classList.remove('active');agenda.innerHTML='';
   if(st.mode==='twoweek'){
@@ -6293,7 +6333,7 @@ function plannerICS(meetings){let s='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-/
 function downloadPlannerICS(singleId){ensurePlannerSettings();const today=localIsoDate(),end=calAddDays(today,13);let ms=settings.salesPlannerMeetings.filter(m=>!m.completed&&m.date>=today&&m.date<=end);if(singleId)ms=ms.filter(m=>m.id===singleId);if(!ms.length){alert('No planned meetings to export.');return}const blob=new Blob([plannerICS(ms)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=singleId?'Sales_Meeting.ics':'ABCO_Next_14_Days.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 
 function renderPlanner(){
-  if(!$("plannerMeetingList"))return;ensurePlannerSettings();plannerFillCustomerOptions();renderPlannerCalendar();
+  if(!$("plannerMeetingList"))return;ensurePlannerSettings();plannerFillCustomerOptions();renderPlannerCalendar();renderPlannerUnscheduled();
   const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),end=new Date(today);end.setDate(end.getDate()+14);end.setHours(23,59,59,999);
   const meetings=settings.salesPlannerMeetings.filter(m=>{const d=plannerDateTime(m);return !m.completed&&d>=today&&d<=end}).sort((a,b)=>plannerDateTime(a)-plannerDateTime(b));
   const todos=settings.salesTodos||[],open=todos.filter(t=>!t.completed),overdue=open.filter(t=>t.date&&new Date(t.date+"T23:59:59")<today);
@@ -8565,6 +8605,19 @@ if($("calToday"))$("calToday").onclick=()=>{settings.plannerCalendarAnchor=local
 document.querySelectorAll(".cal-mode").forEach(b=>b.onclick=()=>setPlannerCalendarMode(b.dataset.calMode));
 if($("exportPlannerIcsApple"))$("exportPlannerIcsApple").onclick=()=>downloadPlannerICS();
 if($("exportPlannerIcsOutlook"))$("exportPlannerIcsOutlook").onclick=()=>downloadPlannerICS();
+if($("unscheduledType"))$("unscheduledType").onchange=renderPlannerUnscheduled;
+if($("unscheduledSort"))$("unscheduledSort").onchange=renderPlannerUnscheduled;
+
+let plannerDraggedSource=null;
+document.addEventListener("dragstart",e=>{
+  const card=e.target.closest("[data-unscheduled-kind]");if(!card)return;
+  plannerDraggedSource={kind:card.dataset.unscheduledKind,id:card.dataset.unscheduledId};card.classList.add("dragging");
+  e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",`${plannerDraggedSource.kind}:${plannerDraggedSource.id}`);
+  document.querySelectorAll("[data-cal-date]").forEach(x=>x.classList.add("drag-ready"));
+});
+document.addEventListener("dragend",e=>{e.target.closest("[data-unscheduled-kind]")?.classList.remove("dragging");document.querySelectorAll(".drag-ready,.drop-target").forEach(x=>x.classList.remove("drag-ready","drop-target"));plannerDraggedSource=null});
+document.addEventListener("dragover",e=>{const slot=e.target.closest("[data-cal-date]");if(!slot||!plannerDraggedSource)return;e.preventDefault();e.dataTransfer.dropEffect="move";document.querySelectorAll(".drop-target").forEach(x=>{if(x!==slot)x.classList.remove("drop-target")});slot.classList.add("drop-target")});
+document.addEventListener("drop",e=>{const slot=e.target.closest("[data-cal-date]");if(!slot||!plannerDraggedSource)return;e.preventDefault();const src={...plannerDraggedSource},hour=Number.isFinite(Number(slot.dataset.calHour))?Number(slot.dataset.calHour):9;document.querySelectorAll(".drag-ready,.drop-target").forEach(x=>x.classList.remove("drag-ready","drop-target"));plannerDraggedSource=null;openQuickEvent(src.kind,src.id,{date:slot.dataset.calDate,time:`${String(hour).padStart(2,"0")}:00`})});
 
 // v5.7.6: iOS-safe order menu actions. Delete uses pointerup so Safari cannot
 // swallow the tap when the absolutely-positioned menu closes/reflows.
@@ -8976,8 +9029,9 @@ if($("saveTodoItem"))$("saveTodoItem").onclick=saveTodo;
 if($("todoCustomer"))$("todoCustomer").onchange=()=>plannerFillContacts("todo");
 if($("todoFilter"))$("todoFilter").onchange=renderPlanner;
 document.addEventListener("click",e=>{
+  const us=e.target.closest("[data-unscheduled-schedule]");if(us){const [kind,...idParts]=us.dataset.unscheduledSchedule.split(":");openQuickEvent(kind,idParts.join(":"));return}
   const ce=e.target.closest("[data-cal-event]");if(ce){openPlannerMeeting(ce.dataset.calEvent);return}
-  const slot=e.target.closest("[data-cal-date]");if(slot&&!e.target.closest("[data-cal-event]")){openPlannerMeeting();$("plannerDate").value=slot.dataset.calDate;$("plannerTime").value=String(slot.dataset.calHour).padStart(2,"0")+":00";return}
+  const slot=e.target.closest("[data-cal-date]");if(slot&&!e.target.closest("[data-cal-event]")){openPlannerMeeting();$("plannerDate").value=slot.dataset.calDate;$("plannerTime").value=String(slot.dataset.calHour||9).padStart(2,"0")+":00";return}
   const ca=e.target.closest("[data-plan-calendar]");if(ca){downloadPlannerICS(ca.dataset.planCalendar);return}
   const pe=e.target.closest("[data-plan-edit]");if(pe){openPlannerMeeting(pe.dataset.planEdit);return}
   const pd=e.target.closest("[data-plan-delete]");if(pd){if(confirm("Delete this planned meeting?")){ensurePlannerSettings();settings.salesPlannerMeetings=settings.salesPlannerMeetings.filter(x=>x.id!==pd.dataset.planDelete);save();renderPlanner()}return}
@@ -8986,6 +9040,7 @@ document.addEventListener("click",e=>{
   const te=e.target.closest("[data-todo-edit]");if(te){openTodo(te.dataset.todoEdit);return}
   const td=e.target.closest("[data-todo-delete]");if(td){if(confirm("Delete this to-do?")){settings.salesTodos=settings.salesTodos.filter(x=>x.id!==td.dataset.todoDelete);save();renderPlanner()}return}
 });
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const card=e.target.closest("[data-unscheduled-kind]");if(!card||e.target.closest("button,select,input"))return;e.preventDefault();openQuickEvent(card.dataset.unscheduledKind,card.dataset.unscheduledId)});
 document.addEventListener("change",e=>{const t=e.target.closest("[data-todo-toggle]");if(!t)return;const rec=settings.salesTodos.find(x=>x.id===t.dataset.todoToggle);if(rec){rec.completed=t.checked;rec.completedAt=t.checked?new Date().toISOString():"";save();renderPlanner()}});
 if($("closeBackorderNow"))$("closeBackorderNow").onclick=closeRemainingBackorderToday;
 if($("boQuickCloseX"))$("boQuickCloseX").onclick=closeBackorderQuickModal;
