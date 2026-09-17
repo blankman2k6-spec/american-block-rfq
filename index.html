@@ -1494,7 +1494,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.3 Calendar Workbench</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.4 Recovery Import</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2594,14 +2594,15 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
     </div>
 
     <div class="card">
-      <h2>Version 5.6.4 — Account Intelligence + Contacts</h2>
+      <h2>Version 5.8.4 — Recovery Import</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
         <button id="settingsImport" class="secondary">Import Backup</button>
-        <button id="settingsActivityImport" class="secondary">Import Activities Only</button>
+        <button id="settingsActivityImport" class="secondary">Import Customer Logs</button>
         <input id="activityImportFile" type="file" class="hidden" accept=".json,application/json">
       </div>
+      <div id="activityImportStatus" class="mini" style="margin-top:8px">Customer-log imports add missing accounts, contacts, and activities without replacing existing CRM records.</div>
     </div>
     <div class="card">
       <div class="kicker">Data Layer</div>
@@ -8912,6 +8913,60 @@ async function exportBackupFile(){
     const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
   }catch(e){alert("Backup export failed: "+e.message)}
 }
+function recoveryImportText(v){return String(v||"").trim().replace(/\s+/g," ")}
+function recoveryImportPhone(v){return String(v||"").replace(/\D/g,"")}
+function recoveryActivityKey({date,type,customerId,comments}){return [date||"",type||"",customerId||"",recoveryImportText(comments).toLowerCase()].join("|")}
+async function importCustomerLogRecovery(file){
+  const status=$("activityImportStatus");
+  try{
+    if(!file)return;
+    status.textContent="Reading customer-log recovery package…";
+    const payload=JSON.parse(await file.text());
+    if(payload?.format!=="American Block Sales OS Customer Log Import"||!Array.isArray(payload.customers)||!Array.isArray(payload.activities))throw new Error("This is not a valid American Block customer-log recovery package.");
+    if(!confirm(`Import ${payload.activities.length} customer-log activities and match ${payload.customers.length} customer accounts? Existing CRM records will be preserved and exact duplicate activities will be skipped.`)){status.textContent="Import cancelled. No CRM records were changed.";return}
+    const now=new Date().toISOString(),customerIds=new Map(),contactIds=new Map();
+    let customersAdded=0,customersUpdated=0,contactsAdded=0,contactsUpdated=0,activitiesAdded=0,duplicatesSkipped=0;
+    for(const src of payload.customers){
+      const sourceKey=String(src.sourceKey||normalizeCompanyMatch(src.company));
+      let customer=customers.find(c=>normalizeCompanyMatch(c.company)===normalizeCompanyMatch(src.company));
+      if(!customer){
+        customer={id:uid(),company:recoveryImportText(src.company)||"Recovered Customer",city:src.city||"",state:src.state||"",address:src.address||"",zip:src.zip||"",website:"",accountType:src.accountType||"",businessDescription:"",marketRegion:"",knownSuppliers:"",buyingDrivers:"",notes:"Recovered from customer log import.",contacts:[],isNewAccount:false,wishlist:[],aiRecommendedProducts:[],accountYearlyGoals:{},createdAt:now,updatedAt:now};
+        customers.push(customer);customersAdded++;
+      }else{
+        let changed=false;
+        for(const field of ["city","state","address","zip","accountType"]){if(!customer[field]&&src[field]){customer[field]=src[field];changed=true}}
+        customer.contacts=Array.isArray(customer.contacts)?customer.contacts:[];
+        if(changed){customer.updatedAt=now;customersUpdated++}
+      }
+      customerIds.set(sourceKey,customer.id);
+      for(const srcContact of (src.contacts||[])){
+        const email=String(srcContact.email||"").trim().toLowerCase(),phone=recoveryImportPhone(srcContact.phone),name=recoveryImportText(srcContact.name).toLowerCase();
+        let contact=customer.contacts.find(c=>(email&&String(c.email||"").trim().toLowerCase()===email)||(phone&&recoveryImportPhone(c.phone)===phone)||(name&&recoveryImportText(c.name).toLowerCase()===name));
+        if(!contact){
+          contact={id:uid(),name:srcContact.name||"",role:"",phone:srcContact.phone||"",email:srcContact.email||"",location:srcContact.location||"",address:srcContact.address||"",city:srcContact.city||"",state:srcContact.state||"",zip:srcContact.zip||"",sameAsCompany:false,primary:customer.contacts.length===0};
+          customer.contacts.push(contact);contactsAdded++;
+        }else{
+          let changed=false;
+          for(const field of ["name","phone","email","location","address","city","state","zip"]){if(!contact[field]&&srcContact[field]){contact[field]=srcContact[field];changed=true}}
+          if(changed)contactsUpdated++;
+        }
+        contactIds.set(`${sourceKey}|${String(srcContact.sourceKey||"")}`,contact.id);
+      }
+    }
+    const existingKeys=new Set(activities.map(a=>recoveryActivityKey(a)));
+    for(const src of payload.activities){
+      const customerId=customerIds.get(String(src.customerKey||""));if(!customerId)continue;
+      const key=recoveryActivityKey({date:src.date,type:src.type,customerId,comments:src.comments});
+      if(existingKeys.has(key)){duplicatesSkipped++;continue}
+      const rec={id:uid(),date:src.date||localIsoDate(),type:src.type||"Visit",customerId,contactId:contactIds.get(`${String(src.customerKey||"")}|${String(src.contactKey||"")}`)||null,comments:String(src.comments||"").trim(),locationSnapshot:{locationName:src.locationSnapshot?.locationName||"",address:src.locationSnapshot?.address||"",city:src.locationSnapshot?.city||"",state:src.locationSnapshot?.state||"",zip:src.locationSnapshot?.zip||""},locationSource:"manual",opportunityRfqId:null,opportunityTitle:"",opportunityValue:0,opportunityStage:"",opportunityDetails:"",createdAt:now,updatedAt:now};
+      activities.push(rec);existingKeys.add(key);activitiesAdded++;
+    }
+    save();migrate();renderAll();
+    const summary=`Import complete — ${activitiesAdded} activities added; ${duplicatesSkipped} duplicates skipped; ${customersAdded} customers and ${contactsAdded} contacts added.`;
+    status.textContent=summary;alert(summary);
+  }catch(e){status.textContent="Import failed — "+e.message;alert("Customer-log import failed: "+e.message)}
+  finally{if($("activityImportFile"))$("activityImportFile").value=""}
+}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(r.error||new Error("Could not read image."));r.readAsDataURL(file)})}
 function normalizeCompanyMatch(v){return String(v||"").toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g," ").replace(/\b(llc|l l c|inc|incorporated|corp|corporation|co|company|ltd|limited)\b/g," ").replace(/\s+/g," ").trim()}
 function businessCardLocationLabel(card){
@@ -8974,6 +9029,8 @@ if($("scanBusinessCardBtn"))$("scanBusinessCardBtn").onclick=()=>$("businessCard
 if($("businessCardInput"))$("businessCardInput").onchange=e=>scanBusinessCard(e.target.files?.[0]);
 if($("exportBackup"))$("exportBackup").onclick=exportBackupFile;
 if($("settingsExport"))$("settingsExport").onclick=exportBackupFile;
+if($("settingsActivityImport"))$("settingsActivityImport").onclick=()=>$("activityImportFile")?.click();
+if($("activityImportFile"))$("activityImportFile").onchange=e=>importCustomerLogRecovery(e.target.files?.[0]);
 if($("backFromCustomer"))$("backFromCustomer").onclick=returnFromCustomerForm;
 if($("cancelCustomer"))$("cancelCustomer").onclick=returnFromCustomerForm;
 
