@@ -1494,7 +1494,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.4 Recovery Import</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.5 Backup Import Repair</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2594,7 +2594,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
     </div>
 
     <div class="card">
-      <h2>Version 5.8.4 — Recovery Import</h2>
+      <h2>Version 5.8.5 — Backup Import Repair</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -2602,6 +2602,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
         <button id="settingsActivityImport" class="secondary">Import Customer Logs</button>
         <input id="activityImportFile" type="file" class="hidden" accept=".json,application/json">
       </div>
+      <div id="backupImportStatus" class="mini" style="margin-top:8px">Full backups replace the CRM on this device only. Cloud data is not changed until you explicitly choose Upload This Device.</div>
       <div id="activityImportStatus" class="mini" style="margin-top:8px">Customer-log imports add missing accounts, contacts, and activities without replacing existing CRM records.</div>
     </div>
     <div class="card">
@@ -3177,7 +3178,7 @@ if(recoveryQuery.get("ab_recovery")==="1"){
 if(!String(cloud.url||"").trim()) cloud.url=BUILTIN_CLOUD.url;
 if(!String(cloud.anonKey||"").trim()) cloud.anonKey=BUILTIN_CLOUD.anonKey;
 localStorage.setItem(KEYS.cloud,JSON.stringify(cloud));
-let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false,cloudRecoveryMode=false;
+let cloudSyncReady=false,cloudSyncTimer=null,applyingCloudState=false,cloudRecoveryMode=!!cloud.backupRestorePending;
 let settings=JSON.parse(localStorage.getItem(KEYS.settings)||"null")||{goal:100000,sales:0};
 if(!settings.skin)settings.skin="midnight-executive";
 function ensureYearSettings(){
@@ -8243,6 +8244,8 @@ async function pullCloudState({force=false}={}){
   cloud.lastSyncedAt=remote.updated_at||new Date().toISOString();
   cloud.localDirtyAt="";
   cloud.firstSyncComplete=true;
+  cloudRecoveryMode=false;
+  delete cloud.backupRestorePending;
   saveCloudMeta();
   const remoteState=remote.state||{};
   const counts=`${(remoteState.customers||[]).length} customers, ${(remoteState.rfqs||[]).length} RFQs, ${(remoteState.orders||[]).length} orders`;
@@ -8255,6 +8258,11 @@ async function pullCloudState({force=false}={}){
 }
 async function syncCloudNow(){
   if(!cloud.session?.access_token){setCloudSyncStatus("Sign in first.","warn");return}
+  if(cloud.backupRestorePending){
+    cloudRecoveryMode=true;
+    setCloudSyncStatus("A backup was restored on this device. Review it, then choose Download Cloud to discard it or Upload This Device to replace the cloud intentionally.","warn");
+    return;
+  }
   setCloudSyncStatus("Checking for changes…");
   try{
     const remote=await getCloudStateRow();
@@ -8555,6 +8563,8 @@ if($("cloudPushNow"))$("cloudPushNow").onclick=async()=>{
     cloud.lastSyncedAt=verify.updated_at||cloud.lastSyncedAt||new Date().toISOString();
     cloud.localDirtyAt="";
     cloud.firstSyncComplete=true;
+    cloudRecoveryMode=false;
+    delete cloud.backupRestorePending;
     saveCloudMeta();
     const msg=`✓ Upload verified — cloud revision ${cloud.lastRevision} contains ${counts}.`;
     setCloudSyncStatus(msg,"good");
@@ -8804,7 +8814,7 @@ applyLayoutMode(layoutMode);
 
 if("serviceWorker" in navigator)window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.8.2");
+    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.8.5");
     await reg.update();
     // Force a newly deployed worker to take control without leaving iPhone/PWA users on an older report build.
     if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
@@ -8912,6 +8922,52 @@ async function exportBackupFile(){
     }
     const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
   }catch(e){alert("Backup export failed: "+e.message)}
+}
+async function importBackupFile(file){
+  const status=$("backupImportStatus");
+  try{
+    if(!file)return;
+    if(status)status.textContent="Reading full backup…";
+    const backup=JSON.parse(await file.text());
+    const recordKeys=["rfqs","customers","orders","communications","activities","intelligence"];
+    const hasRecords=backup&&typeof backup==="object"&&recordKeys.some(key=>Array.isArray(backup[key]));
+    if(!hasRecords)throw new Error("This is not a valid American Block Sales OS backup JSON file.");
+    const counts=`${(backup.customers||[]).length} customers, ${(backup.rfqs||[]).length} RFQs, ${(backup.orders||[]).length} orders, ${(backup.activities||[]).length} activities`;
+    const ok=confirm(`Restore this full backup (${counts})?\n\nThis replaces the CRM on this device. It will NOT change the cloud unless you later choose Upload This Device.`);
+    if(!ok){if(status)status.textContent="Backup import cancelled. Nothing was changed.";return}
+
+    clearTimeout(cloudSyncTimer);
+    cloudRecoveryMode=true;
+    cloud.backupRestorePending=true;
+    applyingCloudState=true;
+    try{
+      rfqs=Array.isArray(backup.rfqs)?backup.rfqs:[];
+      customers=Array.isArray(backup.customers)?backup.customers:[];
+      orders=Array.isArray(backup.orders)?backup.orders:[];
+      communications=Array.isArray(backup.communications)?backup.communications:[];
+      activities=Array.isArray(backup.activities)?backup.activities:[];
+      intelligence=Array.isArray(backup.intelligence)?backup.intelligence:[];
+      settings=backup.settings&&typeof backup.settings==="object"?{...backup.settings}:{goal:100000,sales:0};
+      if(!settings.skin)settings.skin="midnight-executive";
+      ensureYearSettings();ensureAiSettings();ensureReportIntel();
+      save(false);
+    }finally{applyingCloudState=false}
+
+    migrate();
+    cloud.localDirtyAt=new Date().toISOString();
+    cloud.backupRestorePending=true;
+    saveCloudMeta();
+    applySkin(settings.skin||"midnight-executive");
+    renderAll();
+    const summary=`Backup restored on this device — ${counts}. Cloud data is unchanged. Review the restored records before using Upload This Device.`;
+    if(status)status.textContent=summary;
+    setCloudSyncStatus("Backup restored locally. Automatic cloud upload is paused until you choose Download Cloud or Upload This Device.","warn");
+    alert(summary);
+  }catch(e){
+    const message="Backup import failed — "+(e?.message||String(e));
+    if(status)status.textContent=message;
+    alert(message);
+  }finally{if($("importFile"))$("importFile").value=""}
 }
 function recoveryImportText(v){return String(v||"").trim().replace(/\s+/g," ")}
 function recoveryImportPhone(v){return String(v||"").replace(/\D/g,"")}
@@ -9029,6 +9085,9 @@ if($("scanBusinessCardBtn"))$("scanBusinessCardBtn").onclick=()=>$("businessCard
 if($("businessCardInput"))$("businessCardInput").onchange=e=>scanBusinessCard(e.target.files?.[0]);
 if($("exportBackup"))$("exportBackup").onclick=exportBackupFile;
 if($("settingsExport"))$("settingsExport").onclick=exportBackupFile;
+if($("importBackup"))$("importBackup").onclick=()=>$("importFile")?.click();
+if($("settingsImport"))$("settingsImport").onclick=()=>$("importFile")?.click();
+if($("importFile"))$("importFile").onchange=e=>importBackupFile(e.target.files?.[0]);
 if($("settingsActivityImport"))$("settingsActivityImport").onclick=()=>$("activityImportFile")?.click();
 if($("activityImportFile"))$("activityImportFile").onchange=e=>importCustomerLogRecovery(e.target.files?.[0]);
 if($("backFromCustomer"))$("backFromCustomer").onclick=returnFromCustomerForm;
