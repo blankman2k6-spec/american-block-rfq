@@ -1,4 +1,4 @@
-const CACHE="ab-sales-os-v5-8-5-backup-import-repair";
+const CACHE="ab-sales-os-v5-8-6-additive-recovery";
 const ASSETS=["jspdf.umd.min.js","./","index.html","manifest.json","icon-192.png","icon-512.png","ABCO-FLOWLINE-CATALOG.pdf"];
 
 self.addEventListener("install",event=>{

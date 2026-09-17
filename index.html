@@ -1494,7 +1494,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
   <header class="topbar">
     <div class="brand">
       <h1>American Block Sales OS</h1>
-      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.5 Backup Import Repair</p>
+      <p id="todayLabel"></p><p class="mini" style="margin-top:2px">App v5.8.6 Additive Recovery</p>
     </div>
     <div class="topbar-actions">
       <button id="refreshApp" class="icon-btn refresh-btn" type="button" aria-label="Refresh CRM" title="Refresh CRM">↻</button>
@@ -2594,7 +2594,7 @@ body[data-layout="mobile"] #quickEventDate{width:190px!important;max-width:190px
     </div>
 
     <div class="card">
-      <h2>Version 5.8.5 — Backup Import Repair</h2>
+      <h2>Version 5.8.6 — Additive Recovery</h2>
       <p class="muted">Executive dashboard, customer CRM, multiple contacts per account, RFQ management, editable/deletable order history, PDF acknowledgment parsing, manual order entry, automatic customer synchronization, RFQ conversion to Closed Won, goal tracking, reports, and offline support.</p>
       <div class="toolbar">
         <button id="settingsExport" class="secondary">Export Backup</button>
@@ -8814,7 +8814,7 @@ applyLayoutMode(layoutMode);
 
 if("serviceWorker" in navigator)window.addEventListener("load",async()=>{
   try{
-    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.8.5");
+    const reg=await navigator.serviceWorker.register("service-worker.js?v=5.8.6");
     await reg.update();
     // Force a newly deployed worker to take control without leaving iPhone/PWA users on an older report build.
     if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
@@ -8976,21 +8976,24 @@ async function importCustomerLogRecovery(file){
   const status=$("activityImportStatus");
   try{
     if(!file)return;
-    status.textContent="Reading customer-log recovery package…";
+    status.textContent="Reading additive recovery package…";
     const payload=JSON.parse(await file.text());
-    if(payload?.format!=="American Block Sales OS Customer Log Import"||!Array.isArray(payload.customers)||!Array.isArray(payload.activities))throw new Error("This is not a valid American Block customer-log recovery package.");
-    if(!confirm(`Import ${payload.activities.length} customer-log activities and match ${payload.customers.length} customer accounts? Existing CRM records will be preserved and exact duplicate activities will be skipped.`)){status.textContent="Import cancelled. No CRM records were changed.";return}
+    const supportedFormats=["American Block Sales OS Customer Log Import","American Block Sales OS Additive Recovery Import"];
+    if(!supportedFormats.includes(payload?.format)||!Array.isArray(payload.customers)||!Array.isArray(payload.activities))throw new Error("This is not a valid American Block additive recovery package.");
+    const proposed=`${payload.customers.length} customers, ${payload.activities.length} activities, ${(payload.orders||[]).length} orders, ${(payload.rfqs||[]).length} RFQs`;
+    if(!confirm(`Add missing records from this recovery package (${proposed})?\n\nExisting populated CRM records will not be replaced. Exact duplicates will be skipped.`)){status.textContent="Import cancelled. No CRM records were changed.";return}
     const now=new Date().toISOString(),customerIds=new Map(),contactIds=new Map();
-    let customersAdded=0,customersUpdated=0,contactsAdded=0,contactsUpdated=0,activitiesAdded=0,duplicatesSkipped=0;
+    const rfqIds=new Map();
+    let customersAdded=0,customersUpdated=0,contactsAdded=0,contactsUpdated=0,activitiesAdded=0,rfqsAdded=0,ordersAdded=0,communicationsAdded=0,intelligenceAdded=0,salesMonthsAdded=0,duplicatesSkipped=0;
     for(const src of payload.customers){
       const sourceKey=String(src.sourceKey||normalizeCompanyMatch(src.company));
       let customer=customers.find(c=>normalizeCompanyMatch(c.company)===normalizeCompanyMatch(src.company));
       if(!customer){
-        customer={id:uid(),company:recoveryImportText(src.company)||"Recovered Customer",city:src.city||"",state:src.state||"",address:src.address||"",zip:src.zip||"",website:"",accountType:src.accountType||"",businessDescription:"",marketRegion:"",knownSuppliers:"",buyingDrivers:"",notes:"Recovered from customer log import.",contacts:[],isNewAccount:false,wishlist:[],aiRecommendedProducts:[],accountYearlyGoals:{},createdAt:now,updatedAt:now};
+        customer={id:src.sourceId||uid(),company:recoveryImportText(src.company)||"Recovered Customer",city:src.city||"",state:src.state||"",address:src.address||"",zip:src.zip||"",website:src.website||"",accountType:src.accountType||"",businessDescription:src.businessDescription||"",marketRegion:src.marketRegion||"",knownSuppliers:src.knownSuppliers||"",buyingDrivers:src.buyingDrivers||"",notes:src.notes||"Recovered from additive recovery import.",contacts:[],isNewAccount:false,wishlist:Array.isArray(src.wishlist)?src.wishlist:[],aiRecommendedProducts:Array.isArray(src.aiRecommendedProducts)?src.aiRecommendedProducts:[],accountYearlyGoals:src.accountYearlyGoals||{},createdAt:src.createdAt||now,updatedAt:src.updatedAt||now};
         customers.push(customer);customersAdded++;
       }else{
         let changed=false;
-        for(const field of ["city","state","address","zip","accountType"]){if(!customer[field]&&src[field]){customer[field]=src[field];changed=true}}
+        for(const field of ["city","state","address","zip","accountType","website","notes","marketRegion","businessDescription","knownSuppliers","buyingDrivers","aiRecommendedProducts","websiteResearchSummary","websiteResearchWhyFit","websiteResearchFullAnalysis","websiteResearchUpdatedAt","websiteResearchSourceMode"]){if((!customer[field]||(Array.isArray(customer[field])&&!customer[field].length))&&src[field]){customer[field]=src[field];changed=true}}
         customer.contacts=Array.isArray(customer.contacts)?customer.contacts:[];
         if(changed){customer.updatedAt=now;customersUpdated++}
       }
@@ -8999,28 +9002,62 @@ async function importCustomerLogRecovery(file){
         const email=String(srcContact.email||"").trim().toLowerCase(),phone=recoveryImportPhone(srcContact.phone),name=recoveryImportText(srcContact.name).toLowerCase();
         let contact=customer.contacts.find(c=>(email&&String(c.email||"").trim().toLowerCase()===email)||(phone&&recoveryImportPhone(c.phone)===phone)||(name&&recoveryImportText(c.name).toLowerCase()===name));
         if(!contact){
-          contact={id:uid(),name:srcContact.name||"",role:"",phone:srcContact.phone||"",email:srcContact.email||"",location:srcContact.location||"",address:srcContact.address||"",city:srcContact.city||"",state:srcContact.state||"",zip:srcContact.zip||"",sameAsCompany:false,primary:customer.contacts.length===0};
+          contact={id:srcContact.sourceId||uid(),name:srcContact.name||"",role:srcContact.role||"",phone:srcContact.phone||"",email:srcContact.email||"",location:srcContact.location||"",address:srcContact.address||"",city:srcContact.city||"",state:srcContact.state||"",zip:srcContact.zip||"",sameAsCompany:!!srcContact.sameAsCompany,primary:srcContact.primary===true||customer.contacts.length===0};
           customer.contacts.push(contact);contactsAdded++;
         }else{
           let changed=false;
-          for(const field of ["name","phone","email","location","address","city","state","zip"]){if(!contact[field]&&srcContact[field]){contact[field]=srcContact[field];changed=true}}
+          for(const field of ["name","role","phone","email","location","address","city","state","zip"]){if(!contact[field]&&srcContact[field]){contact[field]=srcContact[field];changed=true}}
           if(changed)contactsUpdated++;
         }
         contactIds.set(`${sourceKey}|${String(srcContact.sourceKey||"")}`,contact.id);
       }
     }
+
+    const cleanImportedRecord=src=>{const rec={...src};for(const key of ["sourceId","sourceLinkedId","customerKey","contactKey","linkedRfqSourceId","rfqSourceId","sourceRfqSourceId"]){delete rec[key]}return rec};
+    for(const src of (payload.rfqs||[])){
+      const sourceId=String(src.sourceId||src.id||""),customerId=customerIds.get(String(src.customerKey||""))||null,contactId=contactIds.get(`${String(src.customerKey||"")}|${String(src.contactKey||"")}`)||null;
+      let existing=(sourceId&&rfqs.find(r=>r.id===sourceId))||rfqs.find(r=>normalizeCompanyMatch(r.company)===normalizeCompanyMatch(src.company)&&String(r.quoteNo||"")===String(src.quoteNo||"")&&String(r.rfqDate||"")===String(src.rfqDate||""));
+      if(existing){if(sourceId)rfqIds.set(sourceId,existing.id);duplicatesSkipped++;continue}
+      const rec=cleanImportedRecord(src);rec.id=sourceId||uid();rec.customerId=customerId;rec.contactId=contactId;rfqs.push(rec);if(sourceId)rfqIds.set(sourceId,rec.id);rfqsAdded++;
+    }
+
+    for(const src of (payload.orders||[])){
+      const sourceId=String(src.sourceId||src.id||""),customerId=customerIds.get(String(src.customerKey||""))||null,contactId=contactIds.get(`${String(src.customerKey||"")}|${String(src.contactKey||"")}`)||null;
+      const existing=(sourceId&&orders.find(o=>o.id===sourceId))||orders.find(o=>normalizeCompanyMatch(o.company)===normalizeCompanyMatch(src.company)&&String(o.poNumber||"")===String(src.poNumber||"")&&String(o.salesOrder||"")===String(src.salesOrder||"")&&String(o.orderDate||"")===String(src.orderDate||"")&&Number(o.total||0)===Number(src.total||0));
+      if(existing){duplicatesSkipped++;continue}
+      const rec=cleanImportedRecord(src);rec.id=sourceId||uid();rec.customerId=customerId;rec.contactId=contactId;rec.linkedRfqId=rfqIds.get(String(src.linkedRfqSourceId||""))||null;orders.push(rec);ordersAdded++;
+    }
+
+    for(const src of (payload.communications||[])){
+      const sourceId=String(src.sourceId||src.id||"");
+      const existing=(sourceId&&communications.find(c=>c.id===sourceId))||communications.find(c=>String(c.createdAt||"")===String(src.createdAt||"")&&String(c.type||"")===String(src.type||"")&&String(c.message||"")===String(src.message||""));
+      if(existing){duplicatesSkipped++;continue}
+      const rec=cleanImportedRecord(src);rec.id=sourceId||uid();rec.customerId=customerIds.get(String(src.customerKey||""))||null;rec.contactId=contactIds.get(`${String(src.customerKey||"")}|${String(src.contactKey||"")}`)||null;rec.rfqId=rfqIds.get(String(src.rfqSourceId||""))||null;communications.push(rec);communicationsAdded++;
+    }
+
+    for(const src of (payload.intelligence||[])){
+      const sourceId=String(src.sourceId||src.id||"");
+      const existing=(sourceId&&intelligence.find(x=>x.id===sourceId))||intelligence.find(x=>String(x.date||"")===String(src.date||"")&&String(x.type||"")===String(src.type||"")&&String(x.part||"")===String(src.part||"")&&Number(x.amount||0)===Number(src.amount||0));
+      if(existing){duplicatesSkipped++;continue}
+      const rec=cleanImportedRecord(src);rec.id=sourceId||uid();rec.customerId=customerIds.get(String(src.customerKey||""))||null;rec.sourceRfqId=rfqIds.get(String(src.sourceRfqSourceId||""))||null;intelligence.push(rec);intelligenceAdded++;
+    }
+
     const existingKeys=new Set(activities.map(a=>recoveryActivityKey(a)));
     for(const src of payload.activities){
       const customerId=customerIds.get(String(src.customerKey||""));if(!customerId)continue;
       const key=recoveryActivityKey({date:src.date,type:src.type,customerId,comments:src.comments});
       if(existingKeys.has(key)){duplicatesSkipped++;continue}
-      const rec={id:uid(),date:src.date||localIsoDate(),type:src.type||"Visit",customerId,contactId:contactIds.get(`${String(src.customerKey||"")}|${String(src.contactKey||"")}`)||null,comments:String(src.comments||"").trim(),locationSnapshot:{locationName:src.locationSnapshot?.locationName||"",address:src.locationSnapshot?.address||"",city:src.locationSnapshot?.city||"",state:src.locationSnapshot?.state||"",zip:src.locationSnapshot?.zip||""},locationSource:"manual",opportunityRfqId:null,opportunityTitle:"",opportunityValue:0,opportunityStage:"",opportunityDetails:"",createdAt:now,updatedAt:now};
+      const rec={id:src.sourceId||uid(),date:src.date||localIsoDate(),type:src.type||"Visit",customerId,contactId:contactIds.get(`${String(src.customerKey||"")}|${String(src.contactKey||"")}`)||null,comments:String(src.comments||"").trim(),locationSnapshot:{locationName:src.locationSnapshot?.locationName||"",address:src.locationSnapshot?.address||"",city:src.locationSnapshot?.city||"",state:src.locationSnapshot?.state||"",zip:src.locationSnapshot?.zip||""},locationSource:src.locationSource||"manual",opportunityRfqId:rfqIds.get(String(src.opportunitySourceId||""))||null,opportunityTitle:src.opportunityTitle||"",opportunityValue:Number(src.opportunityValue)||0,opportunityStage:src.opportunityStage||"",opportunityDetails:src.opportunityDetails||"",internalOnly:!!src.internalOnly,autoLogged:!!src.autoLogged,source:src.source||"Recovery import",createdAt:src.createdAt||now,updatedAt:src.updatedAt||now};
       activities.push(rec);existingKeys.add(key);activitiesAdded++;
     }
+
+    ensureMonthlySalesAdjustments();
+    for(const [month,value] of Object.entries(payload.salesHistory?.monthlyAccountingActuals||{})){if(settings.monthlyAccountingActuals[month]===undefined){settings.monthlyAccountingActuals[month]=value;salesMonthsAdded++}}
+    for(const [month,value] of Object.entries(payload.salesHistory?.monthlySalesAdjustments||{})){if(settings.monthlySalesAdjustments[month]===undefined)settings.monthlySalesAdjustments[month]=value}
     save();migrate();renderAll();
-    const summary=`Import complete — ${activitiesAdded} activities added; ${duplicatesSkipped} duplicates skipped; ${customersAdded} customers and ${contactsAdded} contacts added.`;
+    const summary=`Additive import complete — ${customersAdded} customers, ${contactsAdded} contacts, ${activitiesAdded} activities, ${rfqsAdded} RFQs, ${ordersAdded} orders, ${communicationsAdded} communications, ${intelligenceAdded} intelligence records, and ${salesMonthsAdded} sales months added. ${duplicatesSkipped} duplicates skipped.`;
     status.textContent=summary;alert(summary);
-  }catch(e){status.textContent="Import failed — "+e.message;alert("Customer-log import failed: "+e.message)}
+  }catch(e){status.textContent="Import failed — "+e.message;alert("Additive recovery import failed: "+e.message)}
   finally{if($("activityImportFile"))$("activityImportFile").value=""}
 }
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(r.error||new Error("Could not read image."));r.readAsDataURL(file)})}
